@@ -1,0 +1,20 @@
+{
+  "supported_languages": [
+    "English",
+    "Spanish",
+    "French",
+    "German",
+    "Italian",
+    "Portuguese",
+    "Russian",
+    "Chinese",
+    "Japanese",
+    "Korean",
+    "Arabic",
+    "Hindi",
+    "Dutch",
+    "Swedish",
+    "Norwegian"
+  ],
+  "supported_formats": ["PDF", "DOCX", "TXT"]
+}
