@@ -1,28 +1,32 @@
 """File handling utilities"""
 
+from __future__ import annotations
+
 import os
 import shutil
 import tempfile
 import uuid
-from pathlib import Path
-from typing import Optional
 import logging
+from pathlib import Path
+from typing import Optional, Any, IO
+
+from fastapi import UploadFile
 
 logger = logging.getLogger(__name__)
 
 class FileHandler:
     """Handles file operations for the application"""
     
-    def __init__(self):
-        self.upload_dir = "uploads"
-        self.download_dir = "downloads"
-        self.temp_dir = "temp"
+    def __init__(self) -> None:
+        self.upload_dir: str = "uploads"
+        self.download_dir: str = "downloads"
+        self.temp_dir: str = "temp"
         
         # Create directories
         for directory in [self.upload_dir, self.download_dir, self.temp_dir]:
             os.makedirs(directory, exist_ok=True)
     
-    def save_uploaded_file(self, file) -> str:
+    def save_uploaded_file(self, file: Any) -> str:
         """Save uploaded file and return path"""
         try:
             # Validate file type
@@ -62,7 +66,7 @@ class FileHandler:
         file_ext = Path(filename).suffix.lower()
         return file_ext in allowed_extensions
     
-    def save_upload_file(self, upload_file) -> str:
+    def save_upload_file(self, upload_file: UploadFile) -> str:
         """Save FastAPI UploadFile and ensure its underlying stream is closed."""
         file_path: Optional[str] = None
         try:

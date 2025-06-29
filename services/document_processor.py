@@ -1,9 +1,11 @@
 """Document processing service for multiple file formats"""
 
+from __future__ import annotations
+
 import os
 import logging
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import tempfile
 
 import fitz  # PyMuPDF
@@ -16,8 +18,8 @@ logger = logging.getLogger(__name__)
 class DocumentProcessor:
     """Handles document processing for multiple formats"""
     
-    def __init__(self):
-        self.supported_formats = ['.pdf', '.docx', '.txt']
+    def __init__(self) -> None:
+        self.supported_formats: List[str] = ['.pdf', '.docx', '.txt']
     
     def extract_content(self, file_path: str) -> Dict[str, Any]:
         """Extract content from document based on file type"""
@@ -359,7 +361,7 @@ class DocumentProcessor:
             logger.error(f"TXT creation error: {e}")
             raise
     
-    def _normalize_color(self, color_value) -> tuple:
+    def _normalize_color(self, color_value: Any) -> Tuple[float, float, float]:
         """Convert color to RGB tuple"""
         if isinstance(color_value, int):
             r = (color_value >> 16) & 0xFF

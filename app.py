@@ -3,6 +3,8 @@ Professional Document Translator with Advanced Formatting Preservation
 Based on amazon-translate-pdf approach with comprehensive layout preservation
 """
 
+from __future__ import annotations
+
 import os
 import asyncio
 import logging
@@ -92,6 +94,7 @@ class AdvancedTranslationState:
         self.output_file = None
         self.processing_info = {}
         self.backup_path = None
+        self.max_pages: int = 0  # 0 means translate all pages
 
 # Global state instance
 state = AdvancedTranslationState()
@@ -198,7 +201,7 @@ async def process_file_upload(file) -> Tuple[str, str, str, str]:
         logger.error(f"File upload error: {str(e)}")
         return "", f"❌ Upload failed: {str(e)}", "", ""
 
-async def start_translation(target_language: str) -> Tuple[str, str, bool]:
+async def start_translation(target_language: str, max_pages: int) -> Tuple[str, str, bool]:
     """Start the advanced translation process"""
     try:
         if not state.current_file or not state.current_content:
@@ -212,6 +215,7 @@ async def start_translation(target_language: str) -> Tuple[str, str, bool]:
         state.translation_status = "starting"
         state.translation_progress = 0
         state.error_message = ""
+        state.max_pages = max_pages
         
         # Start translation in background
         asyncio.create_task(perform_advanced_translation())
@@ -222,7 +226,7 @@ async def start_translation(target_language: str) -> Tuple[str, str, bool]:
         logger.error(f"Translation start error: {str(e)}")
         return f"❌ Failed to start translation: {str(e)}", "", False
 
-async def perform_advanced_translation():
+async def perform_advanced_translation() -> None:
     """Perform the advanced translation process with format preservation"""
     try:
         state.translation_status = "processing"
@@ -244,12 +248,15 @@ async def perform_advanced_translation():
         else:
             raise ValueError(f"Unsupported content type: {content['type']}")
         
-        # Translate content page by page
+        # Translate content page by page respecting max_pages limit
         state.translation_progress = 30
         translated_by_page = {}
-        
-        total_pages = len(text_by_page)
-        for page_num, page_texts in text_by_page.items():
+
+        max_pages = state.max_pages if state.max_pages > 0 else None
+        pages_to_process = {k: v for k, v in text_by_page.items() if (max_pages is None or k < max_pages)}
+
+        total_pages = len(pages_to_process)
+        for page_num, page_texts in pages_to_process.items():
             if not page_texts:
                 translated_by_page[page_num] = []
                 continue
@@ -320,7 +327,7 @@ async def perform_advanced_translation():
         state.translation_status = "error"
         state.error_message = str(e)
 
-def update_translation_progress(progress: int):
+def update_translation_progress(progress: int) -> None:
     """Update translation progress"""
     state.translation_progress = min(30 + (progress * 0.6), 90)
 
@@ -366,7 +373,7 @@ def download_translated_file(output_format: str) -> str:
         return f"❌ Download failed: {str(e)}"
 
 # Gradio Interface with Enhanced Features
-def create_gradio_interface():
+def create_gradio_interface() -> gr.Blocks:
     """Create the advanced Gradio web interface"""
     
     with gr.Blocks(
@@ -482,6 +489,8 @@ def create_gradio_interface():
                             value="English"
                         )
                 
+                # Page limit slider
+                pages_slider = gr.Slider(minimum=1, maximum=200, step=1, value=20, label="Pages to translate")
                 # Translation Controls
                 translate_btn = gr.Button(
                     "🚀 Start Advanced Translation",
@@ -532,7 +541,7 @@ def create_gradio_interface():
         
         translate_btn.click(
             fn=start_translation,
-            inputs=[target_language],
+            inputs=[target_language, pages_slider],
             outputs=[progress_status, upload_status, download_btn]
         )
         
@@ -565,7 +574,7 @@ def create_gradio_interface():
 
 # FastAPI Routes (Enhanced)
 @app.get("/")
-async def root():
+async def root() -> Dict[str, Any]:
     """Root endpoint"""
     return {
         "message": "Advanced Document Translator API", 
@@ -680,7 +689,7 @@ async def download_result(job_id: str):
         headers={"X-Processing-Type": "advanced", "X-Format-Preserved": "true"}
     )
 
-async def process_advanced_translation_job(job_id: str, file_path: str, source_lang: str, target_lang: str):
+async def process_advanced_translation_job(job_id: str, file_path: str, source_lang: str, target_lang: str) -> None:
     """Process translation job with advanced formatting preservation"""
     try:
         job = translation_jobs[job_id]
@@ -736,7 +745,7 @@ async def process_advanced_translation_job(job_id: str, file_path: str, source_l
         job["status"] = "failed"
         job["error"] = str(e)
         
-def main():
+def main() -> None:
     """Main application entry point"""
     logger.info("Starting Advanced Document Translator")
     
