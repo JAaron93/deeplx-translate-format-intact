@@ -3,6 +3,8 @@ Advanced PDF processor with comprehensive formatting preservation.
 Based on amazon-translate-pdf approach using image rendering + text overlay.
 """
 
+from __future__ import annotations
+
 import fitz  # PyMuPDF for PDF manipulation
 import os
 import io
@@ -63,7 +65,7 @@ class AdvancedPDFProcessor:
     Uses image-based rendering with precise text overlay for maximum accuracy.
     """
     
-    def __init__(self, dpi: int = 300, preserve_images: bool = True):
+    def __init__(self, dpi: int = 300, preserve_images: bool = True) -> None:
         """
         Initialize the advanced PDF processor.
         
@@ -71,9 +73,10 @@ class AdvancedPDFProcessor:
             dpi: Resolution for page rendering (higher = better quality, more memory)
             preserve_images: Whether to preserve embedded images
         """
-        self.dpi = dpi
-        self.preserve_images = preserve_images
-        self.memory_threshold = 0.8  # 80% memory usage threshold
+        self.dpi: int = dpi
+        self.preserve_images: bool = preserve_images
+        # If current memory usage exceeds this fraction, trigger GC
+        self.memory_threshold: float = 0.8  # 80%
         
     def extract_document_layout(self, pdf_path: str) -> List[PageLayout]:
         """

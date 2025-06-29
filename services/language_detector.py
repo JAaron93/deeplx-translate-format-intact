@@ -1,7 +1,9 @@
 """Language detection service"""
 
+from __future__ import annotations
+
 import logging
-from typing import Optional
+from typing import Optional, Dict, List
 from pathlib import Path
 
 try:
@@ -28,8 +30,8 @@ logger = logging.getLogger(__name__)
 class LanguageDetector:
     """Detects language of document content"""
     
-    def __init__(self):
-        self.language_map = {
+    def __init__(self) -> None:
+        self.language_map: Dict[str, str] = {
             'en': 'English',
             'es': 'Spanish',
             'fr': 'French',
@@ -194,6 +196,6 @@ class LanguageDetector:
             logger.warning(f"Language detection error: {e}")
             return "Unknown"
     
-    def get_supported_languages(self) -> list:
+    def get_supported_languages(self) -> List[str]:
         """Get list of supported languages"""
         return list(self.language_map.values())

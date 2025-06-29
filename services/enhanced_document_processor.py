@@ -3,12 +3,14 @@ Enhanced document processor with comprehensive formatting preservation.
 Integrates advanced PDF processing with other document formats.
 """
 
+from __future__ import annotations
+
 import os
 import json
 import logging
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 import fitz
 from docx import Document
@@ -35,7 +37,7 @@ class EnhancedDocumentProcessor:
     Supports PDF, DOCX, and TXT with advanced layout preservation for PDFs.
     """
     
-    def __init__(self, dpi: int = 300, preserve_images: bool = True):
+    def __init__(self, dpi: int = 300, preserve_images: bool = True) -> None:
         """
         Initialize the enhanced document processor.
         
@@ -45,7 +47,7 @@ class EnhancedDocumentProcessor:
         """
         self.dpi = dpi
         self.preserve_images = preserve_images
-        self.pdf_processor = AdvancedPDFProcessor(dpi=dpi, preserve_images=preserve_images)
+        self.pdf_processor: AdvancedPDFProcessor = AdvancedPDFProcessor(dpi=dpi, preserve_images=preserve_images)
         
     def extract_content(self, file_path: str) -> Dict[str, Any]:
         """

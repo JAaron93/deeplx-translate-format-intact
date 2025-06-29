@@ -2,6 +2,8 @@
 
 import asyncio
 import logging
+from __future__ import annotations
+
 from typing import List, Dict, Any, Callable, Optional
 from abc import ABC, abstractmethod
 import json
@@ -9,6 +11,7 @@ import os
 import requests
 import deepl
 from google.cloud import translate_v2 as translate
+import re
 
 # Translation service configuration
 TRANSLATION_DELAY = float(os.getenv('TRANSLATION_DELAY', '0.1'))  # Delay between batch requests in seconds
@@ -39,7 +42,8 @@ class DeepLTranslator(BaseTranslator):
                 text,
                 source_lang=source_lang,
                 target_lang=target_lang,
-                preserve_formatting=True
+                preserve_formatting=True,
+                tag_handling="html"
             )
             return result.text
         except Exception as e:
@@ -53,7 +57,8 @@ class DeepLTranslator(BaseTranslator):
                 texts,
                 source_lang=source_lang,
                 target_lang=target_lang,
-                preserve_formatting=True
+                preserve_formatting=True,
+                tag_handling="html"
             )
             return [result.text for result in results]
         except Exception as e:
@@ -170,7 +175,8 @@ class AzureTranslator(BaseTranslator):
             params = {
                 'api-version': '3.0',
                 'from': source_lang.lower(),
-                'to': target_lang.lower()
+                'to': target_lang.lower(),
+                'textType': 'html'
             }
             
             headers = {
@@ -206,7 +212,8 @@ class AzureTranslator(BaseTranslator):
             params = {
                 'api-version': '3.0',
                 'from': source_lang.lower(),
-                'to': target_lang.lower()
+                'to': target_lang.lower(),
+                'textType': 'html'
             }
             
             headers = {
@@ -237,11 +244,14 @@ class AzureTranslator(BaseTranslator):
 class TranslationService:
     """Main translation service with provider management"""
     
-    def __init__(self):
-        self.providers = {}
+    def __init__(self, terminology_map: Optional[Dict[str, str]] = None) -> None:
+        # Mapping of provider name to translator instance
+        self.providers: Dict[str, BaseTranslator] = {}
+        # Optional terminology mapping for preprocessing
+        self.terminology_map: Dict[str, str] = terminology_map or {}
         self._initialize_providers()
     
-    def _initialize_providers(self):
+    def _initialize_providers(self) -> None:
         """Initialize available translation providers"""
         
         # DeepL
@@ -299,8 +309,17 @@ class TranslationService:
             raise ValueError(f"Provider {provider} not available")
 
         translator = self.providers[provider]
+        batch_texts = texts.copy()
+        
+        # Apply optional terminology preprocessing
+        if self.terminology_map:
+            batch_texts = [self._apply_terminology(t) for t in batch_texts]
+        
         try:
-            return await translator.translate_batch(texts, source_lang, target_lang)
+            translated = await translator.translate_batch(batch_texts, source_lang, target_lang)
+            # Strip non-translate tags after translation
+            translated = [self._strip_non_translate_tags(t) for t in translated]
+            return translated
         except Exception as e:
             logger.error(f"Batch translation failed with provider {provider}: {e}")
             return texts  # Fallback to original texts
@@ -316,6 +335,10 @@ class TranslationService:
         if not text.strip():
             return text  # Nothing to translate
 
+        # Apply optional terminology preprocessing
+        if self.terminology_map:
+            text = self._apply_terminology(text)
+
         if provider == "auto":
             provider = self._select_best_provider()
 
@@ -324,7 +347,8 @@ class TranslationService:
 
         translator = self.providers[provider]
         try:
-            return await translator.translate_text(text, source_lang, target_lang)
+            translated = await translator.translate_text(text, source_lang, target_lang)
+            return self._strip_non_translate_tags(translated)
         except Exception as e:
             logger.error(f"Translation failed with provider {provider}: {e}")
             return text
@@ -419,10 +443,16 @@ class TranslationService:
             batch = text_blocks[i:i + batch_size]
             batch_texts = [block["text"] for block in batch]
 
+            # Apply terminology preprocessing if configured
+            if self.terminology_map:
+                batch_texts = [self._apply_terminology(t) for t in batch_texts]
+
             # Perform batch translation with the selected provider
             translated_texts = await translator.translate_batch(
                 batch_texts, source_lang, target_lang
             )
+            # Strip tags
+            translated_texts = [self._strip_non_translate_tags(t) for t in translated_texts]
 
             # Merge translated texts back into their respective blocks
             for j, translated_text in enumerate(translated_texts):
@@ -457,3 +487,16 @@ class TranslationService:
                             block['text'] = block_lookup[key]['text']
         
         return content
+
+    def _strip_non_translate_tags(self, text: str) -> str:
+        """Remove <span translate="no"> wrappers from translated text."""
+        return re.sub(r"<span translate=\"no\">(.*?)</span>", r"\1", text, flags=re.IGNORECASE)
+
+    def _apply_terminology(self, text: str) -> str:
+        """Replace terms in text using self.terminology_map with word-boundary safety."""
+        processed = text
+        for source, target in self.terminology_map.items():
+            # Wrap term in HTML span with translate="no" to preserve it
+            pattern = rf"(?<!\\w){re.escape(source)}(?!\\w)"
+            processed = re.sub(pattern, f"<span translate=\"no\">{source}</span>", processed)
+        return processed

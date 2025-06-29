@@ -1,22 +1,27 @@
 """Input validation utilities"""
 
+from __future__ import annotations
+
 import os
 import mimetypes
+import json
+import logging
 from pathlib import Path
 from typing import Dict, Any
-import logging
+
+from fastapi import UploadFile
 
 logger = logging.getLogger(__name__)
 
 class FileValidator:
     """Validates file uploads and inputs"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         from config.settings import Settings
         settings = Settings()
-        self.max_file_size = settings.MAX_FILE_SIZE_MB * 1024 * 1024
-        self.allowed_extensions = set(settings.ALLOWED_EXTENSIONS)
-        self.allowed_mimetypes = {
+        self.max_file_size: int = settings.MAX_FILE_SIZE_MB * 1024 * 1024
+        self.allowed_extensions: set[str] = set(settings.ALLOWED_EXTENSIONS)
+        self.allowed_mimetypes: set[str] = {
             'application/pdf',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'text/plain'
@@ -54,7 +59,7 @@ class FileValidator:
             logger.error(f"File validation error: {e}")
             return {"valid": False, "error": f"Validation error: {str(e)}"}
     
-    def validate_upload_file(self, upload_file) -> Dict[str, Any]:
+    def validate_upload_file(self, upload_file: UploadFile) -> Dict[str, Any]:
         """Validate FastAPI UploadFile"""
         try:
             # Check content type
@@ -85,7 +90,7 @@ class FileValidator:
             logger.error(f"Upload file validation error: {e}")
             return {"valid": False, "error": f"Validation error: {str(e)}"}
     
-    def _load_language_config(self) -> dict:
+    def _load_language_config(self) -> Dict[str, Any]:
         """Load language configuration from external JSON file"""
         try:
             config_path = Path(__file__).parent.parent / 'config' / 'languages.json'
