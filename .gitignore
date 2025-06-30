@@ -74,5 +74,6 @@ static/generated/
 *.txt
 
 # Context files for CLI code agents
-CLAUDE.md
 GEMINI.md
+.claude
+.vincent

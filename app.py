@@ -46,8 +46,8 @@ logger = logging.getLogger(__name__)
 settings = Settings()
 translation_service = TranslationService()
 document_processor = EnhancedDocumentProcessor(
-    dpi=settings.get('PDF_DPI', 300),
-    preserve_images=settings.get('PRESERVE_IMAGES', True)
+    dpi=getattr(settings, 'PDF_DPI', 300),
+    preserve_images=getattr(settings, 'PRESERVE_IMAGES', True)
 )
 language_detector = LanguageDetector()
 file_handler = FileHandler()
@@ -104,33 +104,42 @@ async def process_file_upload(file) -> Tuple[str, str, str, str]:
     try:
         if file is None:
             return "", "No file uploaded", "", ""
-        
-        # Handle Gradio file object (which can be a string path or file-like object)
+
+        # Determine file properties depending on Gradio version/return type
+        file_path: str = ""
+        file_name: str = ""
+        file_size: int = 0
+
+        # Case 1: Newer Gradio returns a path string
         if isinstance(file, str):
-            # File is a path string (modern Gradio)
-            file_path = file
-            file_name = os.path.basename(file_path)
             file_path = file
             file_name = os.path.basename(file_path)
             try:
                 file_size = os.path.getsize(file_path)
             except OSError as e:
-                logger.error(f"Failed to get file size: {e}")
-                return "", f"❌ Failed to process file: {str(e)}", "", ""
-            # File is a file-like object (older Gradio)
-            file_name = getattr(file, 'name', 'unknown')
-            
-            # Get file size safely
-            if hasattr(file, 'read'):
-                current_pos = file.tell() if hasattr(file, 'tell') else 0
-                file.seek(0, 2)  # Seek to end
-                file_size = file.tell()
-                file.seek(current_pos)  # Reset to original position
-            else:
-                file_size = 0
-            
-            # Save uploaded file
+                logger.error(f"Failed to stat uploaded file: {e}")
+                return "", f"❌ Could not read uploaded file", "", ""
+
+        # Case 2: FileData (dict-like) with .name / .size / .data attributes
+        elif hasattr(file, "size") and hasattr(file, "name"):
+            file_name = os.path.basename(file.name)
+            file_size = file.size or 0
             file_path = file_handler.save_uploaded_file(file)
+
+        # Case 3: Legacy file-like object
+        elif hasattr(file, "read"):
+            file_name = getattr(file, "name", "uploaded_file")
+            # compute size
+            current = file.tell() if hasattr(file, "tell") else 0
+            file.seek(0, os.SEEK_END)
+            file_size = file.tell()
+            file.seek(current)
+            file_path = file_handler.save_uploaded_file(file)
+
+        else:
+            return "", "❌ Unsupported file object returned by Gradio", "", ""
+        
+
         
         # Validate file
         validation_result = file_validator.validate_file(file_name, file_size)
@@ -215,7 +224,11 @@ async def start_translation(target_language: str, max_pages: int) -> Tuple[str, 
         state.translation_status = "starting"
         state.translation_progress = 0
         state.error_message = ""
-        state.max_pages = max_pages
+        # Gradio sliders may return float; cast safely to int
+        try:
+            state.max_pages = int(max_pages) if max_pages else 0
+        except (TypeError, ValueError):
+            state.max_pages = 0
         
         # Start translation in background
         asyncio.create_task(perform_advanced_translation())
@@ -253,7 +266,11 @@ async def perform_advanced_translation() -> None:
         translated_by_page = {}
 
         max_pages = state.max_pages if state.max_pages > 0 else None
-        pages_to_process = {k: v for k, v in text_by_page.items() if (max_pages is None or k < max_pages)}
+        # Determine pages to process based on numeric order, independent of key type
+        page_keys = sorted(text_by_page.keys(), key=lambda x: int(x))
+        if max_pages is not None:
+            page_keys = page_keys[: int(max_pages)]
+        pages_to_process = {k: text_by_page[k] for k in page_keys}
 
         total_pages = len(pages_to_process)
         for page_num, page_texts in pages_to_process.items():
@@ -309,10 +326,18 @@ async def perform_advanced_translation() -> None:
             Path(state.current_file).name,
             state.target_language
         )
+
+        # If a page limit was applied, restrict layouts for PDF reconstruction
+        if max_pages is not None:
+            limited_layouts = [lay for lay in content["layouts"] if lay.page_num in pages_to_process]
+            content_limited = dict(content)
+            content_limited["layouts"] = limited_layouts
+        else:
+            content_limited = content
         
         logger.info(f"Creating translated document: {output_filename}")
         state.output_file = document_processor.create_translated_document(
-            content,
+            content_limited,
             translated_by_page,
             output_filename
         )
@@ -557,12 +582,7 @@ def create_gradio_interface() -> gr.Blocks:
             outputs=[progress_status, download_btn]
         )
 
-        # Automatic periodic status updates every 2 seconds
-        interface.load(
-            fn=update_status,
-            outputs=[progress_status, download_btn],
-            every=2
-        )
+
         
         download_btn.click(
             fn=download_translated_file,
@@ -577,7 +597,8 @@ def create_gradio_interface() -> gr.Blocks:
 async def root() -> Dict[str, Any]:
     """Root endpoint"""
     return {
-        "message": "Advanced Document Translator API", 
+        "message": "Advanced Document Translator API",
+        "ui_url": "/ui", 
         "version": "2.0.0",
         "features": [
             "Advanced PDF processing",
@@ -753,15 +774,14 @@ def main() -> None:
     gradio_app = create_gradio_interface()
     
     # Mount Gradio app to FastAPI
-    app_with_gradio = gr.mount_gradio_app(app, gradio_app, path="/")
+    app_with_gradio = gr.mount_gradio_app(app, gradio_app, path="/ui")
     
     # Start server with Uvicorn
     uvicorn.run(
         app_with_gradio,
         host="0.0.0.0",
         port=8000,
-        log_level="info",
-        quiet=False
+        log_level="info"
     )
 
 if __name__ == "__main__":
