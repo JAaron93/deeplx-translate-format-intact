@@ -9,6 +9,7 @@ import os
 import json
 import logging
 import tempfile
+import asyncio
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
@@ -17,8 +18,50 @@ from docx import Document
 import mammoth
 
 from .advanced_pdf_processor import AdvancedPDFProcessor, PageLayout
+from .dolphin_client import get_layout as get_dolphin_layout
 
 logger = logging.getLogger(__name__)
+
+
+def validate_dolphin_layout(layout: Dict[str, Any], expected_page_count: int) -> bool:
+    """Validate the structure of the Dolphin layout data.
+    
+    Args:
+        layout: The Dolphin layout data to validate
+        expected_page_count: Expected number of pages in the layout
+        
+    Returns:
+        bool: True if layout is valid, False otherwise
+    """
+    if not isinstance(layout, dict):
+        logger.warning("Dolphin layout must be a dictionary")
+        return False
+        
+    if 'pages' not in layout:
+        logger.warning("Dolphin layout missing 'pages' key")
+        return False
+        
+    if not isinstance(layout['pages'], list):
+        logger.warning("Dolphin layout 'pages' must be a list")
+        return False
+        
+    if len(layout['pages']) != expected_page_count:
+        logger.warning(
+            "Dolphin layout page count mismatch. "
+            f"Expected {expected_page_count}, got {len(layout['pages'])}"
+        )
+        return False
+        
+    # Validate each page structure
+    for i, page in enumerate(layout['pages']):
+        if not isinstance(page, dict):
+            logger.warning(f"Page {i} is not a dictionary")
+            return False
+            
+        # Add more specific validations here based on Dolphin's schema
+        # For example, check for required fields in each page
+        
+    return True
 
 @dataclass
 class DocumentMetadata:
@@ -79,8 +122,27 @@ class EnhancedDocumentProcessor:
         import time
         start_time = time.time()
         
-        # Extract complete layout information
+        # Extract complete layout information using internal processor
         layouts = self.pdf_processor.extract_document_layout(pdf_path)
+
+        # Retrieve Dolphin layout for higher-fidelity page structure (optional)
+        try:
+            try:
+                # Try to get the current event loop
+                loop = asyncio.get_running_loop()
+                # If we're in an async context, we need to run in a thread
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, get_dolphin_layout(pdf_path))
+                    dolphin_layout = future.result()
+            except RuntimeError:
+                # No running loop, safe to use asyncio.run
+                dolphin_layout = asyncio.run(get_dolphin_layout(pdf_path))
+        except Exception as dl_err:
+            logger.warning("Failed to fetch Dolphin layout for %s: %s", pdf_path, dl_err)
+            dolphin_layout = {}
+            logger.error("Unexpected error fetching Dolphin layout for %s: %s", pdf_path, dl_err)
+            dolphin_layout = {}
         
         # Create backup of layout information
         backup_path = self._get_backup_path(pdf_path)
@@ -104,13 +166,27 @@ class EnhancedDocumentProcessor:
             dpi=self.dpi
         )
         
+        # Validate dolphin_layout structure if present
+        if dolphin_layout is not None:
+            try:
+                self._validate_dolphin_layout(dolphin_layout, len(layouts))
+            except ValueError as e:
+                logger.warning(f"Dolphin layout validation failed: {e}")
+                dolphin_layout = None
+
+        # Validate dolphin_layout structure if present
+        if dolphin_layout and not validate_dolphin_layout(dolphin_layout, len(layouts)):
+            logger.warning("Invalid Dolphin layout structure, discarding")
+            dolphin_layout = None
+
         return {
             'type': 'pdf_advanced',
             'layouts': layouts,
             'text_by_page': text_by_page,
             'metadata': metadata,
             'backup_path': backup_path,
-            'preview': self.pdf_processor.generate_preview(layouts)
+            'preview': self.pdf_processor.generate_preview(layouts),
+            'dolphin_layout': dolphin_layout
         }
     
     def _extract_docx_content(self, docx_path: str) -> Dict[str, Any]:
