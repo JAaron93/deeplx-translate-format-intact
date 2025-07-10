@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Philosophy-Enhanced Translation Interface</title>
+    <link rel="stylesheet" href="/static/philosophy_interface.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body>
+    <div class="philosophy-interface">
+        <!-- Header -->
+        <header class="philosophy-header">
+            <h1>Philosophy-Enhanced Translation System</h1>
+            <p>Advanced neologism detection and user choice management for philosophical texts</p>
+            <div class="connection-status">
+                <div class="status-indicator" id="connection-status"></div>
+                <span class="status-text" id="connection-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="philosophy-nav">
+            <button class="nav-tab active" data-tab="neologisms">Neologism Review</button>
+            <button class="nav-tab" data-tab="terminology">Terminology Management</button>
+            <button class="nav-tab" data-tab="settings">Philosophy Settings</button>
+            <button class="nav-tab" data-tab="analytics">Session Analytics</button>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="philosophy-content">
+            <!-- Main Panel -->
+            <div class="main-panel">
+                <!-- Neologism Review Tab -->
+                <div class="tab-content active" id="neologisms-tab">
+                    <div class="neologism-header">
+                        <h2 class="neologism-title">Detected Neologisms</h2>
+                        <div class="neologism-controls">
+                            <input type="text" id="neologism-search" class="search-box" placeholder="Search neologisms...">
+                            <select id="confidence-filter" class="filter-select">
+                                <option value="0">All Confidence Levels</option>
+                                <option value="0.8">High (80%+)</option>
+                                <option value="0.6">Medium (60%+)</option>
+                                <option value="0.4">Low (40%+)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Batch Operations -->
+                    <div class="batch-operations">
+                        <h4>Batch Operations</h4>
+                        <div class="batch-buttons">
+                            <button class="batch-btn preserve" id="batch-preserve">Preserve Selected</button>
+                            <button class="batch-btn translate" id="batch-translate">Translate Selected</button>
+                            <button class="batch-btn" id="batch-custom">Custom Translation</button>
+                            <button class="batch-btn" id="select-all">Select All</button>
+                            <button class="batch-btn" id="clear-selection">Clear Selection</button>
+                        </div>
+                    </div>
+
+                    <!-- Neologism List -->
+                    <div class="neologism-list" id="neologism-container">
+                        <!-- Neologisms will be dynamically populated here -->
+                        <div class="empty-state" id="empty-neologisms">
+                            <p>No neologisms detected yet. Upload a document to begin analysis.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terminology Management Tab -->
+                <div class="tab-content" id="terminology-tab">
+                    <div class="terminology-section">
+                        <div class="terminology-header">
+                            <h2 class="terminology-title">Terminology Database</h2>
+                            <div class="terminology-controls">
+                                <button class="terminology-btn" id="add-term">Add Term</button>
+                                <button class="terminology-btn" id="import-terminology">Import</button>
+                                <button class="terminology-btn" id="export-terminology">Export</button>
+                            </div>
+                        </div>
+
+                        <!-- Drop Zone -->
+                        <div class="terminology-drop-zone" id="terminology-drop-zone">
+                            <p>Drag and drop terminology files here, or click to select files</p>
+                            <small>Supported formats: JSON, CSV, TXT</small>
+                        </div>
+
+                        <!-- Search -->
+                        <div class="terminology-search">
+                            <input type="text" id="terminology-search" class="search-box" placeholder="Search terminology...">
+                        </div>
+
+                        <!-- Terminology List -->
+                        <div class="terminology-list" id="terminology-list">
+                            <!-- Terminology entries will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div class="tab-content" id="settings-tab">
+                    <div class="settings-section">
+                        <h2>Philosophy Settings</h2>
+                        
+                        <div class="settings-group">
+                            <label>Neologism Detection Sensitivity</label>
+                            <input type="range" id="sensitivity-slider" class="settings-input" min="0.1" max="1.0" step="0.1" value="0.5">
+                            <span id="sensitivity-value">0.5</span>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Philosophical Author Context</label>
+                            <select id="author-context" class="settings-input">
+                                <option value="general">General Philosophy</option>
+                                <option value="klages">Ludwig Klages</option>
+                                <option value="heidegger">Martin Heidegger</option>
+                                <option value="nietzsche">Friedrich Nietzsche</option>
+                                <option value="kant">Immanuel Kant</option>
+                                <option value="hegel">Georg Wilhelm Friedrich Hegel</option>
+                                <option value="custom">Custom Terminology</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-group">
+                            <div class="settings-checkbox">
+                                <input type="checkbox" id="auto-preserve" checked>
+                                <label for="auto-preserve">Auto-preserve high-confidence neologisms</label>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <div class="settings-checkbox">
+                                <input type="checkbox" id="real-time-detection" checked>
+                                <label for="real-time-detection">Real-time neologism detection</label>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <div class="settings-checkbox">
+                                <input type="checkbox" id="context-analysis" checked>
+                                <label for="context-analysis">Enhanced context analysis</label>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Morphological Analysis Depth</label>
+                            <select id="morphology-depth" class="settings-input">
+                                <option value="basic">Basic</option>
+                                <option value="standard" selected>Standard</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-group">
+                            <label>Custom Terminology File</label>
+                            <input type="file" id="custom-terminology" class="settings-input" accept=".json,.csv,.txt">
+                        </div>
+
+                        <div class="settings-group">
+                            <button class="terminology-btn" id="save-settings">Save Settings</button>
+                            <button class="terminology-btn" id="reset-settings">Reset to Defaults</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Tab -->
+                <div class="tab-content" id="analytics-tab">
+                    <div class="analytics-section">
+                        <h2>Session Analytics</h2>
+                        
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <h3>Detection Summary</h3>
+                                <div class="analytics-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="total-detected">0</span>
+                                        <span class="stat-label">Total Detected</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="high-confidence">0</span>
+                                        <span class="stat-label">High Confidence</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="user-reviewed">0</span>
+                                        <span class="stat-label">User Reviewed</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-card">
+                                <h3>Choice Distribution</h3>
+                                <div class="choice-chart" id="choice-chart">
+                                    <!-- Chart will be rendered here -->
+                                </div>
+                            </div>
+
+                            <div class="analytics-card">
+                                <h3>Processing Time</h3>
+                                <div class="analytics-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="avg-processing-time">0ms</span>
+                                        <span class="stat-label">Average Processing</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value" id="total-processing-time">0s</span>
+                                        <span class="stat-label">Total Time</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="analytics-card">
+                                <h3>Semantic Fields</h3>
+                                <div class="semantic-fields" id="semantic-fields">
+                                    <!-- Semantic field distribution will be shown here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="export-section">
+                            <h3>Export Options</h3>
+                            <div class="export-buttons">
+                                <button class="terminology-btn" id="export-session">Export Session Data</button>
+                                <button class="terminology-btn" id="export-choices">Export User Choices</button>
+                                <button class="terminology-btn" id="export-report">Generate Report</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Panel -->
+            <div class="sidebar-panel">
+                <!-- Progress Tracking -->
+                <div class="progress-section">
+                    <h3>Progress Tracking</h3>
+                    
+                    <div class="progress-item">
+                        <div class="progress-label">
+                            <span>Neologism Detection</span>
+                            <span id="detection-progress-text">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="detection-progress"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-item">
+                        <div class="progress-label">
+                            <span>User Choices</span>
+                            <span id="choice-progress-text">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="choice-progress"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-item">
+                        <div class="progress-label">
+                            <span>Overall Progress</span>
+                            <span id="overall-progress-text">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="overall-progress"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-neologisms">0</div>
+                            <div class="stat-label">Total Neologisms</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="choices-made">0</div>
+                            <div class="stat-label">Choices Made</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="remaining-choices">0</div>
+                            <div class="stat-label">Remaining</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <button class="action-btn" id="quick-preserve-all">Preserve All High-Confidence</button>
+                    <button class="action-btn" id="quick-translate-all">Translate All Low-Confidence</button>
+                    <button class="action-btn" id="quick-review-uncertain">Review Uncertain Terms</button>
+                    <button class="action-btn" id="quick-export-session">Export Current Session</button>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list" id="activity-list">
+                        <!-- Recent activities will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Session Info -->
+                <div class="session-info">
+                    <h3>Session Information</h3>
+                    <div class="session-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Session ID:</span>
+                            <span class="detail-value" id="session-id">N/A</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Document:</span>
+                            <span class="detail-value" id="document-name">N/A</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Start Time:</span>
+                            <span class="detail-value" id="session-start">N/A</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Language Pair:</span>
+                            <span class="detail-value" id="language-pair">N/A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Dialogs -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Modal Title</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Modal content will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" id="modal-cancel">Cancel</button>
+                <button class="modal-btn primary" id="modal-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Processing...</div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/philosophy_interface.js"></script>
+    <script>
+        // Initialize tab switching
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.nav-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    this.classList.add('active');
+                    document.getElementById(targetTab + '-tab').classList.add('active');
+                });
+            });
+            
+            // Initialize modal functionality
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalClose = document.getElementById('modal-close');
+            const modalCancel = document.getElementById('modal-cancel');
+            
+            modalClose.addEventListener('click', () => {
+                modalOverlay.classList.remove('active');
+            });
+            
+            modalCancel.addEventListener('click', () => {
+                modalOverlay.classList.remove('active');
+            });
+            
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    modalOverlay.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -18,14 +18,18 @@ import mimetypes
 
 import gradio as gr
 import uvicorn
-from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 # Import our enhanced translation modules
 from services.translation_service import TranslationService
 from services.enhanced_document_processor import EnhancedDocumentProcessor
+from services.philosophy_enhanced_translation_service import PhilosophyEnhancedTranslationService
+from services.neologism_detector import NeologismDetector
+from services.user_choice_manager import UserChoiceManager
 from services.language_detector import LanguageDetector
 from utils.file_handler import FileHandler
 from utils.validators import FileValidator
@@ -49,6 +53,16 @@ document_processor = EnhancedDocumentProcessor(
     dpi=getattr(settings, 'PDF_DPI', 300),
     preserve_images=getattr(settings, 'PRESERVE_IMAGES', True)
 )
+
+# Initialize philosophy-enhanced services
+neologism_detector = NeologismDetector()
+user_choice_manager = UserChoiceManager()
+philosophy_translation_service = PhilosophyEnhancedTranslationService(
+    translation_service=translation_service,
+    neologism_detector=neologism_detector,
+    user_choice_manager=user_choice_manager
+)
+
 language_detector = LanguageDetector()
 file_handler = FileHandler()
 file_validator = FileValidator()
@@ -74,7 +88,11 @@ os.makedirs("static", exist_ok=True)
 os.makedirs("uploads", exist_ok=True)
 os.makedirs("downloads", exist_ok=True)
 os.makedirs(".layout_backups", exist_ok=True)
+os.makedirs("templates", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Templates
+templates = Jinja2Templates(directory="templates")
 
 # Global state for translation jobs
 translation_jobs: Dict[str, Dict[str, Any]] = {}
@@ -95,6 +113,10 @@ class AdvancedTranslationState:
         self.processing_info = {}
         self.backup_path = None
         self.max_pages: int = 0  # 0 means translate all pages
+        self.session_id: Optional[str] = None
+        self.neologism_analysis: Optional[Dict[str, Any]] = None
+        self.user_choices: List[Dict[str, Any]] = []
+        self.philosophy_mode: bool = False
 
 # Global state instance
 state = AdvancedTranslationState()
@@ -210,7 +232,11 @@ async def process_file_upload(file) -> Tuple[str, str, str, str]:
         logger.error(f"File upload error: {str(e)}")
         return "", f"❌ Upload failed: {str(e)}", "", ""
 
-async def start_translation(target_language: str, max_pages: int) -> Tuple[str, str, bool]:
+async def start_translation(
+    target_language: str,
+    max_pages: int,
+    philosophy_mode: bool
+) -> Tuple[str, str, bool]:
     """Start the advanced translation process"""
     try:
         if not state.current_file or not state.current_content:
@@ -224,11 +250,23 @@ async def start_translation(target_language: str, max_pages: int) -> Tuple[str, 
         state.translation_status = "starting"
         state.translation_progress = 0
         state.error_message = ""
+        state.philosophy_mode = philosophy_mode
         # Gradio sliders may return float; cast safely to int
         try:
             state.max_pages = int(max_pages) if max_pages else 0
         except (TypeError, ValueError):
             state.max_pages = 0
+        
+        # Create session for philosophy mode
+        if philosophy_mode:
+            session = user_choice_manager.create_session(
+                session_name=f"Philosophy Translation {datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                document_name=Path(state.current_file).name if state.current_file else "Unknown",
+                source_language=state.source_language,
+                target_language=target_language
+            )
+            state.session_id = session.session_id
+            logger.info(f"Created philosophy session: {state.session_id}")
         
         # Start translation in background
         asyncio.create_task(perform_advanced_translation())
@@ -514,8 +552,11 @@ def create_gradio_interface() -> gr.Blocks:
                             value="English"
                         )
                 
-                # Page limit slider
-                pages_slider = gr.Slider(minimum=1, maximum=200, step=1, value=20, label="Pages to translate")
+                # Page limit slider (increased from 200 to 2000 pages)
+                pages_slider = gr.Slider(minimum=1, maximum=2000, step=1, value=50, label="Pages to translate")
+                
+                # Philosophy mode toggle
+                philosophy_mode = gr.Checkbox(label="Enable Philosophy Mode (Neologism Detection)", value=False)
                 # Translation Controls
                 translate_btn = gr.Button(
                     "🚀 Start Advanced Translation",
@@ -566,7 +607,7 @@ def create_gradio_interface() -> gr.Blocks:
         
         translate_btn.click(
             fn=start_translation,
-            inputs=[target_language, pages_slider],
+            inputs=[target_language, pages_slider, philosophy_mode],
             outputs=[progress_status, upload_status, download_btn]
         )
         
@@ -598,15 +639,164 @@ async def root() -> Dict[str, Any]:
     """Root endpoint"""
     return {
         "message": "Advanced Document Translator API",
-        "ui_url": "/ui", 
+        "ui_url": "/ui",
+        "philosophy_ui_url": "/philosophy",
         "version": "2.0.0",
         "features": [
             "Advanced PDF processing",
             "Image-text overlay preservation",
             "High-resolution rendering",
-            "Comprehensive format support"
+            "Comprehensive format support",
+            "Philosophy-enhanced neologism detection",
+            "User choice management for translations"
         ]
     }
+
+@app.get("/philosophy", response_class=HTMLResponse)
+async def philosophy_interface(request: Request):
+    """Philosophy-enhanced translation interface"""
+    return templates.TemplateResponse("philosophy_interface.html", {"request": request})
+
+# Philosophy API Endpoints
+@app.post("/api/philosophy/choice")
+async def save_user_choice(choice_data: Dict[str, Any]):
+    """Save a user choice for a neologism"""
+    try:
+        # Extract choice data
+        term = choice_data.get("term")
+        choice = choice_data.get("choice")
+        custom_translation = choice_data.get("custom_translation", "")
+        notes = choice_data.get("notes", "")
+        session_id = choice_data.get("session_id")
+        
+        # Create a mock neologism for the choice (in real implementation, this would come from the detection)
+        from models.neologism_models import DetectedNeologism, NeologismType, MorphologicalAnalysis, PhilosophicalContext, ConfidenceFactors
+        from models.user_choice_models import ChoiceType, ChoiceScope
+        
+        # Create a simple neologism representation
+        neologism = DetectedNeologism(
+            term=term,
+            confidence=0.8,
+            neologism_type=NeologismType.PHILOSOPHICAL_TERM,
+            start_pos=0,
+            end_pos=len(term),
+            sentence_context="Context sentence",
+            morphological_analysis=MorphologicalAnalysis(),
+            philosophical_context=PhilosophicalContext(),
+            confidence_factors=ConfidenceFactors()
+        )
+        
+        # Map choice string to ChoiceType
+        choice_type_mapping = {
+            "preserve": ChoiceType.PRESERVE,
+            "translate": ChoiceType.TRANSLATE,
+            "custom": ChoiceType.CUSTOM_TRANSLATION
+        }
+        
+        choice_type = choice_type_mapping.get(choice, ChoiceType.PRESERVE)
+        
+        # Save the choice
+        user_choice = user_choice_manager.make_choice(
+            neologism=neologism,
+            choice_type=choice_type,
+            translation_result=custom_translation,
+            session_id=session_id,
+            choice_scope=ChoiceScope.CONTEXTUAL,
+            user_notes=notes
+        )
+        
+        return {
+            "success": True,
+            "choice_id": user_choice.choice_id,
+            "message": "Choice saved successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error saving user choice: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/philosophy/neologisms")
+async def get_detected_neologisms(session_id: Optional[str] = None):
+    """Get detected neologisms for the current session"""
+    try:
+        # Return mock neologisms for now (in real implementation, this would come from the detector)
+        return {
+            "neologisms": state.neologism_analysis.get("detected_neologisms", []) if state.neologism_analysis else [],
+            "total": len(state.neologism_analysis.get("detected_neologisms", [])) if state.neologism_analysis else 0
+        }
+    except Exception as e:
+        logger.error(f"Error getting neologisms: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/philosophy/progress")
+async def get_philosophy_progress():
+    """Get current philosophy processing progress"""
+    try:
+        return {
+            "total_neologisms": len(state.neologism_analysis.get("detected_neologisms", [])) if state.neologism_analysis else 0,
+            "processed_neologisms": len([choice for choice in state.user_choices if choice.get("processed", False)]),
+            "choices_made": len(state.user_choices),
+            "session_id": state.session_id,
+            "philosophy_mode": state.philosophy_mode
+        }
+    except Exception as e:
+        logger.error(f"Error getting progress: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/philosophy/export-choices")
+async def export_user_choices(export_data: Dict[str, Any]):
+    """Export user choices to JSON"""
+    try:
+        session_id = export_data.get("session_id")
+        
+        if session_id:
+            file_path = user_choice_manager.export_session_choices(session_id)
+        else:
+            file_path = user_choice_manager.export_all_choices()
+        
+        if file_path:
+            return FileResponse(
+                file_path,
+                media_type="application/json",
+                filename=f"philosophy-choices-{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Export failed")
+            
+    except Exception as e:
+        logger.error(f"Error exporting choices: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/philosophy/import-choices")
+async def import_user_choices(import_data: Dict[str, Any]):
+    """Import user choices from JSON"""
+    try:
+        choices = import_data.get("choices", {})
+        session_id = import_data.get("session_id")
+        
+        count = user_choice_manager.import_choices(json.dumps(choices), session_id)
+        
+        return {
+            "success": True,
+            "count": count,
+            "message": f"Imported {count} choices successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error importing choices: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/philosophy/terminology")
+async def get_terminology():
+    """Get current terminology database"""
+    try:
+        # Get terminology from neologism detector
+        terminology = neologism_detector.terminology_map
+        return terminology
+        
+    except Exception as e:
+        logger.error(f"Error getting terminology: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):

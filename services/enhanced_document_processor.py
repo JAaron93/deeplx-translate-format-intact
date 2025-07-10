@@ -140,10 +140,7 @@ class EnhancedDocumentProcessor:
                 dolphin_layout = asyncio.run(get_dolphin_layout(pdf_path))
         except Exception as dl_err:
             logger.warning("Failed to fetch Dolphin layout for %s: %s", pdf_path, dl_err)
-            dolphin_layout = {}
-            logger.error("Unexpected error fetching Dolphin layout for %s: %s", pdf_path, dl_err)
-            dolphin_layout = {}
-        
+            dolphin_layout = None
         # Create backup of layout information
         backup_path = self._get_backup_path(pdf_path)
         self.pdf_processor.create_layout_backup(layouts, backup_path)
@@ -167,18 +164,9 @@ class EnhancedDocumentProcessor:
         )
         
         # Validate dolphin_layout structure if present
-        if dolphin_layout is not None:
-            try:
-                self._validate_dolphin_layout(dolphin_layout, len(layouts))
-            except ValueError as e:
-                logger.warning(f"Dolphin layout validation failed: {e}")
-                dolphin_layout = None
-
-        # Validate dolphin_layout structure if present
         if dolphin_layout and not validate_dolphin_layout(dolphin_layout, len(layouts)):
             logger.warning("Invalid Dolphin layout structure, discarding")
             dolphin_layout = None
-
         return {
             'type': 'pdf_advanced',
             'layouts': layouts,
