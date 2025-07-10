@@ -1,0 +1,34 @@
+{
+  "core_philosophical_terms": [
+    "philosophie", "metaphysik", "ontologie", "epistemologie", "ethik",
+    "ästhetik", "logik", "dialektik", "hermeneutik", "phänomenologie"
+  ],
+  "conceptual_terms": [
+    "begriff", "konzept", "idee", "prinzip", "kategorie", "struktur",
+    "system", "methode", "theorie", "hypothese", "thesis", "antithesis"
+  ],
+  "existence_and_being": [
+    "sein", "dasein", "existenz", "wesen", "substanz", "realität",
+    "wirklichkeit", "erscheinung", "phänomen", "noumen"
+  ],
+  "consciousness_and_mind": [
+    "bewusstsein", "geist", "seele", "psyche", "verstand", "vernunft",
+    "intellekt", "intuition", "erkenntnis", "wahrnehmung", "anschauung"
+  ],
+  "value_and_meaning": [
+    "wert", "bedeutung", "sinn", "zweck", "ziel", "ideal", "norm",
+    "gut", "böse", "schön", "hässlich", "wahr", "falsch"
+  ],
+  "temporal_and_spatial": [
+    "zeit", "raum", "ewigkeit", "unendlichkeit", "endlichkeit",
+    "temporal", "spatial", "chronos", "kairos"
+  ],
+  "abstract_relations": [
+    "relation", "verhältnis", "beziehung", "zusammenhang", "einheit",
+    "vielheit", "identität", "differenz", "ähnlichkeit", "verschiedenheit"
+  ],
+  "philosophical_movements": [
+    "idealismus", "materialismus", "empirismus", "rationalismus",
+    "kritizismus", "positivismus", "existentialismus", "nihilismus"
+  ]
+}

@@ -1,0 +1,1288 @@
+/* Philosophy Interface CSS
+   Modern, academic-focused styling for neologism detection and user choice management */
+
+:root {
+    /* Academic Color Palette */
+    --primary-color: #2c3e50;
+    --secondary-color: #34495e;
+    --accent-color: #3498db;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --error-color: #e74c3c;
+    --info-color: #8e44ad;
+    
+    /* Neutral Colors */
+    --background-color: #f8f9fa;
+    --card-background: #ffffff;
+    --border-color: #dee2e6;
+    --text-primary: #2c3e50;
+    --text-secondary: #6c757d;
+    --text-muted: #95a5a6;
+    
+    /* Confidence Level Colors */
+    --confidence-high: #27ae60;
+    --confidence-medium: #f39c12;
+    --confidence-low: #e67e22;
+    --confidence-uncertain: #e74c3c;
+    
+    /* Layout Variables */
+    --border-radius: 8px;
+    --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.2);
+    --transition: all 0.3s ease;
+    
+    /* Typography */
+    --font-family-primary: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-family-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+    --font-size-base: 14px;
+    --font-size-small: 12px;
+    --font-size-large: 16px;
+    --font-size-xl: 18px;
+    --line-height-base: 1.5;
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    color: var(--text-primary);
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 0;
+}
+
+.philosophy-interface {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+.philosophy-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-medium);
+}
+
+.philosophy-header h1 {
+    margin: 0 0 10px 0;
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+}
+
+.philosophy-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: var(--font-size-base);
+}
+
+/* Connection Status */
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--error-color);
+    transition: var(--transition);
+}
+
+.status-connected .status-indicator {
+    background-color: var(--success-color);
+}
+
+.status-text {
+    font-size: var(--font-size-small);
+}
+
+/* Navigation Tabs */
+.philosophy-nav {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 20px;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    overflow: hidden;
+}
+
+.nav-tab {
+    flex: 1;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+}
+
+.nav-tab:hover {
+    background-color: var(--background-color);
+}
+
+.nav-tab.active {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+/* Main Content Area */
+.philosophy-content {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+    min-height: 600px;
+}
+
+.main-panel {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    overflow: hidden;
+}
+
+.sidebar-panel {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    padding: 20px;
+}
+
+/* Progress Tracking */
+.progress-section {
+    margin-bottom: 20px;
+}
+
+.progress-section h3 {
+    margin: 0 0 15px 0;
+    font-size: var(--font-size-large);
+    color: var(--text-primary);
+}
+
+.progress-item {
+    margin-bottom: 15px;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: var(--font-size-small);
+    color: var(--text-secondary);
+}
+
+.progress-bar-container {
+    height: 8px;
+    background-color: var(--background-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-color), var(--success-color));
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.progress-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.stat-card {
+    text-align: center;
+    padding: 10px;
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+}
+
+.stat-value {
+    font-size: var(--font-size-large);
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+.stat-label {
+    font-size: var(--font-size-small);
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* Neologism Container */
+.neologism-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.neologism-title {
+    font-size: var(--font-size-large);
+    font-weight: 600;
+    margin: 0;
+}
+
+.neologism-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.search-box {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-small);
+    width: 200px;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-small);
+    background: white;
+}
+
+.neologism-list {
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 0;
+}
+
+/* Neologism Items */
+.neologism-item {
+    border-bottom: 1px solid var(--border-color);
+    padding: 20px;
+    transition: var(--transition);
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.neologism-item.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.neologism-item:hover {
+    background-color: var(--background-color);
+}
+
+.neologism-item.choice-made {
+    background-color: #f8fff8;
+    border-left: 4px solid var(--success-color);
+}
+
+.neologism-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.neologism-term {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.term-text {
+    font-size: var(--font-size-large);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.confidence-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    color: white;
+}
+
+.confidence-high {
+    background-color: var(--confidence-high);
+}
+
+.confidence-medium {
+    background-color: var(--confidence-medium);
+}
+
+.confidence-low {
+    background-color: var(--confidence-low);
+}
+
+.confidence-uncertain {
+    background-color: var(--confidence-uncertain);
+}
+
+.type-badge {
+    padding: 4px 8px;
+    background-color: var(--info-color);
+    color: white;
+    border-radius: 12px;
+    font-size: var(--font-size-small);
+    font-weight: 500;
+}
+
+.neologism-context {
+    margin-bottom: 15px;
+}
+
+.context-sentence {
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.context-details {
+    display: flex;
+    gap: 15px;
+    font-size: var(--font-size-small);
+    color: var(--text-muted);
+}
+
+.semantic-field,
+.page-number {
+    padding: 2px 6px;
+    background-color: var(--background-color);
+    border-radius: 4px;
+}
+
+/* Analysis Details */
+.analysis-details {
+    margin-bottom: 15px;
+}
+
+.analysis-details summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--accent-color);
+    margin-bottom: 10px;
+}
+
+.analysis-details summary:hover {
+    color: var(--primary-color);
+}
+
+.analysis-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.morphological-analysis,
+.philosophical-context {
+    background-color: var(--background-color);
+    padding: 12px;
+    border-radius: var(--border-radius);
+}
+
+.morphological-analysis h4,
+.philosophical-context h4 {
+    margin: 0 0 8px 0;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+.morphological-analysis p,
+.philosophical-context p {
+    margin: 4px 0;
+    font-size: var(--font-size-small);
+    color: var(--text-secondary);
+}
+
+/* Choice Options */
+.neologism-choices {
+    margin-top: 15px;
+}
+
+.choice-options {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.choice-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: var(--font-size-small);
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.choice-option:hover {
+    color: var(--text-primary);
+}
+
+.choice-option input[type="radio"] {
+    margin: 0;
+}
+
+.choice-option.selected {
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+.custom-translation {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: var(--background-color);
+    border-radius: var(--border-radius);
+    display: flex;
+    gap: 10px;
+}
+
+.custom-translation-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-small);
+}
+
+.apply-custom-btn {
+    padding: 8px 16px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: var(--font-size-small);
+    transition: var(--transition);
+}
+
+.apply-custom-btn:hover {
+    background-color: var(--primary-color);
+}
+
+.choice-notes {
+    margin-top: 10px;
+}
+
+.choice-notes-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-small);
+    resize: vertical;
+    min-height: 50px;
+}
+
+/* Batch Operations */
+.batch-operations {
+    padding: 15px;
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.batch-operations h4 {
+    margin: 0 0 10px 0;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+.batch-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.batch-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: var(--font-size-small);
+    transition: var(--transition);
+}
+
+.batch-btn:hover {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.batch-btn.preserve {
+    border-color: var(--success-color);
+}
+
+.batch-btn.preserve:hover {
+    background-color: var(--success-color);
+}
+
+.batch-btn.translate {
+    border-color: var(--warning-color);
+}
+
+.batch-btn.translate:hover {
+    background-color: var(--warning-color);
+}
+
+/* Terminology Management */
+.terminology-section {
+    margin-top: 20px;
+}
+
+.terminology-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.terminology-title {
+    font-size: var(--font-size-large);
+    font-weight: 600;
+    margin: 0;
+}
+
+.terminology-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.terminology-btn {
+    padding: 8px 16px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: var(--font-size-small);
+    transition: var(--transition);
+}
+
+.terminology-btn:hover {
+    background-color: var(--primary-color);
+}
+
+.terminology-drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 15px;
+    transition: var(--transition);
+}
+
+.terminology-drop-zone.drag-over {
+    border-color: var(--accent-color);
+    background-color: var(--background-color);
+}
+
+.terminology-search {
+    margin-bottom: 15px;
+}
+
+.terminology-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+}
+
+.terminology-item {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.terminology-item:last-child {
+    border-bottom: none;
+}
+
+.terminology-item:hover {
+    background-color: var(--background-color);
+}
+
+.term-pair {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.source-term {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.arrow {
+    color: var(--text-muted);
+}
+
+.target-term {
+    color: var(--text-secondary);
+}
+
+.term-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.term-action-btn {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: var(--font-size-small);
+    transition: var(--transition);
+}
+
+.term-action-btn:hover {
+    background-color: var(--background-color);
+}
+
+.edit-term-btn {
+    color: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+.delete-term-btn {
+    color: var(--error-color);
+    border-color: var(--error-color);
+}
+
+/* Settings Panel */
+.settings-section {
+    margin-top: 20px;
+}
+
+.settings-group {
+    margin-bottom: 15px;
+}
+
+.settings-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.settings-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-small);
+}
+
+.settings-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-checkbox input {
+    margin: 0;
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 16px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-medium);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: var(--transition);
+    font-size: var(--font-size-small);
+    max-width: 300px;
+}
+
+.notification.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.notification-error {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.notification-warning {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+.notification-info {
+    background-color: var(--info-color);
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .philosophy-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .sidebar-panel {
+        order: -1;
+    }
+    
+    .neologism-controls {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+    
+    .choice-options {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .batch-buttons {
+        justify-content: center;
+    }
+    
+    .progress-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .analysis-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .philosophy-interface {
+        padding: 10px;
+    }
+    
+    .philosophy-header {
+        padding: 15px;
+    }
+    
+    .philosophy-nav {
+        flex-direction: column;
+    }
+    
+    .neologism-item {
+        padding: 15px;
+    }
+    
+    .neologism-item-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .term-pair {
+        flex-direction: column;
+        gap: 5px;
+        align-items: flex-start;
+    }
+    
+    .custom-translation {
+        flex-direction: column;
+    }
+    
+    .terminology-controls {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .philosophy-interface {
+        padding: 5px;
+    }
+    
+    .philosophy-header {
+        padding: 10px;
+    }
+    
+    .philosophy-header h1 {
+        font-size: var(--font-size-large);
+    }
+    
+    .neologism-item {
+        padding: 10px;
+    }
+    
+    .batch-buttons {
+        flex-direction: column;
+    }
+    
+    .terminology-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: #1a1a1a;
+        --card-background: #2d2d2d;
+        --border-color: #404040;
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --text-muted: #808080;
+    }
+    
+    .search-box,
+    .filter-select,
+    .settings-input,
+    .custom-translation-input,
+    .choice-notes-input {
+        background-color: var(--card-background);
+        color: var(--text-primary);
+    }
+    
+    .batch-btn,
+    .term-action-btn {
+        background-color: var(--card-background);
+        color: var(--text-primary);
+    }
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: var(--font-size-base);
+}
+
+/* Analytics Section */
+.analytics-section {
+    padding: 20px;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.analytics-card {
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--shadow-light);
+}
+
+.analytics-card h3 {
+    margin: 0 0 15px 0;
+    font-size: var(--font-size-large);
+    color: var(--text-primary);
+}
+
+.analytics-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 15px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-item .stat-value {
+    display: block;
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+.stat-item .stat-label {
+    font-size: var(--font-size-small);
+    color: var(--text-secondary);
+    margin-top: 5px;
+}
+
+.choice-chart {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-color);
+    border-radius: var(--border-radius);
+    color: var(--text-muted);
+}
+
+.semantic-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.semantic-field-tag {
+    padding: 4px 8px;
+    background: var(--accent-color);
+    color: white;
+    border-radius: 12px;
+    font-size: var(--font-size-small);
+}
+
+.export-section {
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+}
+
+.export-section h3 {
+    margin: 0 0 15px 0;
+    font-size: var(--font-size-large);
+    color: var(--text-primary);
+}
+
+.export-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Quick Actions */
+.quick-actions {
+    margin-bottom: 20px;
+}
+
+.quick-actions h3 {
+    margin: 0 0 15px 0;
+    font-size: var(--font-size-large);
+    color: var(--text-primary);
+}
+
+.action-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    margin-bottom: 8px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: var(--font-size-small);
+    transition: var(--transition);
+}
+
+.action-btn:hover {
+    background: var(--primary-color);
+}
+
+.action-btn:last-child {
+    margin-bottom: 0;
+}
+
+/* Recent Activity */
+.recent-activity {
+    margin-bottom: 20px;
+}
+
+.recent-activity h3 {
+    margin: 0 0 15px 0;
+    font-size: var(--font-size-large);
+    color: var(--text-primary);
+}
+
+.activity-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: var(--font-size-small);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-time {
+    color: var(--text-muted);
+    font-size: var(--font-size-small);
+}
+
+.activity-description {
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+/* Session Info */
+.session-info h3 {
+    margin: 0 0 15px 0;
+    font-size: var(--font-size-large);
+    color: var(--text-primary);
+}
+
+.session-details {
+    font-size: var(--font-size-small);
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.detail-value {
+    color: var(--text-primary);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-small);
+}
+
+/* Modal Dialogs */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition);
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-heavy);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    margin: 0;
+    font-size: var(--font-size-large);
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: var(--font-size-small);
+    transition: var(--transition);
+}
+
+.modal-btn.primary {
+    background: var(--accent-color);
+    color: white;
+}
+
+.modal-btn.primary:hover {
+    background: var(--primary-color);
+}
+
+.modal-btn.secondary {
+    background: var(--background-color);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.modal-btn.secondary:hover {
+    background: var(--border-color);
+}
+
+/* Loading Indicator */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition);
+}
+
+.loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--background-color);
+    border-top: 4px solid var(--accent-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin-top: 15px;
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+}
+
+/* Neologism Selection */
+.neologism-select {
+    margin-right: 10px;
+}
+
+.neologism-item.selected {
+    background-color: #e3f2fd;
+    border-left: 4px solid var(--accent-color);
+}
+
+/* Print Styles */
+@media print {
+    .philosophy-interface {
+        background: white;
+        color: black;
+        box-shadow: none;
+    }
+    
+    .sidebar-panel {
+        display: none;
+    }
+    
+    .philosophy-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .neologism-item {
+        page-break-inside: avoid;
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+    }
+    
+    .batch-operations,
+    .terminology-controls,
+    .settings-section {
+        display: none;
+    }
+    
+    .modal-overlay,
+    .loading-overlay {
+        display: none !important;
+    }
+}
