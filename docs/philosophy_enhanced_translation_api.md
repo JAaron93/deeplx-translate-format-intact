@@ -538,7 +538,7 @@ def translate_philosophy_text(
         provider=provider,
         session_id=session_id
     )
-    
+
     return {
         "translated_text": result.translated_text,
         "neologisms_detected": result.neologism_analysis.total_neologisms,
@@ -567,7 +567,7 @@ async def translate_document(file, source, target, provider, output):
         provider=provider,
         output_filename=output
     )
-    
+
     click.echo(f"Translation completed: {output_path}")
     click.echo(f"Neologisms detected: {result.document_neologism_analysis.total_neologisms}")
 ```

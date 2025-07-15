@@ -20,16 +20,16 @@ class PhilosophyInterface {
     initializeInterface() {
         // Initialize event listeners
         this.setupEventListeners();
-        
+
         // Initialize WebSocket connection for real-time updates
         this.initializeWebSocket();
-        
+
         // Setup drag and drop
         this.setupDragDrop();
-        
+
         // Initialize terminology management
         this.initializeTerminologyManager();
-        
+
         console.log('Philosophy Interface initialized');
     }
 
@@ -83,10 +83,10 @@ class PhilosophyInterface {
         // Initialize WebSocket for real-time progress updates
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/philosophy`;
-        
+
         try {
             this.websocket = new WebSocket(wsUrl);
-            
+
             this.websocket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 this.handleWebSocketMessage(data);
@@ -162,7 +162,7 @@ class PhilosophyInterface {
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('drag-over');
-            
+
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 this.handleTerminologyUpload(files[0]);
@@ -173,7 +173,7 @@ class PhilosophyInterface {
     initializeTerminologyManager() {
         // Load existing terminology
         this.loadTerminology();
-        
+
         // Setup terminology search
         const searchInput = document.getElementById('terminology-search');
         if (searchInput) {
@@ -187,13 +187,13 @@ class PhilosophyInterface {
     addNeologism(neologism) {
         this.neologisms.push(neologism);
         this.progressTracking.totalNeologisms = this.neologisms.length;
-        
+
         // Add to UI
         this.renderNeologism(neologism);
-        
+
         // Update progress
         this.updateProgressDisplay();
-        
+
         // Check for existing choices
         this.checkExistingChoice(neologism);
     }
@@ -204,7 +204,7 @@ class PhilosophyInterface {
 
         const neologismElement = this.createNeologismElement(neologism);
         container.appendChild(neologismElement);
-        
+
         // Add animation
         setTimeout(() => {
             neologismElement.classList.add('visible');
@@ -216,9 +216,9 @@ class PhilosophyInterface {
         div.className = 'neologism-item';
         div.setAttribute('data-term', neologism.term);
         div.setAttribute('data-confidence', neologism.confidence);
-        
+
         const confidenceClass = this.getConfidenceClass(neologism.confidence);
-        
+
         div.innerHTML = `
             <div class="neologism-header">
                 <div class="neologism-term">
@@ -231,7 +231,7 @@ class PhilosophyInterface {
                     <span class="type-badge">${neologism.neologism_type}</span>
                 </div>
             </div>
-            
+
             <div class="neologism-context">
                 <div class="context-sentence">
                     <strong>Context:</strong> ${neologism.sentence_context}
@@ -241,7 +241,7 @@ class PhilosophyInterface {
                     <span class="page-number">Page: ${neologism.page_number || 'N/A'}</span>
                 </div>
             </div>
-            
+
             <div class="neologism-analysis">
                 <details class="analysis-details">
                     <summary>Analysis Details</summary>
@@ -260,7 +260,7 @@ class PhilosophyInterface {
                     </div>
                 </details>
             </div>
-            
+
             <div class="neologism-choices">
                 <div class="choice-options">
                     <label class="choice-option">
@@ -276,18 +276,18 @@ class PhilosophyInterface {
                         <span class="choice-label">Custom Translation</span>
                     </label>
                 </div>
-                
+
                 <div class="custom-translation" style="display: none;">
                     <input type="text" class="custom-translation-input" placeholder="Enter custom translation...">
                     <button class="apply-custom-btn">Apply</button>
                 </div>
-                
+
                 <div class="choice-notes">
                     <textarea class="choice-notes-input" placeholder="Notes (optional)..." rows="2"></textarea>
                 </div>
             </div>
         `;
-        
+
         return div;
     }
 
@@ -302,7 +302,7 @@ class PhilosophyInterface {
         const neologismItem = target.closest('.neologism-item');
         const term = neologismItem.getAttribute('data-term');
         const choice = target.value;
-        
+
         // Show/hide custom translation input
         const customDiv = neologismItem.querySelector('.custom-translation');
         if (choice === 'custom') {
@@ -311,21 +311,21 @@ class PhilosophyInterface {
         } else {
             customDiv.style.display = 'none';
         }
-        
+
         // Store choice
         this.userChoices[term] = {
             choice: choice,
             timestamp: new Date().toISOString(),
             notes: ''
         };
-        
+
         // Update progress
         this.progressTracking.choicesMade = Object.keys(this.userChoices).length;
         this.updateProgressDisplay();
-        
+
         // Mark as processed
         neologismItem.classList.add('choice-made');
-        
+
         // Send choice to backend
         this.sendChoiceToBackend(term, choice);
     }
@@ -345,14 +345,14 @@ class PhilosophyInterface {
                     session_id: this.currentSession
                 })
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to save choice');
             }
-            
+
             const result = await response.json();
             console.log('Choice saved:', result);
-            
+
         } catch (error) {
             console.error('Error saving choice:', error);
             this.showNotification('Error saving choice', 'error');
@@ -362,22 +362,22 @@ class PhilosophyInterface {
     // Batch Operations
     batchOperation(operation) {
         const selectedNeologisms = this.getSelectedNeologisms();
-        
+
         if (selectedNeologisms.length === 0) {
             this.showNotification('No neologisms selected', 'warning');
             return;
         }
-        
+
         const confirmation = confirm(
             `Apply "${operation}" to ${selectedNeologisms.length} selected neologisms?`
         );
-        
+
         if (!confirmation) return;
-        
+
         selectedNeologisms.forEach(term => {
             this.applyChoiceToNeologism(term, operation);
         });
-        
+
         this.showNotification(
             `Applied "${operation}" to ${selectedNeologisms.length} neologisms`,
             'success'
@@ -392,7 +392,7 @@ class PhilosophyInterface {
     applyChoiceToNeologism(term, choice) {
         const neologismItem = document.querySelector(`[data-term="${term}"]`);
         if (!neologismItem) return;
-        
+
         const choiceInput = neologismItem.querySelector(`input[value="${choice}"]`);
         if (choiceInput) {
             choiceInput.checked = true;
@@ -404,11 +404,11 @@ class PhilosophyInterface {
     searchNeologisms(searchTerm) {
         const neologisms = document.querySelectorAll('.neologism-item');
         const term = searchTerm.toLowerCase();
-        
+
         neologisms.forEach(item => {
             const neologismTerm = item.getAttribute('data-term').toLowerCase();
             const context = item.querySelector('.context-sentence').textContent.toLowerCase();
-            
+
             if (neologismTerm.includes(term) || context.includes(term)) {
                 item.style.display = 'block';
             } else {
@@ -420,10 +420,10 @@ class PhilosophyInterface {
     filterByConfidence(minConfidence) {
         const neologisms = document.querySelectorAll('.neologism-item');
         const threshold = parseFloat(minConfidence);
-        
+
         neologisms.forEach(item => {
             const confidence = parseFloat(item.getAttribute('data-confidence'));
-            
+
             if (confidence >= threshold) {
                 item.style.display = 'block';
             } else {
@@ -440,16 +440,16 @@ class PhilosophyInterface {
 
     updateProgressDisplay() {
         const { totalNeologisms, processedNeologisms, choicesMade } = this.progressTracking;
-        
+
         // Update progress bars
         this.updateProgressBar('detection-progress', processedNeologisms, totalNeologisms);
         this.updateProgressBar('choice-progress', choicesMade, totalNeologisms);
-        
+
         // Update statistics
         document.getElementById('total-neologisms')?.textContent = totalNeologisms;
         document.getElementById('choices-made')?.textContent = choicesMade;
         document.getElementById('remaining-choices')?.textContent = totalNeologisms - choicesMade;
-        
+
         // Update overall progress
         const overallProgress = totalNeologisms > 0 ? (choicesMade / totalNeologisms) * 100 : 0;
         this.updateProgressBar('overall-progress', overallProgress, 100);
@@ -458,12 +458,12 @@ class PhilosophyInterface {
     updateProgressBar(id, current, total) {
         const progressBar = document.getElementById(id);
         if (!progressBar) return;
-        
+
         const percentage = total > 0 ? (current / total) * 100 : 0;
         progressBar.style.width = `${percentage}%`;
         progressBar.setAttribute('aria-valuenow', current);
         progressBar.setAttribute('aria-valuemax', total);
-        
+
         // Update text
         const progressText = progressBar.querySelector('.progress-text');
         if (progressText) {
@@ -483,11 +483,11 @@ class PhilosophyInterface {
                     session_id: this.currentSession
                 })
             });
-            
+
             if (!response.ok) {
                 throw new Error('Export failed');
             }
-            
+
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -495,9 +495,9 @@ class PhilosophyInterface {
             a.download = `philosophy-choices-${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             window.URL.revokeObjectURL(url);
-            
+
             this.showNotification('Choices exported successfully', 'success');
-            
+
         } catch (error) {
             console.error('Export error:', error);
             this.showNotification('Export failed', 'error');
@@ -508,14 +508,14 @@ class PhilosophyInterface {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json';
-        
+
         input.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
                 this.handleChoicesImport(file);
             }
         };
-        
+
         input.click();
     }
 
@@ -523,7 +523,7 @@ class PhilosophyInterface {
         try {
             const text = await file.text();
             const data = JSON.parse(text);
-            
+
             const response = await fetch('/api/philosophy/import-choices', {
                 method: 'POST',
                 headers: {
@@ -534,17 +534,17 @@ class PhilosophyInterface {
                     session_id: this.currentSession
                 })
             });
-            
+
             if (!response.ok) {
                 throw new Error('Import failed');
             }
-            
+
             const result = await response.json();
             this.showNotification(`Imported ${result.count} choices`, 'success');
-            
+
             // Refresh the interface
             this.refreshNeologismList();
-            
+
         } catch (error) {
             console.error('Import error:', error);
             this.showNotification('Import failed', 'error');
@@ -565,9 +565,9 @@ class PhilosophyInterface {
     renderTerminology(terminology) {
         const container = document.getElementById('terminology-list');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         Object.entries(terminology).forEach(([term, translation]) => {
             const item = document.createElement('div');
             item.className = 'terminology-item';
@@ -589,7 +589,7 @@ class PhilosophyInterface {
     searchTerminology(searchTerm) {
         const items = document.querySelectorAll('.terminology-item');
         const term = searchTerm.toLowerCase();
-        
+
         items.forEach(item => {
             const termText = item.textContent.toLowerCase();
             if (termText.includes(term)) {
@@ -605,13 +605,13 @@ class PhilosophyInterface {
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.textContent = message;
-        
+
         document.body.appendChild(notification);
-        
+
         setTimeout(() => {
             notification.classList.add('visible');
         }, 100);
-        
+
         setTimeout(() => {
             notification.classList.remove('visible');
             setTimeout(() => {
@@ -632,18 +632,18 @@ class PhilosophyInterface {
         try {
             const response = await fetch('/api/philosophy/neologisms');
             const neologisms = await response.json();
-            
+
             // Clear existing list
             const container = document.getElementById('neologism-container');
             if (container) {
                 container.innerHTML = '';
             }
-            
+
             // Render new list
             neologisms.forEach(neologism => {
                 this.renderNeologism(neologism);
             });
-            
+
         } catch (error) {
             console.error('Error refreshing neologisms:', error);
         }

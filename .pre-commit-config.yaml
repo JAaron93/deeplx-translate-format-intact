@@ -1,0 +1,180 @@
+# Pre-commit Configuration for deeplx-translate-format-intact
+# ========================================================
+# This configuration prevents future whitespace violations and ensures
+# consistent code formatting across the entire repository.
+#
+# Installation:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Manual run:
+#   pre-commit run --all-files
+
+repos:
+  # Built-in hooks for basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Whitespace and line ending fixes
+      - id: trailing-whitespace
+        name: Remove trailing whitespace
+        description: Removes trailing whitespace from all files
+        args: [--markdown-linebreak-ext=md]
+
+      - id: end-of-file-fixer
+        name: Fix end of file
+        description: Ensures files end with a newline
+
+      - id: mixed-line-ending
+        name: Fix mixed line endings
+        description: Fixes mixed line endings (LF vs CRLF)
+
+      # File formatting checks
+      - id: check-yaml
+        name: Check YAML syntax
+        description: Checks yaml files for parseable syntax
+
+      - id: check-json
+        name: Check JSON syntax
+        description: Checks json files for parseable syntax
+
+      - id: check-toml
+        name: Check TOML syntax
+        description: Checks toml files for parseable syntax
+
+      - id: check-xml
+        name: Check XML syntax
+        description: Checks xml files for parseable syntax
+
+      # Code quality checks
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+        description: Checks for merge conflict markers
+
+      - id: check-added-large-files
+        name: Check for large files
+        description: Prevents giant files from being committed
+        args: ['--maxkb=1000']
+
+      - id: check-case-conflict
+        name: Check case conflicts
+        description: Checks for case conflicts in filenames
+
+      - id: check-symlinks
+        name: Check symlinks
+        description: Checks for broken symlinks
+
+      # Python-specific checks
+      - id: check-ast
+        name: Check Python AST
+        description: Checks Python files for valid syntax
+        files: \.py$
+
+      - id: check-builtin-literals
+        name: Check builtin literals
+        description: Prevents accidentally using builtin names
+        files: \.py$
+
+      - id: check-docstring-first
+        name: Check docstring first
+        description: Checks docstrings come before code
+        files: \.py$
+
+      - id: debug-statements
+        name: Check debug statements
+        description: Checks for debugger statements
+        files: \.py$
+
+  # Python formatting with Black
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        name: Format Python code with Black
+        description: Formats Python code to Black's style
+        language_version: python3
+        # No args needed - uses pyproject.toml
+
+  # Python linting with Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.11
+    hooks:
+      - id: ruff
+        name: Lint Python code with Ruff
+        description: Fast Python linter replacing Flake8, isort, and more
+        args: [--fix, --exit-non-zero-on-fix]
+
+  # Python security checks with bandit
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        name: Security check with bandit
+        description: Checks Python code for security issues
+        args: [--recursive, --format=custom]
+        files: \.py$
+        exclude: ^tests/
+
+  # # Python type checking with mypy (temporarily disabled due to SSL issues)
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.4.1
+  #   hooks:
+  #     - id: mypy
+  #       name: Type check with mypy
+  #       description: Checks Python code for type errors
+  #       args: [
+  #         --ignore-missing-imports,
+  #         --strict-optional,
+  #         --no-error-summary,
+  #         --no-pretty,
+  #         --cache-dir=/tmp/mypy_cache
+  #       ]
+  #       files: \.py$
+  #       exclude: ^(tests/|examples/)
+
+  # # Markdown linting (temporarily disabled due to SSL issues)
+  # - repo: https://github.com/igorshubovych/markdownlint-cli
+  #   rev: v0.35.0
+  #   hooks:
+  #     - id: markdownlint
+  #       name: Lint Markdown files
+  #       description: Lints Markdown files for style consistency
+  #       args: [--fix, --disable=MD013,MD033]
+  #       files: \.md$
+
+  # # YAML linting (temporarily disabled due to SSL issues)
+  # - repo: https://github.com/adrienverge/yamllint
+  #   rev: v1.32.0
+  #   hooks:
+  #     - id: yamllint
+  #       name: Lint YAML files
+  #       description: Lints YAML files for style consistency
+  #       args: [--format=parsable, --strict]
+
+  # Additional whitespace checks for specific files
+  # Note: Custom whitespace validation removed - handled by built-in hooks
+
+# Configuration for specific tools
+default_language_version:
+  python: python3
+
+ci:
+  # Auto-update dependencies
+  autoupdate_schedule: weekly
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+
+# File patterns to exclude globally
+exclude: |
+  (?x)^(
+    \.git/.*|
+    \.venv/.*|
+    __pycache__/.*|
+    \.pytest_cache/.*|
+    \.mypy_cache/.*|
+    \.tox/.*|
+    build/.*|
+    dist/.*|
+    .*\.egg-info/.*|
+    node_modules/.*|
+    \.backup_.*
+  )$

@@ -38,7 +38,7 @@ This document outlines the implementation plan for integrating ByteDance's Dolph
 
 **Approach**: Utilize ByteDance's existing Dolphin Space via API calls
 - **Endpoint**: `https://huggingface.co/spaces/ByteDance/Dolphin`
-- **Benefits**: 
+- **Benefits**:
   - Leverages optimized inference setup
   - No local GPU requirements
   - Cost-effective with existing $25 HF credits
@@ -57,7 +57,7 @@ class DolphinProcessor:
         self.hf_token = hf_token
         self.spaces_url = "https://huggingface.co/spaces/ByteDance/Dolphin"
         self.session = requests.Session()
-    
+
     def extract_document_structure(self, document_image: bytes) -> dict:
         """
         Extract structured content from document image using Dolphin
@@ -68,7 +68,7 @@ class DolphinProcessor:
         }
         """
         pass
-    
+
     def process_pdf_pages(self, pdf_path: str) -> list:
         """Process all pages of a PDF document"""
         pass
@@ -84,7 +84,7 @@ class EnhancedDocumentProcessor:
     def __init__(self):
         self.dolphin = DolphinProcessor(hf_token)
         # Remove PyMuPDF dependencies
-    
+
     def extract_content(self, file_path: str) -> dict:
         """
         Extract content using Dolphin for superior format preservation
