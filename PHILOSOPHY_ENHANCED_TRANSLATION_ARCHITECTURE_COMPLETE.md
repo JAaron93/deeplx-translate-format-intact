@@ -29,7 +29,7 @@ graph TB
         B --> C[Page Segmentation]
         C --> D[Text Extraction]
     end
-    
+
     subgraph "Neologism Detection Engine"
         D --> E[Linguistic Analysis]
         E --> F[Pattern Recognition]
@@ -37,27 +37,27 @@ graph TB
         G --> H[Confidence Scoring]
         H --> I[Neologism Candidates]
     end
-    
+
     subgraph "Terminology Management"
         I --> J[Multi-Author Terminology DB]
         J --> K[Contextual Matching]
         K --> L[Usage Examples]
         L --> M[Confidence Validation]
     end
-    
+
     subgraph "User Choice System"
         M --> N[Neologism Review Interface]
         N --> O[User Decision Capture]
         O --> P[Choice Persistence]
         P --> Q[Conflict Resolution]
     end
-    
+
     subgraph "Enhanced Translation Pipeline"
         Q --> R[Selective Translation]
         R --> S[Format Preservation]
         S --> T[Output Generation]
     end
-    
+
     subgraph "Scalability Layer"
         U[Progress Tracking] --> V[Memory Management]
         V --> W[Batch Processing]
@@ -102,21 +102,21 @@ class NeologismDetector:
         self.pattern_recognizer = PatternRecognizer()
         self.context_analyzer = ContextAnalyzer()
         self.confidence_threshold = 0.7
-    
+
     def detect_neologisms(self, text: str, author_context: str = "klages") -> List[NeologismCandidate]:
         """Detect philosophical neologisms in text with confidence scoring"""
         candidates = []
-        
+
         # 1. Pattern-based detection
         compounds = self.pattern_recognizer.recognize_compounds(text, author_context)
-        
+
         # 2. Morphological analysis
         for compound in compounds:
             if self._is_potential_neologism(compound, author_context):
                 morphology = self.linguistic_analyzer.analyze_morphology(compound)
                 context_analysis = self.context_analyzer.analyze_context(compound, text, author_context)
                 confidence = self._calculate_confidence(compound, morphology, context_analysis)
-                
+
                 if confidence >= self.confidence_threshold:
                     candidate = NeologismCandidate(
                         term=compound,
@@ -129,27 +129,27 @@ class NeologismDetector:
                         author_specific_markers=self._extract_author_markers(compound, author_context)
                     )
                     candidates.append(candidate)
-        
+
         return candidates
-    
+
     def _calculate_confidence(self, term: str, morphology: Dict, context_analysis: Dict) -> float:
         """Calculate confidence score for neologism detection"""
         base_score = 0.0
-        
+
         # Morphological complexity (0.0-0.3)
         if len(morphology.get("compound_parts", [])) > 1:
             base_score += 0.2
         if morphology.get("philosophical_markers"):
             base_score += 0.1
-        
+
         # Context density (0.0-0.4)
         context_score = context_analysis.get("philosophical_density", 0.0)
         base_score += context_score * 0.4
-        
+
         # Rarity factor (0.0-0.3)
         rarity_score = self._calculate_rarity(term)
         base_score += rarity_score * 0.3
-        
+
         return min(base_score, 1.0)
 ```
 
@@ -218,25 +218,25 @@ class UserChoiceManager:
         self.active_sessions: Dict[str, TranslationSession] = {}
         self.choice_cache: Dict[str, UserChoice] = {}
         self.init_database()
-    
+
     def record_choice(self, session_id: str, choice: UserChoice):
         """Record user choice for neologism translation"""
         # Cache and persist choice
         cache_key = f"{choice.term}_{choice.author}_{choice.context_hash}"
         self.choice_cache[cache_key] = choice
-        
+
         # Persist to database
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
-                INSERT OR REPLACE INTO user_choices 
-                (term, author, source_lang, target_lang, choice_type, 
-                 custom_translation, context, confidence, timestamp, 
+                INSERT OR REPLACE INTO user_choices
+                (term, author, source_lang, target_lang, choice_type,
+                 custom_translation, context, confidence, timestamp,
                  document_id, context_hash)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (choice.term, choice.author, choice.source_language, 
-                  choice.target_language, choice.choice_type, 
-                  choice.custom_translation, choice.context, 
-                  choice.confidence, choice.timestamp, 
+            """, (choice.term, choice.author, choice.source_language,
+                  choice.target_language, choice.choice_type,
+                  choice.custom_translation, choice.context,
+                  choice.confidence, choice.timestamp,
                   choice.document_id, choice.context_hash))
 ```
 
@@ -250,27 +250,27 @@ class ScalableDocumentProcessor:
         self.batch_size = batch_size
         self.memory_monitor = MemoryMonitor()
         self.page_cache = PageCache(max_size=100)
-    
-    def process_large_document(self, pdf_path: str, session_id: str, 
+
+    def process_large_document(self, pdf_path: str, session_id: str,
                              max_pages: int = 2000) -> Iterator[PageBatch]:
         """Process large documents in manageable batches"""
-        
+
         # Check for existing checkpoint
         checkpoint = self.load_checkpoint(session_id)
         start_page = checkpoint.processed_pages if checkpoint else 0
-        
+
         # Process in batches
         for start_idx in range(start_page, max_pages, self.batch_size):
             # Check memory before processing
             if self.memory_monitor.check_memory_usage():
                 self._cleanup_memory()
-            
+
             end_idx = min(start_idx + self.batch_size, max_pages)
             pages_to_process = list(range(start_idx, end_idx))
-            
+
             batch = self._process_page_batch(pdf_path, pages_to_process)
             self.create_checkpoint(session_id, end_idx, max_pages, {})
-            
+
             yield batch
 ```
 
@@ -280,20 +280,20 @@ class ScalableDocumentProcessor:
 ```python
 def create_enhanced_main_interface() -> gr.Blocks:
     """Enhanced main interface with philosophy features"""
-    
+
     with gr.Blocks(title="Philosophy-Enhanced Document Translator") as interface:
         gr.Markdown("""
         # 📚 Philosophy-Enhanced Document Translator
-        
+
         Advanced PDF translation with **philosophical neologism detection** and **user-controlled terminology management**.
-        
+
         🎯 **Enhanced Features:**
         - **Neologism Detection**: Automatically identify philosophical compound terms
         - **User Choice System**: Control translation behavior for each detected term
         - **Multi-Author Support**: Specialized terminology for different philosophical traditions
         - **Large Document Support**: Handle up to 2,000 pages with memory optimization
         """)
-        
+
         with gr.Row():
             with gr.Column(scale=1):
                 # File Upload
@@ -301,43 +301,43 @@ def create_enhanced_main_interface() -> gr.Blocks:
                     label="Choose Document (PDF, DOCX, TXT - up to 2,000 pages)",
                     file_types=[".pdf", ".docx", ".txt"]
                 )
-                
+
                 # Philosophy Settings
                 with gr.Group():
                     gr.Markdown("## 🧠 Philosophy Settings")
-                    
+
                     author_dropdown = gr.Dropdown(
                         label="Philosophical Author/Tradition",
                         choices=["Klages", "Heidegger", "Nietzsche", "Generic"],
                         value="Klages"
                     )
-                    
+
                     neologism_sensitivity = gr.Slider(
                         minimum=0.1,
                         maximum=1.0,
                         value=0.7,
                         label="Neologism Detection Sensitivity"
                     )
-                    
+
                     pages_slider = gr.Slider(
                         minimum=1,
                         maximum=2000,
                         value=100,
                         label="Pages to Process"
                     )
-                    
+
                     target_language = gr.Dropdown(
                         label="Target Language",
                         choices=["English", "French", "Spanish", "German", "Italian"],
                         value="English"
                     )
-                
+
                 upload_status = gr.Textbox(
                     label="Processing Status",
                     interactive=False,
                     lines=6
                 )
-                
+
             with gr.Column(scale=2):
                 # Document Preview and Neologism Detection
                 with gr.Tabs():
@@ -347,79 +347,79 @@ def create_enhanced_main_interface() -> gr.Blocks:
                             lines=8,
                             interactive=False
                         )
-                    
+
                     with gr.Tab("Detected Neologisms"):
                         neologism_table = gr.Dataframe(
                             headers=["Term", "Context", "Confidence", "Suggested Translation"],
                             datatype=["str", "str", "number", "str"],
                             label="Detected Neologisms"
                         )
-                        
+
                         # Neologism Review Interface
                         with gr.Group():
                             gr.Markdown("### Review Neologisms")
-                            
+
                             selected_term = gr.Textbox(label="Selected Term", interactive=False)
-                            
+
                             choice_radio = gr.Radio(
                                 choices=["Translate", "Preserve Original", "Custom Translation"],
                                 label="Translation Behavior",
                                 value="Translate"
                             )
-                            
+
                             custom_translation = gr.Textbox(
                                 label="Custom Translation",
                                 visible=False
                             )
-                            
+
                             with gr.Row():
                                 save_choice_btn = gr.Button("Save Choice", variant="primary")
                                 approve_all_btn = gr.Button("Approve All", variant="secondary")
-                
+
                 # Translation Controls
                 with gr.Group():
                     gr.Markdown("## 🚀 Translation")
-                    
+
                     translate_btn = gr.Button(
                         "Start Enhanced Translation",
                         variant="primary",
                         size="lg"
                     )
-                    
+
                     progress_bar = gr.Progress()
                     progress_text = gr.Textbox(
                         label="Translation Progress",
                         interactive=False
                     )
-                
+
                 # Download Section
                 with gr.Group():
                     gr.Markdown("## 💾 Download")
-                    
+
                     output_format = gr.Dropdown(
                         label="Output Format",
                         choices=["PDF", "DOCX", "TXT"],
                         value="PDF"
                     )
-                    
+
                     download_btn = gr.Button(
                         "Download Translated Document",
                         variant="secondary",
                         interactive=False
                     )
-                    
+
                     download_file = gr.File(label="Download", visible=False)
-        
+
         # Event Handlers
         def update_custom_translation_visibility(choice):
             return gr.update(visible=(choice == "Custom Translation"))
-        
+
         choice_radio.change(
             fn=update_custom_translation_visibility,
             inputs=[choice_radio],
             outputs=[custom_translation]
         )
-        
+
         return interface
 ```
 
@@ -428,27 +428,27 @@ def create_enhanced_main_interface() -> gr.Blocks:
 ### Enhanced Translation Service
 ```python
 class PhilosophyEnhancedTranslationService(TranslationService):
-    def __init__(self, terminology_manager: TerminologyManager, 
+    def __init__(self, terminology_manager: TerminologyManager,
                  user_choice_manager: UserChoiceManager):
         super().__init__()
         self.terminology_manager = terminology_manager
         self.user_choice_manager = user_choice_manager
         self.neologism_detector = NeologismDetector(terminology_manager)
-    
-    async def translate_with_philosophy_awareness(self, 
+
+    async def translate_with_philosophy_awareness(self,
                                                 texts: List[str],
                                                 source_lang: str,
                                                 target_lang: str,
                                                 session_id: str,
                                                 author: str = "klages") -> List[str]:
         """Enhanced translation with neologism awareness"""
-        
+
         # 1. Detect neologisms
         detected_neologisms = []
         for text in texts:
             neologisms = self.neologism_detector.detect_neologisms(text, author)
             detected_neologisms.extend(neologisms)
-        
+
         # 2. Get user choices
         user_choices = {}
         for neologism in detected_neologisms:
@@ -457,30 +457,30 @@ class PhilosophyEnhancedTranslationService(TranslationService):
             )
             if choice:
                 user_choices[neologism.term] = choice
-        
+
         # 3. Apply preprocessing based on user choices
         processed_texts = []
         for text in texts:
             processed_text = self._apply_user_choices(text, user_choices)
             processed_texts.append(processed_text)
-        
+
         # 4. Perform translation
         translated_texts = await super().translate_batch(
             processed_texts, source_lang, target_lang
         )
-        
+
         # 5. Post-process to ensure neologism choices are respected
         final_texts = []
         for translated_text in translated_texts:
             final_text = self._post_process_neologisms(translated_text, user_choices)
             final_texts.append(final_text)
-        
+
         return final_texts
-    
+
     def _apply_user_choices(self, text: str, user_choices: Dict[str, UserChoice]) -> str:
         """Apply user choices for preprocessing"""
         processed_text = text
-        
+
         for term, choice in user_choices.items():
             if choice.choice_type == "preserve":
                 # Wrap in non-translate tags
@@ -492,7 +492,7 @@ class PhilosophyEnhancedTranslationService(TranslationService):
                 processed_text = processed_text.replace(
                     term, choice.custom_translation
                 )
-        
+
         return processed_text
 ```
 
@@ -509,7 +509,7 @@ sequenceDiagram
     participant UCM as User Choice Manager
     participant TS as Translation Service
     participant BP as Batch Processor
-    
+
     U->>UI: Upload Large PDF (2000 pages)
     UI->>DP: Process Document
     DP->>ND: Detect Neologisms per Page
@@ -592,12 +592,12 @@ class PhilosophyCache:
         self.terminology_cache = LRUCache(max_size // 2)
         self.neologism_cache = LRUCache(max_size // 2)
         self.user_choice_cache = LRUCache(max_size // 4)
-    
+
     def get_terminology(self, term: str, author: str) -> Optional[TerminologyEntry]:
         """Get cached terminology entry"""
         cache_key = f"{term}_{author}"
         return self.terminology_cache.get(cache_key)
-    
+
     def cache_neologism_detection(self, text_hash: str, results: List[NeologismCandidate]):
         """Cache neologism detection results"""
         self.neologism_cache.put(text_hash, results)
@@ -610,13 +610,13 @@ class PhilosophyCache:
 class PhilosophyErrorHandler:
     def __init__(self):
         self.fallback_terminology = self.load_basic_terminology()
-    
+
     def handle_neologism_detection_failure(self, text: str) -> List[NeologismCandidate]:
         """Fallback to basic pattern matching if ML detection fails"""
         # Use simple regex patterns for German compounds
         compounds = re.findall(r'\b[A-Z][a-z]+(?:[A-Z][a-z]+)+\b', text)
         candidates = []
-        
+
         for compound in compounds:
             if len(compound) > 8:  # Minimum length for philosophical compounds
                 candidates.append(NeologismCandidate(
@@ -629,9 +629,9 @@ class PhilosophyErrorHandler:
                     semantic_context=[],
                     author_specific_markers=[]
                 ))
-        
+
         return candidates
-    
+
     def handle_terminology_db_failure(self) -> Dict[str, str]:
         """Fallback to basic terminology if database is unavailable"""
         return self.fallback_terminology
@@ -646,40 +646,40 @@ class TestNeologismDetection:
         """Test detection of Klages compound terms"""
         detector = NeologismDetector(mock_terminology_manager)
         text = "Die Lebensfeindlichkeit des Geistes manifestiert sich in der Bewußtseinsenge."
-        
+
         neologisms = detector.detect_neologisms(text, "klages")
-        
+
         assert len(neologisms) >= 2
         assert any(n.term == "Lebensfeindlichkeit" for n in neologisms)
         assert any(n.term == "Bewußtseinsenge" for n in neologisms)
-    
+
     def test_confidence_scoring(self):
         """Test neologism confidence scoring algorithm"""
         detector = NeologismDetector(mock_terminology_manager)
-        
+
         # Test high-confidence compound
         high_conf = detector._calculate_confidence(
             "Lebensfeindlichkeit",
             {"compound_parts": ["Lebens", "feindlichkeit"], "philosophical_markers": ["Leben"]},
             {"philosophical_density": 0.8}
         )
-        
+
         assert high_conf > 0.8
-        
+
         # Test low-confidence term
         low_conf = detector._calculate_confidence(
             "Haus",
             {"compound_parts": [], "philosophical_markers": []},
             {"philosophical_density": 0.1}
         )
-        
+
         assert low_conf < 0.3
 
 class TestUserChoiceManagement:
     def test_choice_persistence(self):
         """Test user choice persistence across sessions"""
         manager = UserChoiceManager(":memory:")
-        
+
         choice = UserChoice(
             term="Lebensfeindlichkeit",
             author="klages",
@@ -693,9 +693,9 @@ class TestUserChoiceManagement:
             document_id="test_doc",
             context_hash="test_hash"
         )
-        
+
         manager.record_choice("test_session", choice)
-        
+
         retrieved = manager.get_user_preference("Lebensfeindlichkeit", "klages", "philosophical context")
         assert retrieved is not None
         assert retrieved.choice_type == "preserve"
@@ -708,19 +708,19 @@ class TestPhilosophyPipeline:
         """Test complete pipeline with Klages document"""
         # Create test PDF with Klages terminology
         test_pdf = create_test_pdf_with_klages_terms()
-        
+
         # Process document
         processor = PhilosophyEnhancedDocumentProcessor(terminology_manager)
         content = processor.extract_content_with_neologisms(test_pdf, "klages")
-        
+
         # Verify neologisms detected
         assert content['total_neologisms'] > 0
-        assert any("Lebensfeindlichkeit" in str(neologisms) 
+        assert any("Lebensfeindlichkeit" in str(neologisms)
                   for neologisms in content['neologisms_by_page'].values())
-        
+
         # Test translation with user choices
         translation_service = PhilosophyEnhancedTranslationService(terminology_manager, user_choice_manager)
-        
+
         # Simulate user choices
         user_choices = {
             "Lebensfeindlichkeit": UserChoice(
@@ -729,13 +729,13 @@ class TestPhilosophyPipeline:
                 # ... other fields
             )
         }
-        
+
         # Translate
         translated = translation_service.translate_with_philosophy_awareness(
             ["Die Lebensfeindlichkeit des Geistes zeigt sich in der Technik."],
             "german", "english", "test_session", "klages"
         )
-        
+
         # Verify preservation of chosen terms
         assert "Lebensfeindlichkeit" in translated[0]
 ```
@@ -766,12 +766,12 @@ class PhilosophySettings(Settings):
     BATCH_SIZE: int = 50
     ENABLE_PHILOSOPHY_FEATURES: bool = True
     DEFAULT_AUTHOR: str = "klages"
-    
+
     # Database settings
     PHILOSOPHY_DB_PATH: str = "data/philosophy_system.db"
     TERMINOLOGY_DB_PATH: str = "config/enhanced_terminology.json"
     USER_CHOICES_DB_PATH: str = "data/user_choices.db"
-    
+
     # Memory management
     MAX_MEMORY_MB: int = 2048
     CACHE_SIZE: int = 10000
@@ -782,11 +782,11 @@ class PhilosophySettings(Settings):
 
 ### Adding New Authors
 ```python
-def add_new_author(author_name: str, 
+def add_new_author(author_name: str,
                   patterns: Dict[str, List[str]],
                   initial_terminology: Dict[str, TerminologyEntry]):
     """Add support for new philosophical author"""
-    
+
     # 1. Create author profile
     profile = AuthorProfile(
         name=author_name,
@@ -799,13 +799,13 @@ def add_new_author(author_name: str,
         characteristic_suffixes=patterns.get('characteristic_suffixes', []),
         semantic_fields=patterns.get('semantic_fields', [])
     )
-    
+
     # 2. Update terminology database
     terminology_manager.add_author(profile)
-    
+
     # 3. Update neologism detection patterns
     neologism_detector.add_author_patterns(author_name, patterns)
-    
+
     # 4. Update UI choices
     update_ui_author_choices(author_name)
 
@@ -842,36 +842,36 @@ class MLNeologismDetector:
     def __init__(self):
         self.model = self.load_or_train_model()
         self.feature_extractor = PhilosophicalFeatureExtractor()
-    
+
     def train_on_philosophical_corpus(self, author: str, texts: List[str]):
         """Train ML model on philosophical texts"""
         features = []
         labels = []
-        
+
         for text in texts:
             # Extract linguistic features
             text_features = self.feature_extractor.extract_features(text, author)
-            
+
             # Generate training examples
             for feature_vector, is_neologism in text_features:
                 features.append(feature_vector)
                 labels.append(is_neologism)
-        
+
         # Train model
         self.model.fit(features, labels)
         self.save_model(author)
-    
+
     def predict_neologisms(self, text: str, author: str) -> List[NeologismCandidate]:
         """ML-based neologism prediction"""
         candidates = []
-        
+
         # Extract potential terms
         potential_terms = self._extract_potential_terms(text)
-        
+
         for term in potential_terms:
             features = self.feature_extractor.extract_term_features(term, text, author)
             probability = self.model.predict_proba([features])[0][1]
-            
+
             if probability > 0.7:  # Confidence threshold
                 candidate = NeologismCandidate(
                     term=term,
@@ -884,29 +884,29 @@ class MLNeologismDetector:
                     author_specific_markers=[]
                 )
                 candidates.append(candidate)
-        
+
         return candidates
 
 class PhilosophicalFeatureExtractor:
     def __init__(self):
         self.morphological_analyzer = MorphologicalAnalyzer()
         self.semantic_analyzer = SemanticAnalyzer()
-    
+
     def extract_term_features(self, term: str, context: str, author: str) -> List[float]:
         """Extract features for ML classification"""
         features = []
-        
+
         # Morphological features
         features.extend(self.morphological_analyzer.analyze(term, author))
-        
+
         # Semantic features
         features.extend(self.semantic_analyzer.analyze(term, context, author))
-        
+
         # Length and complexity features
         features.append(len(term))
         features.append(len(term.split()))
         features.append(term.count('-'))
-        
+
         return features
 ```
 

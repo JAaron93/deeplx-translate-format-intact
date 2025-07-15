@@ -2,35 +2,36 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import tempfile
 import uuid
-import logging
 from pathlib import Path
-from typing import Optional, Any, IO
+from typing import Any, Optional
 
 from fastapi import UploadFile
 
 logger = logging.getLogger(__name__)
 
+
 class FileHandler:
     """Handles file operations for the application"""
-    
+
     def __init__(self) -> None:
         self.upload_dir: str = "uploads"
         self.download_dir: str = "downloads"
         self.temp_dir: str = "temp"
-        
+
         # Create directories
         for directory in [self.upload_dir, self.download_dir, self.temp_dir]:
             os.makedirs(directory, exist_ok=True)
-    
+
     def save_uploaded_file(self, file: Any) -> str:
         """Save uploaded file and return path"""
         try:
             # Validate file type
-            original_name = getattr(file, 'name', 'unknown')
+            original_name = getattr(file, "name", "unknown")
             if not self._is_valid_file_type(original_name):
                 raise ValueError(f"Unsupported file type: {original_name}")
 
@@ -44,9 +45,9 @@ class FileHandler:
             file_path = os.path.join(self.upload_dir, filename)
 
             # Save file
-            if hasattr(file, 'read'):
+            if hasattr(file, "read"):
                 # File-like object
-                with open(file_path, 'wb') as f:
+                with open(file_path, "wb") as f:
                     content = file.read()
                     f.write(content)
             else:
@@ -62,10 +63,10 @@ class FileHandler:
 
     def _is_valid_file_type(self, filename: str) -> bool:
         """Validate file type based on extension"""
-        allowed_extensions = {'.pdf', '.txt', '.docx', '.doc'}
+        allowed_extensions = {".pdf", ".txt", ".docx", ".doc"}
         file_ext = Path(filename).suffix.lower()
         return file_ext in allowed_extensions
-    
+
     def save_upload_file(self, upload_file: UploadFile) -> str:
         """Save FastAPI UploadFile and ensure its underlying stream is closed."""
         file_path: Optional[str] = None
@@ -99,7 +100,7 @@ class FileHandler:
                 upload_file.file.close()
             except Exception as close_err:
                 logger.debug(f"Could not close upload file stream: {close_err}")
-    
+
     def create_temp_file(self, suffix: str = "") -> str:
         """Create temporary file"""
         try:
@@ -109,7 +110,7 @@ class FileHandler:
         except Exception as e:
             logger.error(f"Temp file creation error: {e}")
             raise
-    
+
     def cleanup_file(self, file_path: str) -> bool:
         """Clean up file"""
         try:
@@ -121,43 +122,43 @@ class FileHandler:
         except Exception as e:
             logger.warning(f"File cleanup error: {e}")
             return False
-    
+
     def get_file_info(self, file_path: str) -> dict:
         """Get file information"""
         try:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"File not found: {file_path}")
-                
+
             file_stat = os.stat(file_path)
             return {
-                'path': file_path,
-                'size': file_stat.st_size,
-                'created': file_stat.st_ctime,
-                'modified': file_stat.st_mtime,
-                'is_dir': os.path.isdir(file_path)
+                "path": file_path,
+                "size": file_stat.st_size,
+                "created": file_stat.st_ctime,
+                "modified": file_stat.st_mtime,
+                "is_dir": os.path.isdir(file_path),
             }
         except Exception as e:
             logger.error(f"Error getting file info for {file_path}: {e}")
             raise
-    
+
     def cleanup_old_files(self, max_age_hours: int = 24) -> int:
         """Clean up old files in the temp directory"""
         cleanup_count = 0
         error_count = 0
-        
+
         try:
             import time
             from pathlib import Path
-            
+
             current_time = time.time()
             max_age_seconds = max_age_hours * 3600
-            
+
             for directory in [self.upload_dir, self.download_dir, self.temp_dir]:
                 try:
                     dir_path = Path(directory)
                     if not dir_path.exists():
                         continue
-                        
+
                     for file_path in dir_path.glob("*"):
                         try:
                             if file_path.is_file():
@@ -172,22 +173,24 @@ class FileHandler:
                 except Exception as e:
                     error_count += 1
                     logger.warning(f"Cleanup error in {directory}: {e}")
-                    
+
             if error_count > 0:
                 logger.warning(f"Completed cleanup with {error_count} errors")
-                
+
             return cleanup_count
-            
+
         except Exception as e:
             logger.error(f"Unexpected error during cleanup: {e}")
             raise
-        
-        logger.info(f"Cleanup completed: {cleanup_count} files removed, {error_count} errors")
+
+        logger.info(
+            f"Cleanup completed: {cleanup_count} files removed, {error_count} errors"
+        )
         import time
-        
+
         current_time = time.time()
         max_age_seconds = max_age_hours * 3600
-        
+
         for directory in [self.upload_dir, self.download_dir, self.temp_dir]:
             try:
                 for file_path in Path(directory).glob("*"):

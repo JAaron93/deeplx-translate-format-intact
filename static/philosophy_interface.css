@@ -10,7 +10,7 @@
     --warning-color: #f39c12;
     --error-color: #e74c3c;
     --info-color: #8e44ad;
-    
+
     /* Neutral Colors */
     --background-color: #f8f9fa;
     --card-background: #ffffff;
@@ -18,20 +18,20 @@
     --text-primary: #2c3e50;
     --text-secondary: #6c757d;
     --text-muted: #95a5a6;
-    
+
     /* Confidence Level Colors */
     --confidence-high: #27ae60;
     --confidence-medium: #f39c12;
     --confidence-low: #e67e22;
     --confidence-uncertain: #e74c3c;
-    
+
     /* Layout Variables */
     --border-radius: 8px;
     --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
     --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.15);
     --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.2);
     --transition: all 0.3s ease;
-    
+
     /* Typography */
     --font-family-primary: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --font-family-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
@@ -751,33 +751,33 @@ body {
     .philosophy-content {
         grid-template-columns: 1fr;
     }
-    
+
     .sidebar-panel {
         order: -1;
     }
-    
+
     .neologism-controls {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .search-box {
         width: 100%;
     }
-    
+
     .choice-options {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .batch-buttons {
         justify-content: center;
     }
-    
+
     .progress-stats {
         grid-template-columns: 1fr;
     }
-    
+
     .analysis-content {
         grid-template-columns: 1fr;
     }
@@ -787,34 +787,34 @@ body {
     .philosophy-interface {
         padding: 10px;
     }
-    
+
     .philosophy-header {
         padding: 15px;
     }
-    
+
     .philosophy-nav {
         flex-direction: column;
     }
-    
+
     .neologism-item {
         padding: 15px;
     }
-    
+
     .neologism-item-header {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .term-pair {
         flex-direction: column;
         gap: 5px;
         align-items: flex-start;
     }
-    
+
     .custom-translation {
         flex-direction: column;
     }
-    
+
     .terminology-controls {
         flex-direction: column;
     }
@@ -824,23 +824,23 @@ body {
     .philosophy-interface {
         padding: 5px;
     }
-    
+
     .philosophy-header {
         padding: 10px;
     }
-    
+
     .philosophy-header h1 {
         font-size: var(--font-size-large);
     }
-    
+
     .neologism-item {
         padding: 10px;
     }
-    
+
     .batch-buttons {
         flex-direction: column;
     }
-    
+
     .terminology-item {
         flex-direction: column;
         align-items: flex-start;
@@ -865,7 +865,7 @@ body {
         --text-secondary: #b0b0b0;
         --text-muted: #808080;
     }
-    
+
     .search-box,
     .filter-select,
     .settings-input,
@@ -874,7 +874,7 @@ body {
         background-color: var(--card-background);
         color: var(--text-primary);
     }
-    
+
     .batch-btn,
     .term-action-btn {
         background-color: var(--card-background);
@@ -1260,27 +1260,27 @@ body {
         color: black;
         box-shadow: none;
     }
-    
+
     .sidebar-panel {
         display: none;
     }
-    
+
     .philosophy-content {
         grid-template-columns: 1fr;
     }
-    
+
     .neologism-item {
         page-break-inside: avoid;
         border: 1px solid #ccc;
         margin-bottom: 10px;
     }
-    
+
     .batch-operations,
     .terminology-controls,
     .settings-section {
         display: none;
     }
-    
+
     .modal-overlay,
     .loading-overlay {
         display: none !important;

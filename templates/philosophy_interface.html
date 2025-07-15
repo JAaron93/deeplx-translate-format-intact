@@ -101,7 +101,7 @@
                 <div class="tab-content" id="settings-tab">
                     <div class="settings-section">
                         <h2>Philosophy Settings</h2>
-                        
+
                         <div class="settings-group">
                             <label>Neologism Detection Sensitivity</label>
                             <input type="range" id="sensitivity-slider" class="settings-input" min="0.1" max="1.0" step="0.1" value="0.5">
@@ -167,7 +167,7 @@
                 <div class="tab-content" id="analytics-tab">
                     <div class="analytics-section">
                         <h2>Session Analytics</h2>
-                        
+
                         <div class="analytics-grid">
                             <div class="analytics-card">
                                 <h3>Detection Summary</h3>
@@ -233,7 +233,7 @@
                 <!-- Progress Tracking -->
                 <div class="progress-section">
                     <h3>Progress Tracking</h3>
-                    
+
                     <div class="progress-item">
                         <div class="progress-label">
                             <span>Neologism Detection</span>
@@ -353,34 +353,34 @@
         document.addEventListener('DOMContentLoaded', function() {
             const tabs = document.querySelectorAll('.nav-tab');
             const tabContents = document.querySelectorAll('.tab-content');
-            
+
             tabs.forEach(tab => {
                 tab.addEventListener('click', function() {
                     const targetTab = this.getAttribute('data-tab');
-                    
+
                     // Remove active class from all tabs and contents
                     tabs.forEach(t => t.classList.remove('active'));
                     tabContents.forEach(content => content.classList.remove('active'));
-                    
+
                     // Add active class to clicked tab and corresponding content
                     this.classList.add('active');
                     document.getElementById(targetTab + '-tab').classList.add('active');
                 });
             });
-            
+
             // Initialize modal functionality
             const modalOverlay = document.getElementById('modal-overlay');
             const modalClose = document.getElementById('modal-close');
             const modalCancel = document.getElementById('modal-cancel');
-            
+
             modalClose.addEventListener('click', () => {
                 modalOverlay.classList.remove('active');
             });
-            
+
             modalCancel.addEventListener('click', () => {
                 modalOverlay.classList.remove('active');
             });
-            
+
             modalOverlay.addEventListener('click', (e) => {
                 if (e.target === modalOverlay) {
                     modalOverlay.classList.remove('active');

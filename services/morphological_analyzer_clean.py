@@ -116,67 +116,19 @@ class MorphologicalAnalyzer:
         if len(term) < 6:  # Very short words are unlikely to be compounds
             return False
         # Check for known compound patterns
-        patterns = self.german_morphological_patterns["compound_patterns"]
-        for pattern in patterns:
+        for pattern in self.german_morphological_patterns["compound_patterns"]:
             if re.search(pattern, term, re.IGNORECASE):
                 return True
         # Check for common compound structures
-        linking_elements = self.german_morphological_patterns["compound_linking"]
-        for linking in linking_elements:
+        for linking in self.german_morphological_patterns["compound_linking"]:
             if linking in term[1:-1]:  # Check middle of word
                 return True
         return False
 
     def _split_compound(self, term: str) -> list[str]:
-        """Split a compound word into its components.
-
-        **CURRENT LIMITATIONS:**
-        This implementation uses a simplified sequential approach with
-        significant limitations for German compound word analysis:
-
-        1. **Sequential Processing**: Processes words left-to-right only using
-           a greedy approach that takes the first matching prefix/suffix/
-           linking element.
-
-        2. **Missing Valid Splits**: Cannot properly handle compounds like
-           "Lebensphilosophie" which should split into ["Leben", "s",
-           "philosophie"] but may miss "Leben" as a meaningful part.
-
-        3. **No Dictionary Validation**: Relies only on predefined
-           morphological patterns without validating against a comprehensive
-           German word dictionary.
-
-        4. **No Backtracking**: Cannot explore alternative splits when the
-           first attempt fails to find optimal compound boundaries.
-
-        5. **Inadequate Linking Element Handling**: German linking elements
-           ("s", "n", "es", "en", "er", "e", "ns", "ts") are stripped without
-           proper consideration of their role in compound structure.
-
-        6. **Limited Morphophonological Rules**: Doesn't handle German-specific
-           sound changes that occur at compound boundaries.
-
-        **Examples of Current Limitations:**
-        - "Lebensphilosophie" → May not correctly identify "Leben" + "s" +
-          "philosophie"
-        - "Weltanschauung" → May not properly split "Welt" + "anschauung"
-        - "Erkenntnistheorie" → Complex compounds may be incorrectly segmented
-
-        **Proper Solution Requirements:**
-        A robust German compound analyzer would need:
-        - Comprehensive German word dictionary
-        - Bidirectional analysis algorithms
-        - Morphophonological rule engine
-        - Statistical scoring for split validation
-        - Handling of recursive compound structures
-
-        Args:
-            term: The compound word to split
-
-        Returns:
-            List of identified word parts (may be incomplete or inaccurate)
-        """
-        # This is a simplified implementation - see docstring for limitations
+        """Split a compound word into its components."""
+        # This is a simplified implementation
+        # A more sophisticated approach would use a dictionary
         parts = []
         current = term
         while len(current) > 3:  # Minimum length for meaningful parts
@@ -262,9 +214,9 @@ class MorphologicalAnalyzer:
     ) -> float:
         """Calculate a complexity score based on word structure."""
         complexity = 0.0
-        # More parts suggest more complexity on word length
+        # Word length contributes to complexity
         complexity += min(analysis.word_length / 20.0, 1.0)
-        # Longer words are more complex compounds
+        # Compounds increase complexity
         if analysis.is_compound:
             complexity += 0.3
         # Increase for multiple morphemes
@@ -276,12 +228,12 @@ class MorphologicalAnalyzer:
     ) -> float:
         """Calculate a productivity score based on morphological features."""
         productivity = 0.0
-        # More affixes suggest higher productivity
+        # More affixes suggest higher productivity from affixes
         prefix_score = len(analysis.prefixes) * 0.2
         suffix_score = len(analysis.suffixes) * 0.3
         affix_score = prefix_score + suffix_score
         productivity += min(affix_score, 0.7)
-        # More compounds suggest higher productivity
+        # Compounds suggest higher productivity
         if analysis.is_compound:
             productivity += 0.2
         return min(productivity, 1.0)
@@ -291,3 +243,12 @@ class MorphologicalAnalyzer:
         if hasattr(self, "analyze") and hasattr(self.analyze, "cache_clear"):
             self.analyze.cache_clear()
             logger.debug("Morphological analysis cache cleared")
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - clear cache."""
+        self.clear_cache()
+        return False
