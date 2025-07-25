@@ -41,7 +41,7 @@ class Config:
     # PDF processing settings
     try:
         PDF_DPI = max(72, int(os.getenv("PDF_DPI", "300")))  # Minimum 72 DPI
-        MEMORY_THRESHOLD_MB = max(100, int(os.getenv("MEMORY_THRESHOLD_MB", "500")))  # MB, minimum 100
+        MEMORY_THRESHOLD_MB = max(100, int(os.getenv("MEMORY_THRESHOLD_MB", "500")))  # MB, min 100
         TRANSLATION_DELAY = max(0.0, float(os.getenv("TRANSLATION_DELAY", "0.1")))
     except ValueError as e:
         logger.error(f"Invalid configuration value: {e}")
@@ -52,6 +52,23 @@ class Config:
 
     PRESERVE_IMAGES = os.getenv("PRESERVE_IMAGES", "true").lower() == "true"
 
+    # Parallel processing settings
+    try:
+        MAX_CONCURRENT_REQUESTS = max(1, int(os.getenv("MAX_CONCURRENT_REQUESTS", "10")))
+        MAX_REQUESTS_PER_SECOND = max(0.1, float(os.getenv("MAX_REQUESTS_PER_SECOND", "5.0")))
+        TRANSLATION_BATCH_SIZE = max(1, int(os.getenv("TRANSLATION_BATCH_SIZE", "50")))
+        TRANSLATION_MAX_RETRIES = max(0, int(os.getenv("TRANSLATION_MAX_RETRIES", "3")))
+        TRANSLATION_REQUEST_TIMEOUT = max(1.0, float(os.getenv("TRANSLATION_REQUEST_TIMEOUT", "30.0")))
+        PARALLEL_PROCESSING_THRESHOLD = max(1, int(os.getenv("PARALLEL_PROCESSING_THRESHOLD", "5")))
+    except ValueError as e:
+        logger.error(f"Invalid parallel processing configuration value: {e}")
+        # Set default values if parsing fails
+        MAX_CONCURRENT_REQUESTS = 10
+        MAX_REQUESTS_PER_SECOND = 5.0
+        TRANSLATION_BATCH_SIZE = 50
+        TRANSLATION_MAX_RETRIES = 3
+        TRANSLATION_REQUEST_TIMEOUT = 30.0
+        PARALLEL_PROCESSING_THRESHOLD = 5
     @classmethod
     def validate_config(cls) -> bool:
         """Validate that required configuration is present and valid.
