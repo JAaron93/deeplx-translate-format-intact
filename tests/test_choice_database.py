@@ -238,6 +238,27 @@ class TestChoiceDatabase:
         """Test getting choices by session."""
         session_id = "test_session_123"
 
+        # Create sessions first (required for foreign key constraints)
+        session1 = ChoiceSession(
+            session_id=session_id,
+            session_name="Test Session 1",
+            status=SessionStatus.ACTIVE,
+            user_id="test_user",
+            source_language="de",
+            target_language="en",
+        )
+        session2 = ChoiceSession(
+            session_id="different_session",
+            session_name="Test Session 2",
+            status=SessionStatus.ACTIVE,
+            user_id="test_user",
+            source_language="de",
+            target_language="en",
+        )
+
+        assert temp_db.save_session(session1)
+        assert temp_db.save_session(session2)
+
         # Create choices for session
         choice1 = UserChoice(
             choice_id="choice1",

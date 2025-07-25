@@ -342,6 +342,16 @@ class NeologismDetector:
                 "logie",
                 "sophie",
             ],
+            "philosophical_endings": [
+                "bewusstsein",
+                "wirklichkeit",
+                "erkenntnis",
+                "wahrnehmung",
+                "philosophie",
+                "theorie",
+                "anschauung",
+                "thematik",
+            ],
             "compound_patterns": [
                 # Standard compound linking
                 r"\w+(?:s|n|es|en|er|e|ns|ts)\w+",
@@ -544,12 +554,14 @@ class NeologismDetector:
 
         # German compound word patterns
         compound_patterns = [
-            # CapitalizedCompounds
+            # CapitalizedCompounds (internal capitals)
             r"\b[A-ZÄÖÜ][a-zäöüß]{5,}(?:[A-ZÄÖÜ][a-zäöüß]+)+\b",
+            # Long capitalized words (potential compounds)
+            r"\b[A-ZÄÖÜ][a-zäöüß]{10,}\b",
             # linked compounds
             r"\b[a-zäöüß]+(?:s|n|es|en|er|e|ns|ts)[a-zäöüß]{4,}\b",
-            # abstract suffixes
-            r"\b[a-zäöüß]+(?:heit|keit|ung|schaft|tum|nis|sal|ismus|ität|logie|sophie)\b",
+            # abstract suffixes including philosophical terms
+            r"\b[a-zäöüß]+(?:heit|keit|ung|schaft|tum|nis|sal|ismus|ität|logie|sophie|bewusstsein|philosophie)\b",
         ]
 
         sentences = self._split_sentences(text)
@@ -572,14 +584,33 @@ class NeologismDetector:
 
     def _is_compound_word(self, word: str) -> bool:
         """Check if word appears to be a German compound."""
-        if len(word) < 8:
+        if len(word) < 10:  # Increase minimum length for compounds
             return False
 
-        # Check for compound patterns
-        patterns = self.german_morphological_patterns["compound_patterns"]
-        for pattern in patterns:
-            if re.search(pattern, word.lower()):
-                return True
+        word_lower = word.lower()
+
+        # Exclude common single words that might match patterns
+        single_words = {"bewusstsein", "wirklichkeit", "erkenntnis", "wahrnehmung",
+                       "philosophie", "wissenschaft", "gesellschaft"}
+        if word_lower in single_words:
+            return False
+
+        # Pattern 1: Philosophical compounds (requires prefix before philosophical terms)
+        philosophical_endings = self.german_morphological_patterns["philosophical_endings"]
+        for ending in philosophical_endings:
+            if word_lower.endswith(ending) and len(word_lower) > len(ending):
+                prefix = word_lower[:-len(ending)]
+                if len(prefix) >= 4:  # Require meaningful prefix (increased from 3)
+                    return True
+
+        # Pattern 2: Philosophical prefix compounds
+        if re.search(r"^(?:welt|lebens|seins|geist|seele)\w{4,}$", word_lower):
+            return True
+
+        # Pattern 3: Standard compound linking (more restrictive)
+        # Only match if there's a clear compound structure with meaningful parts
+        if re.search(r"^\w{4,}(?:s|en|er)\w{4,}$", word_lower):
+            return True
 
         # Check for multiple capital letters (German noun compounds)
         capital_count = sum(1 for c in word if c.isupper())
@@ -618,10 +649,7 @@ class NeologismDetector:
         if morphological.is_compound:
             return NeologismType.COMPOUND
 
-        if morphological.prefixes or morphological.suffixes:
-            return NeologismType.DERIVED
-
-        # Check for philosophical indicators
+        # Check for philosophical indicators first (more specific)
         philosophical_suffixes = ["ismus", "logie", "sophie"]
         if any(suffix in morphological.suffixes for suffix in philosophical_suffixes):
             return NeologismType.PHILOSOPHICAL_TERM
@@ -630,6 +658,10 @@ class NeologismDetector:
         technical_suffixes = ["ation", "ität", "ismus"]
         if any(suffix in morphological.suffixes for suffix in technical_suffixes):
             return NeologismType.TECHNICAL_TERM
+
+        # General derived check (less specific)
+        if morphological.prefixes or morphological.suffixes:
+            return NeologismType.DERIVED
 
         return NeologismType.UNKNOWN
 
@@ -689,6 +721,128 @@ class NeologismDetector:
             "terminology_entries": len(self.terminology_map),
             "philosophical_indicators": len(self.philosophical_indicators),
         }
+
+    def debug_compound_detection(self, word: str) -> bool:
+        """Public debugging method to check if a word appears to be a German compound.
+
+        This method provides safe access to compound word detection logic
+        for debugging and testing purposes.
+
+        Args:
+            word: The word to analyze for compound structure
+
+        Returns:
+            bool: True if the word appears to be a compound, False otherwise
+        """
+        return self._is_compound_word(word)
+
+    def debug_extract_philosophical_keywords(self, text: str) -> list[str]:
+        """Public debugging method to extract philosophical keywords from text.
+
+        This method provides safe access to philosophical keyword extraction logic
+        for debugging and testing purposes.
+
+        Args:
+            text: The text to analyze for philosophical keywords
+
+        Returns:
+            list[str]: List of philosophical keywords found in the text
+        """
+        return self._extract_philosophical_keywords(text)
+
+    # Delegation methods for morphological analysis (for backward compatibility with tests)
+    def _count_syllables(self, word: str) -> int:
+        """Count syllables in a word."""
+        return self.morphological_analyzer._count_syllables(word)
+
+    def _split_compound(self, word: str) -> list[str]:
+        """Split compound word into parts."""
+        return self.morphological_analyzer._split_compound(word)
+
+    def _extract_prefixes(self, word: str) -> list[str]:
+        """Extract prefixes from a word."""
+        return self.morphological_analyzer._extract_prefixes(word)
+
+    def _extract_suffixes(self, word: str) -> list[str]:
+        """Extract suffixes from a word."""
+        return self.morphological_analyzer._extract_suffixes(word)
+
+    def _calculate_philosophical_density(self, text: str) -> float:
+        """Calculate philosophical density of text."""
+        return self.philosophical_context_analyzer.calculate_philosophical_density(text)
+
+    def _extract_philosophical_keywords(self, text: str) -> list[str]:
+        """Extract philosophical keywords from text."""
+        return self.philosophical_context_analyzer.extract_philosophical_keywords(text)
+
+    def _identify_semantic_field(self, term: str, context: str) -> str:
+        """Identify semantic field of a term."""
+        return self.philosophical_context_analyzer._identify_semantic_field(context)
+
+    def _extract_context_window(self, text: str, start_pos: int, end_pos: int, window_size: int = 50) -> str:
+        """Extract context window around a term."""
+        start = max(0, start_pos - window_size)
+        end = min(len(text), end_pos + window_size)
+        return text[start:end]
+
+    def _calculate_rarity_score(self, term: str) -> float:
+        """Calculate rarity score for a term."""
+        # Simple rarity calculation based on term length and morphological complexity
+        base_score = min(len(term) / 20.0, 1.0)  # Longer terms are rarer
+
+        # Check if it's in our terminology map (known terms are less rare)
+        if term.lower() in self.terminology_map:
+            base_score *= 0.5
+
+        return base_score
+
+    def _calculate_pattern_score(self, term: str, morphological_analysis=None) -> float:
+        """Calculate pattern-based score for a term."""
+        score = 0.0
+
+        # If morphological analysis is provided, use it for more accurate scoring
+        if morphological_analysis:
+            # Score based on prefixes
+            if morphological_analysis.prefixes:
+                score += len(morphological_analysis.prefixes) * 0.2
+
+            # Score based on suffixes
+            if morphological_analysis.suffixes:
+                score += len(morphological_analysis.suffixes) * 0.2
+
+            # Score based on compound structure
+            if morphological_analysis.is_compound:
+                score += 0.3
+
+        # Check morphological patterns
+        patterns = self.morphological_analyzer.german_morphological_patterns
+        for pattern_type, pattern_list in patterns.items():
+            for pattern in pattern_list:
+                if re.search(pattern, term.lower()):
+                    score += 0.1
+
+        return min(score, 1.0)
+
+    def _calculate_phonological_plausibility(self, term: str) -> float:
+        """Calculate phonological plausibility score."""
+        # Simple phonological plausibility based on German phonotactics
+        score = 1.0
+
+        # Penalize unusual consonant clusters (only rare/non-standard clusters)
+        # Note: Common German clusters like 'sch', 'ch', 'st', 'sp' are
+        # intentionally excluded as they are standard in German phonotactics
+        unusual_clusters = ['tsch', 'pf', 'tz', 'ck']
+        for cluster in unusual_clusters:
+            if cluster in term.lower():
+                score -= 0.1
+
+        # Penalize very long words without vowels
+        vowels = 'aeiouäöü'
+        vowel_count = sum(1 for c in term.lower() if c in vowels)
+        if len(term) > 8 and vowel_count < 2:
+            score -= 0.3
+
+        return max(score, 0.0)
 
     def clear_cache(self) -> None:
         """Clear component caches."""
