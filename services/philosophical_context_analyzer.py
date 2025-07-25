@@ -230,8 +230,10 @@ class PhilosophicalContextAnalyzer:
         words = context.lower().split()
 
         for word in words:
-            if word in self.philosophical_indicators:
-                keywords.append(word)
+            # Strip punctuation from word
+            clean_word = re.sub(r'[^\w]', '', word)
+            if clean_word in self.philosophical_indicators:
+                keywords.append(clean_word)
 
         return list(set(keywords))
 
@@ -376,3 +378,12 @@ class PhilosophicalContextAnalyzer:
         self.terminology_map.update(new_terminology)
         self.philosophical_indicators = self._load_philosophical_indicators()
         logger.info(f"Updated terminology map with {len(new_terminology)} new terms")
+
+    # Public wrapper methods for backward compatibility with tests
+    def calculate_philosophical_density(self, text: str) -> float:
+        """Calculate philosophical density of text."""
+        return self._calculate_philosophical_density(text)
+
+    def extract_philosophical_keywords(self, text: str) -> list[str]:
+        """Extract philosophical keywords from text."""
+        return self._extract_philosophical_keywords(text)

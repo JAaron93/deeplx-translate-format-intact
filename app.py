@@ -2,7 +2,8 @@
 Refactored main application entry point
 """
 
-import logging
+-import \1  # Found import statement
++import logging
 import os
 
 import gradio as gr

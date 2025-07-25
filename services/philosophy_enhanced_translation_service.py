@@ -480,6 +480,47 @@ class PhilosophyEnhancedTranslationService:
         pattern = rf"\b{re.escape(neologism.term)}\b"
         return re.sub(pattern, marker, text, flags=re.IGNORECASE)
 
+    def _preserve_neologisms_in_text(self, text: str, neologisms: list[DetectedNeologism]) -> tuple[str, dict[str, str]]:
+        """Preserve neologisms in text by replacing them with markers.
+
+        Args:
+            text: Original text
+            neologisms: List of neologisms to preserve
+
+        Returns:
+            Tuple of (preserved_text, markers_dict)
+        """
+        preserved_text = text
+        markers = {}
+
+        # Sort neologisms by position (reverse order to avoid position shifts)
+        sorted_neologisms = sorted(neologisms, key=lambda n: n.start_pos, reverse=True)
+
+        for i, neologism in enumerate(sorted_neologisms):
+-            marker = f"NEOLOGISM_PRESERVE_{i}_PRESERVE_END"
++            marker = self._create_preservation_marker(neologism.term)
+            preserved_text = self._replace_term_with_marker(preserved_text, neologism, marker)
+            markers[marker] = neologism.term
+
+        return preserved_text, markers
+
+    def _restore_neologisms_in_text(self, text: str, markers: dict[str, str]) -> str:
+        """Restore neologisms in text by replacing markers with original terms.
+
+        Args:
+            text: Text with preservation markers
+            markers: Dictionary mapping markers to original terms
+
+        Returns:
+            Text with markers replaced by original terms
+        """
+        restored_text = text
+
+        for marker, original_term in markers.items():
+            restored_text = restored_text.replace(marker, original_term)
+
+        return restored_text
+
     async def _translate_with_preservation_async(
         self,
         text: str,
@@ -689,8 +730,12 @@ class PhilosophyEnhancedTranslationService:
 
         return content
 
+    def _select_best_provider(self) -> str:
+        """Select the best available provider."""
+        return self.translation_service._select_best_provider()
+
     def get_available_providers(self) -> list[str]:
-        """Get available translation providers."""
+        """Get list of available translation providers."""
         return self.translation_service.get_available_providers()
 
     def get_statistics(self) -> dict[str, Any]:

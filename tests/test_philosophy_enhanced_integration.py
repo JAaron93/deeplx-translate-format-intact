@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from models.neologism_models import DetectedNeologism, NeologismAnalysis
+from models.neologism_models import DetectedNeologism, NeologismAnalysis, NeologismType
 from models.user_choice_models import ChoiceType, UserChoice
 from services.philosophy_enhanced_document_processor import (
     PhilosophyDocumentResult,
@@ -43,17 +43,20 @@ class TestPhilosophyEnhancedTranslationServiceIntegration:
         detector = MagicMock()
         neologism = DetectedNeologism(
             term="Dasein",
-            positions=[(0, 6)],
-            context="Dasein is a fundamental concept",
             confidence=0.9,
-            philosophical_domain="existentialism",
+            neologism_type=NeologismType.PHILOSOPHICAL_TERM,
+            start_pos=0,
+            end_pos=6,
+            sentence_context="Dasein is a fundamental concept",
+            paragraph_context="",
         )
         analysis = NeologismAnalysis(
             text_id="test_text",
+            analysis_timestamp="2025-01-01T00:00:00",
+            total_tokens=10,
+            analyzed_chunks=1,
             detected_neologisms=[neologism],
-            total_neologisms=1,
-            confidence_scores=[0.9],
-            analysis_metadata={"detection_time": 0.1},
+            total_detections=1,
         )
         detector.analyze_text.return_value = analysis
         detector.get_statistics.return_value = {"analyses": 5}
@@ -64,10 +67,10 @@ class TestPhilosophyEnhancedTranslationServiceIntegration:
         """Create mock user choice manager."""
         manager = MagicMock()
         choice = UserChoice(
+            choice_id="test_choice_id",
             neologism_term="Dasein",
             choice_type=ChoiceType.PRESERVE,
             session_id="test_session",
-            user_id="test_user",
         )
         manager.get_choice_for_neologism.return_value = choice
         manager.get_statistics.return_value = {"choices": 3}
@@ -94,6 +97,11 @@ class TestPhilosophyEnhancedTranslationServiceIntegration:
         assert philosophy_service.user_choice_manager is not None
         assert philosophy_service.preserve_marker_prefix == "NEOLOGISM_PRESERVE_"
         assert philosophy_service.preserve_marker_suffix == "_PRESERVE_END"
+        
+        # Verify only Lingo provider is available
+        available_providers = philosophy_service.get_available_providers()
+        assert "lingo" in available_providers
+        assert len(available_providers) == 1
 
     def test_translate_text_with_neologism_handling(
         self, philosophy_service, mock_translation_service
@@ -132,7 +140,7 @@ class TestPhilosophyEnhancedTranslationServiceIntegration:
 
     @pytest.mark.asyncio
     async def test_translate_document_with_neologism_handling(self, philosophy_service):
-        """Test document translation with neologism handling."""
+        """Test document translation with neologism handling using Lingo."""
         document = {
             "type": "pdf_advanced",
             "text_by_page": {
@@ -146,7 +154,7 @@ class TestPhilosophyEnhancedTranslationServiceIntegration:
         }
 
         result = await philosophy_service.translate_document_with_neologism_handling(
-            document, "en", "de", "auto", "test_session"
+            document, "en", "de", "lingo", "test_session"  # Use Lingo provider
         )
 
         assert "translated_content" in result
@@ -160,10 +168,11 @@ class TestPhilosophyEnhancedTranslationServiceIntegration:
         neologisms = [
             DetectedNeologism(
                 term="Dasein",
-                positions=[(0, 6)],
-                context="Dasein is a fundamental concept",
+                start_pos=0,
+                end_pos=6,
+                sentence_context="Dasein is a fundamental concept",
                 confidence=0.9,
-                philosophical_domain="existentialism",
+                neologism_type=NeologismType.PHILOSOPHICAL_TERM,
             )
         ]
 
@@ -224,10 +233,11 @@ class TestPhilosophyEnhancedDocumentProcessorIntegration:
                 },
                 "neologism_analysis": NeologismAnalysis(
                     text_id="test",
+                    analysis_timestamp="2025-01-01T00:00:00",
+                    total_tokens=10,
+                    analyzed_chunks=1,
                     detected_neologisms=[],
-                    total_neologisms=0,
-                    confidence_scores=[],
-                    analysis_metadata={},
+                    total_detections=0,
                 ),
             }
         )
@@ -240,10 +250,11 @@ class TestPhilosophyEnhancedDocumentProcessorIntegration:
         detector = MagicMock()
         detector.analyze_text.return_value = NeologismAnalysis(
             text_id="test",
+            analysis_timestamp="2025-01-01T00:00:00",
+            total_tokens=10,
+            analyzed_chunks=1,
             detected_neologisms=[],
-            total_neologisms=0,
-            confidence_scores=[],
-            analysis_metadata={},
+            total_detections=0,
         )
         detector.get_statistics.return_value = {"analyses": 3}
         return detector
@@ -321,10 +332,11 @@ class TestPhilosophyEnhancedDocumentProcessorIntegration:
             },
             document_neologism_analysis=NeologismAnalysis(
                 text_id="test",
+                analysis_timestamp="2025-01-01T00:00:00",
+                total_tokens=10,
+                analyzed_chunks=1,
                 detected_neologisms=[],
-                total_neologisms=0,
-                confidence_scores=[],
-                analysis_metadata={},
+                total_detections=0,
             ),
             page_neologism_analyses=[],
             session_id="test_session",
@@ -401,10 +413,11 @@ class TestEndToEndPhilosophyWorkflow:
                     original_content={"pages": []},
                     document_neologism_analysis=NeologismAnalysis(
                         text_id="test",
+                        analysis_timestamp="2025-01-01T00:00:00",
+                        total_tokens=10,
+                        analyzed_chunks=1,
                         detected_neologisms=[],
-                        total_neologisms=0,
-                        confidence_scores=[],
-                        analysis_metadata={},
+                        total_detections=0,
                     ),
                     page_neologism_analyses=[],
                     session_id="test_session",
@@ -549,7 +562,7 @@ class TestErrorHandling:
         assert result.translated_text == "translated text"
         assert (
             result.neologism_analysis is None
-            or result.neologism_analysis.total_neologisms == 0
+            or result.neologism_analysis.total_detections == 0
         )
 
 
