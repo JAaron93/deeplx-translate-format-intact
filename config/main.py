@@ -1,4 +1,4 @@
-"""Configuration settings for the PDF translator with enhanced image handling."""
+"""Configuration settings for Dolphin OCR Translate with enhanced image handling and parallel processing."""
 
 import json
 import logging
@@ -23,8 +23,8 @@ class Config:
     IMAGE_CACHE_DIR = os.getenv("IMAGE_CACHE_DIR", "temp/images")
 
     # Translation settings
-    SOURCE_LANGUAGE = "DE"
-    TARGET_LANGUAGE = "EN"
+    SOURCE_LANGUAGE = os.getenv("SOURCE_LANGUAGE", "DE")
+    TARGET_LANGUAGE = os.getenv("TARGET_LANGUAGE", "EN")
 
     # Load Klages terminology dictionary from external JSON for easier maintenance
     _TERMINOLOGY_FILE = Path(__file__).parent / "klages_terminology.json"
@@ -41,7 +41,9 @@ class Config:
     # PDF processing settings
     try:
         PDF_DPI = max(72, int(os.getenv("PDF_DPI", "300")))  # Minimum 72 DPI
-        MEMORY_THRESHOLD_MB = max(100, int(os.getenv("MEMORY_THRESHOLD_MB", "500")))  # MB, min 100
+        MEMORY_THRESHOLD_MB = max(
+            100, int(os.getenv("MEMORY_THRESHOLD_MB", "500"))
+        )  # MB, min 100
         TRANSLATION_DELAY = max(0.0, float(os.getenv("TRANSLATION_DELAY", "0.1")))
     except ValueError as e:
         logger.error(f"Invalid configuration value: {e}")
@@ -54,12 +56,20 @@ class Config:
 
     # Parallel processing settings
     try:
-        MAX_CONCURRENT_REQUESTS = max(1, int(os.getenv("MAX_CONCURRENT_REQUESTS", "10")))
-        MAX_REQUESTS_PER_SECOND = max(0.1, float(os.getenv("MAX_REQUESTS_PER_SECOND", "5.0")))
+        MAX_CONCURRENT_REQUESTS = max(
+            1, int(os.getenv("MAX_CONCURRENT_REQUESTS", "10"))
+        )
+        MAX_REQUESTS_PER_SECOND = max(
+            0.1, float(os.getenv("MAX_REQUESTS_PER_SECOND", "5.0"))
+        )
         TRANSLATION_BATCH_SIZE = max(1, int(os.getenv("TRANSLATION_BATCH_SIZE", "50")))
         TRANSLATION_MAX_RETRIES = max(0, int(os.getenv("TRANSLATION_MAX_RETRIES", "3")))
-        TRANSLATION_REQUEST_TIMEOUT = max(1.0, float(os.getenv("TRANSLATION_REQUEST_TIMEOUT", "30.0")))
-        PARALLEL_PROCESSING_THRESHOLD = max(1, int(os.getenv("PARALLEL_PROCESSING_THRESHOLD", "5")))
+        TRANSLATION_REQUEST_TIMEOUT = max(
+            1.0, float(os.getenv("TRANSLATION_REQUEST_TIMEOUT", "30.0"))
+        )
+        PARALLEL_PROCESSING_THRESHOLD = max(
+            1, int(os.getenv("PARALLEL_PROCESSING_THRESHOLD", "5"))
+        )
     except ValueError as e:
         logger.error(f"Invalid parallel processing configuration value: {e}")
         # Set default values if parsing fails
@@ -69,6 +79,7 @@ class Config:
         TRANSLATION_MAX_RETRIES = 3
         TRANSLATION_REQUEST_TIMEOUT = 30.0
         PARALLEL_PROCESSING_THRESHOLD = 5
+
     @classmethod
     def validate_config(cls) -> bool:
         """Validate that required configuration is present and valid.
@@ -106,22 +117,41 @@ class Config:
                 try:
                     Path(dir_path).mkdir(parents=True, exist_ok=True)
                 except (OSError, PermissionError, ValueError) as e:
-                    logger.error(f"Cannot create or access {dir_name} '{dir_path}': {e}")
+                    logger.error(
+                        f"Cannot create or access {dir_name} '{dir_path}': {e}"
+                    )
                     validation_passed = False
 
         # Validate numeric settings
         numeric_validations = {
             "PDF_DPI": (cls.PDF_DPI, 72, 600, "DPI must be between 72 and 600"),
-            "MEMORY_THRESHOLD_MB": (cls.MEMORY_THRESHOLD_MB, 100, 10000, "Memory threshold must be between 100MB and 10GB"),
-            "TRANSLATION_DELAY": (cls.TRANSLATION_DELAY, 0.0, 10.0, "Translation delay must be between 0 and 10 seconds"),
+            "MEMORY_THRESHOLD_MB": (
+                cls.MEMORY_THRESHOLD_MB,
+                100,
+                10000,
+                "Memory threshold must be between 100MB and 10GB",
+            ),
+            "TRANSLATION_DELAY": (
+                cls.TRANSLATION_DELAY,
+                0.0,
+                10.0,
+                "Translation delay must be between 0 and 10 seconds",
+            ),
         }
 
-        for setting_name, (value, min_val, max_val, error_msg) in numeric_validations.items():
+        for setting_name, (
+            value,
+            min_val,
+            max_val,
+            error_msg,
+        ) in numeric_validations.items():
             if not isinstance(value, (int, float)):
                 logger.error(f"{setting_name} must be numeric, got {type(value)}")
                 validation_passed = False
             elif not (min_val <= value <= max_val):
-                logger.error(f"{setting_name} validation failed: {error_msg}. Got: {value}")
+                logger.error(
+                    f"{setting_name} validation failed: {error_msg}. Got: {value}"
+                )
                 validation_passed = False
 
         # Validate language settings
@@ -129,24 +159,32 @@ class Config:
             logger.error("SOURCE_LANGUAGE is required and must be a string")
             validation_passed = False
         elif len(cls.SOURCE_LANGUAGE) != 2:
-            logger.error(f"SOURCE_LANGUAGE must be a 2-letter code, got: {cls.SOURCE_LANGUAGE}")
+            logger.error(
+                f"SOURCE_LANGUAGE must be a 2-letter code, got: {cls.SOURCE_LANGUAGE}"
+            )
             validation_passed = False
 
         if not cls.TARGET_LANGUAGE or not isinstance(cls.TARGET_LANGUAGE, str):
             logger.error("TARGET_LANGUAGE is required and must be a string")
             validation_passed = False
         elif len(cls.TARGET_LANGUAGE) != 2:
-            logger.error(f"TARGET_LANGUAGE must be a 2-letter code, got: {cls.TARGET_LANGUAGE}")
+            logger.error(
+                f"TARGET_LANGUAGE must be a 2-letter code, got: {cls.TARGET_LANGUAGE}"
+            )
             validation_passed = False
 
         # Validate boolean settings
         if not isinstance(cls.PRESERVE_IMAGES, bool):
-            logger.error(f"PRESERVE_IMAGES must be boolean, got {type(cls.PRESERVE_IMAGES)}")
+            logger.error(
+                f"PRESERVE_IMAGES must be boolean, got {type(cls.PRESERVE_IMAGES)}"
+            )
             validation_passed = False
 
         # Validate terminology dictionary
         if not isinstance(cls.KLAGES_TERMINOLOGY, dict):
-            logger.error(f"KLAGES_TERMINOLOGY must be a dictionary, got {type(cls.KLAGES_TERMINOLOGY)}")
+            logger.error(
+                f"KLAGES_TERMINOLOGY must be a dictionary, got {type(cls.KLAGES_TERMINOLOGY)}"
+            )
             validation_passed = False
 
         # Log validation result
@@ -161,8 +199,8 @@ class Config:
     def get_available_providers(cls) -> list[str]:
         """Get list of available translation providers"""
         providers = []
-        
+
         if cls.LINGO_API_KEY:
             providers.append("lingo")
-            
+
         return providers

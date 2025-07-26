@@ -8,7 +8,7 @@ This document outlines the implementation plan for integrating ByteDance's Dolph
 
 ### Existing Architecture
 - **Text Extraction**: PyMuPDF with image-text overlay technique
-- **Translation Services**: DeepLX, DeepL, Google Cloud Translate, Azure Cognitive Services
+- **Translation Services**: Lingo.dev API with high-performance parallel processing
 - **Format Preservation**: High-resolution rendering (300 DPI) with precise text positioning
 - **Supported Formats**: PDF, DOCX, TXT
 
@@ -67,19 +67,28 @@ class DolphinProcessor:
             'elements': list  # Individual document elements
         }
         """
-        pass
+        raise NotImplementedError(
+            "extract_document_structure must call the HF Spaces endpoint and "
+            "return a dict with keys: markdown, json, elements"
+        )
 
     def process_pdf_pages(self, pdf_path: str) -> list:
         """Process all pages of a PDF document"""
-        pass
-```
+        raise NotImplementedError(
+            "process_pdf_pages must convert each PDF page to an image and "
+            "call extract_document_structure for every page"
+        )
 
 ### Phase 2: Enhanced Document Processor
-
-Modify existing processor:
-
-```python
-# services/enhanced_document_processor.py
+class EnhancedDocumentProcessor:
+    def __init__(self, hf_token: str | None = None):
+        if hf_token is None:
+            # Allow injection via env var as a sane default
+            hf_token = os.getenv("HF_TOKEN")
+        if not hf_token:
+            raise ValueError("Hugging Face token not provided")
+        self.dolphin = DolphinProcessor(hf_token)
+        # Remove PyMuPDF dependencies
 class EnhancedDocumentProcessor:
     def __init__(self):
         self.dolphin = DolphinProcessor(hf_token)
@@ -101,7 +110,7 @@ Enhanced translation pipeline:
 
 1. **Document → Images**: Convert PDF pages to optimized images
 2. **Dolphin Processing**: Extract structured text + layout via HF Spaces API
-3. **Translation**: Use existing DeepLX/Azure services on extracted text
+3. **Translation**: Use Lingo.dev API with parallel processing on extracted text
 4. **Reconstruction**: Rebuild document using Dolphin's superior layout understanding
 
 ### Phase 4: Implementation Steps

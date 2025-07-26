@@ -61,7 +61,7 @@ Translates text while detecting and handling neologisms according to user prefer
 - `text` (str): The text to translate
 - `source_lang` (str): Source language code (e.g., "en", "de", "fr")
 - `target_lang` (str): Target language code
-- `provider` (str): Translation provider ("auto", "deepl", "google", etc.)
+- `provider` (str): Translation provider ("auto", "lingo", etc.)
 - `session_id` (str): User session ID for choice management
 - `progress_callback` (Optional[Callable]): Progress callback function
 

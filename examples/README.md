@@ -21,10 +21,9 @@ pip install -r requirements.txt
 python -m spacy download de_core_news_sm
 ```
 
-3. Set up environment variables for translation services (optional):
+3. Set up environment variables for translation services:
 ```bash
-export DEEPL_API_KEY=your_deepl_key
-export DEEPLX_ENDPOINT=your_deeplx_endpoint
+export LINGO_API_KEY=your_lingo_api_key
 ```
 
 ### Running the Integration Example
@@ -102,7 +101,7 @@ The system is optimized for:
 ## Integration with Existing Systems
 
 The neologism detector integrates seamlessly with:
-- Existing translation services (DeepL, Google, Azure, etc.)
+- Lingo.dev translation service with parallel processing
 - Document processing pipeline
 - Language detection system
 - Terminology management system

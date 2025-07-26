@@ -1,4 +1,4 @@
-"""Translation service with Lingo.dev provider support"""
+"""Translation service for Dolphin OCR Translate with Lingo.dev provider support"""
 
 from __future__ import annotations
 
@@ -16,6 +16,9 @@ import requests
 TRANSLATION_DELAY = float(
     os.getenv("TRANSLATION_DELAY", "0.1")
 )  # Delay between batch requests in seconds
+
+# Configurable User-Agent header
+USER_AGENT = os.getenv("DOLPHIN_USER_AGENT", "Dolphin-OCR-Translate/2.0")
 
 logger = logging.getLogger(__name__)
 
@@ -44,15 +47,17 @@ class LingoTranslator(BaseTranslator):
     def __init__(self, api_key: str):
         if not api_key:
             raise ValueError("LINGO_API_KEY is required")
-        
+
         self.api_key = api_key
         self.base_url = "https://api.lingo.dev/v1/translate"
         self.session = requests.Session()
-        self.session.headers.update({
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "User-Agent": "PDF-Translator/1.0",
-        })
+        self.session.headers.update(
+            {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "User-Agent": USER_AGENT,
+            }
+        )
 
     async def translate_text(
         self, text: str, source_lang: str, target_lang: str
@@ -268,25 +273,27 @@ class TranslationService:
         """Select the best available provider (always Lingo.dev)."""
         if "lingo" in self.providers:
             return "lingo"
-        
+
         raise ValueError("No translation providers available")
 
     def _extract_text_blocks(self, content: dict[str, Any]) -> list[dict[str, Any]]:
         """Extract text blocks from document content for translation."""
         text_blocks = []
-        
+
         if "pages" in content:
             for page_num, page in enumerate(content["pages"]):
                 if "text_elements" in page:
                     for element in page["text_elements"]:
                         if element.get("text", "").strip():
-                            text_blocks.append({
-                                "text": element["text"],
-                                "page": page_num,
-                                "element_id": element.get("id"),
-                                "metadata": element
-                            })
-        
+                            text_blocks.append(
+                                {
+                                    "text": element["text"],
+                                    "page": page_num,
+                                    "element_id": element.get("id"),
+                                    "metadata": element,
+                                }
+                            )
+
         return text_blocks
 
     def _reconstruct_document(
@@ -295,7 +302,7 @@ class TranslationService:
         """Reconstruct document with translated text blocks."""
         # Use a deep copy to avoid mutating nested structures in the original
         translated_content = copy.deepcopy(original_content)
-        
+
         # Create a mapping of translated blocks by page and element
         block_map = {}
         for block in translated_blocks:
@@ -306,7 +313,7 @@ class TranslationService:
             # Only index valid element IDs
             if element_id is not None:
                 block_map[page_num][element_id] = block["text"]
-        
+
         # Update the content with translated text
         if "pages" in translated_content:
             for page_num, page in enumerate(translated_content["pages"]):
@@ -316,10 +323,14 @@ class TranslationService:
                         # Skip any null entries
                         if element:
                             element_id = element.get("id")
-                            if element_id is not None and element_id in block_map[page_num]:
+                            if (
+                                element_id is not None
+                                and element_id in block_map[page_num]
+                            ):
                                 element["text"] = block_map[page_num][element_id]
-        
+
         return translated_content
+
     def _strip_non_translate_tags(self, text: str) -> str:
         """Remove <span translate="no"> wrappers from translated text."""
         return re.sub(

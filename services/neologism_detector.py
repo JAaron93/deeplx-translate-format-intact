@@ -548,12 +548,16 @@ class NeologismDetector:
 
         return candidates
 
-    def _extract_candidates_regex(self, text: str) -> list[CandidateTerm]:
-        """Fallback candidate extraction using regex patterns."""
-        candidates = []
+    def get_compound_patterns(self) -> list[str]:
+        """Get the regex patterns used for compound word detection.
 
-        # German compound word patterns
-        compound_patterns = [
+        This method exposes the internal regex patterns used by the detector
+        for compound word identification. Useful for debugging and testing.
+
+        Returns:
+            list[str]: List of regex patterns used for compound detection
+        """
+        return [
             # CapitalizedCompounds (internal capitals)
             r"\b[A-ZÄÖÜ][a-zäöüß]{5,}(?:[A-ZÄÖÜ][a-zäöüß]+)+\b",
             # Long capitalized words (potential compounds)
@@ -563,6 +567,13 @@ class NeologismDetector:
             # abstract suffixes including philosophical terms
             r"\b[a-zäöüß]+(?:heit|keit|ung|schaft|tum|nis|sal|ismus|ität|logie|sophie|bewusstsein|philosophie)\b",
         ]
+
+    def _extract_candidates_regex(self, text: str) -> list[CandidateTerm]:
+        """Fallback candidate extraction using regex patterns."""
+        candidates = []
+
+        # Get patterns from the centralized method
+        compound_patterns = self.get_compound_patterns()
 
         sentences = self._split_sentences(text)
 
@@ -590,16 +601,25 @@ class NeologismDetector:
         word_lower = word.lower()
 
         # Exclude common single words that might match patterns
-        single_words = {"bewusstsein", "wirklichkeit", "erkenntnis", "wahrnehmung",
-                       "philosophie", "wissenschaft", "gesellschaft"}
+        single_words = {
+            "bewusstsein",
+            "wirklichkeit",
+            "erkenntnis",
+            "wahrnehmung",
+            "philosophie",
+            "wissenschaft",
+            "gesellschaft",
+        }
         if word_lower in single_words:
             return False
 
         # Pattern 1: Philosophical compounds (requires prefix before philosophical terms)
-        philosophical_endings = self.german_morphological_patterns["philosophical_endings"]
+        philosophical_endings = self.german_morphological_patterns[
+            "philosophical_endings"
+        ]
         for ending in philosophical_endings:
             if word_lower.endswith(ending) and len(word_lower) > len(ending):
-                prefix = word_lower[:-len(ending)]
+                prefix = word_lower[: -len(ending)]
                 if len(prefix) >= 4:  # Require meaningful prefix (increased from 3)
                     return True
 
@@ -750,6 +770,179 @@ class NeologismDetector:
         """
         return self._extract_philosophical_keywords(text)
 
+    def debug_extract_candidates(self, text: str) -> list[dict[str, Any]]:
+        """Public debugging method to extract candidate terms from text.
+
+        This method provides safe access to candidate extraction logic
+        for debugging and testing purposes. It returns candidate terms
+        that would be considered for neologism analysis.
+
+        Args:
+            text: Text to analyze for candidate terms
+
+        Returns:
+            list[dict[str, Any]]: List of candidate terms with their metadata.
+                Each candidate contains:
+                - term: The candidate term text
+                - start_pos: Starting position in the text
+                - end_pos: Ending position in the text
+                - sentence_context: The sentence containing the term
+        """
+        try:
+            candidates = self._extract_candidates(text)
+            # Convert CandidateTerm objects to dictionaries for safe external use
+            return [
+                {
+                    "term": candidate.term,
+                    "start_pos": candidate.start_pos,
+                    "end_pos": candidate.end_pos,
+                    "sentence_context": candidate.sentence_context,
+                }
+                for candidate in candidates
+            ]
+        except Exception as e:
+            # Return error information for debugging
+            return [
+                {
+                    "error": {
+                        "type": type(e).__name__,
+                        "message": str(e),
+                        "text": text,
+                    }
+                }
+            ]
+
+    def debug_analyze_word(self, word: str, context: str = "") -> dict[str, Any]:
+        """Comprehensive debug analysis of a single word.
+
+        This method provides detailed information about how a word would be analyzed
+        by the neologism detection system, including all intermediate steps and
+        decision factors.
+
+        Args:
+            word: The word to analyze
+            context: Optional context sentence containing the word
+
+        Returns:
+            dict: Comprehensive debug information including:
+                - basic_info: word length, capitalization, etc.
+                - compound_analysis: compound word detection results
+                - morphological_analysis: detailed morphological breakdown
+                - philosophical_context: philosophical relevance analysis
+                - confidence_factors: all confidence calculation factors
+                - final_assessment: whether it would be detected as neologism
+        """
+        try:
+            # Basic word information
+            basic_info = {
+                "word": word,
+                "length": len(word),
+                "capital_count": sum(1 for c in word if c.isupper()),
+                "is_compound": self._is_compound_word(word),
+                "in_terminology": word.lower() in self.terminology_map,
+            }
+
+            # Morphological analysis
+            morphological_analysis = self._analyze_morphology(word)
+
+            # Philosophical context analysis (use provided context or word alone)
+            analysis_text = context if context else word
+            philosophical_context = self._analyze_philosophical_context(
+                word, analysis_text, 0, len(word)
+            )
+
+            # Confidence factors calculation
+            confidence_factors = self._calculate_confidence_factors(
+                word, morphological_analysis, philosophical_context
+            )
+
+            # Final confidence score
+            confidence_score = confidence_factors.calculate_weighted_score()
+            is_neologism = confidence_score >= self.philosophical_threshold
+
+            # Neologism type classification
+            neologism_type = self._classify_neologism_type(morphological_analysis)
+
+            return {
+                "basic_info": basic_info,
+                "compound_analysis": {
+                    "is_compound": basic_info["is_compound"],
+                    "compound_parts": morphological_analysis.compound_parts,
+                    "compound_pattern": morphological_analysis.compound_pattern,
+                },
+                "morphological_analysis": {
+                    "syllable_count": morphological_analysis.syllable_count,
+                    "morpheme_count": morphological_analysis.morpheme_count,
+                    "word_length": morphological_analysis.word_length,
+                    "root_words": morphological_analysis.root_words,
+                    "prefixes": morphological_analysis.prefixes,
+                    "suffixes": morphological_analysis.suffixes,
+                    "is_compound": morphological_analysis.is_compound,
+                    "compound_parts": morphological_analysis.compound_parts,
+                    "compound_pattern": morphological_analysis.compound_pattern,
+                    "structural_complexity": morphological_analysis.structural_complexity,
+                    "morphological_productivity": morphological_analysis.morphological_productivity,
+                },
+                "philosophical_context": {
+                    "philosophical_density": philosophical_context.philosophical_density,
+                    "semantic_field": philosophical_context.semantic_field,
+                    "domain_indicators": philosophical_context.domain_indicators,
+                    "surrounding_terms": philosophical_context.surrounding_terms,
+                    "philosophical_keywords": philosophical_context.philosophical_keywords,
+                    "conceptual_clusters": philosophical_context.conceptual_clusters,
+                    "author_terminology": philosophical_context.author_terminology,
+                    "related_concepts": philosophical_context.related_concepts,
+                },
+                "confidence_factors": {
+                    "morphological_complexity": confidence_factors.morphological_complexity,
+                    "compound_structure_score": confidence_factors.compound_structure_score,
+                    "morphological_productivity": confidence_factors.morphological_productivity,
+                    "context_density": confidence_factors.context_density,
+                    "philosophical_indicators": confidence_factors.philosophical_indicators,
+                    "semantic_coherence": confidence_factors.semantic_coherence,
+                    "rarity_score": confidence_factors.rarity_score,
+                    "frequency_deviation": confidence_factors.frequency_deviation,
+                    "corpus_novelty": confidence_factors.corpus_novelty,
+                    "known_patterns": confidence_factors.known_patterns,
+                    "pattern_productivity": confidence_factors.pattern_productivity,
+                    "structural_regularity": confidence_factors.structural_regularity,
+                    "phonological_plausibility": confidence_factors.phonological_plausibility,
+                    "syntactic_integration": confidence_factors.syntactic_integration,
+                    "semantic_transparency": confidence_factors.semantic_transparency,
+                    "weighted_score": confidence_score,
+                },
+                "final_assessment": {
+                    "is_neologism": is_neologism,
+                    "confidence_score": confidence_score,
+                    "threshold": self.philosophical_threshold,
+                    "neologism_type": neologism_type.value if neologism_type else None,
+                },
+                "debug_metadata": {
+                    "analysis_timestamp": datetime.now().isoformat(),
+                    "detector_config": {
+                        "philosophical_threshold": self.philosophical_threshold,
+                        "spacy_model": self.spacy_model if self.nlp else None,
+                        "terminology_entries": len(self.terminology_map),
+                    },
+                },
+            }
+
+        except Exception as e:
+            # Return error information for debugging
+            return {
+                "error": {
+                    "type": type(e).__name__,
+                    "message": str(e),
+                    "word": word,
+                    "context": context,
+                },
+                "basic_info": {
+                    "word": word,
+                    "length": len(word),
+                    "capital_count": sum(1 for c in word if c.isupper()),
+                },
+            }
+
     # Delegation methods for morphological analysis (for backward compatibility with tests)
     def _count_syllables(self, word: str) -> int:
         """Count syllables in a word."""
@@ -779,7 +972,9 @@ class NeologismDetector:
         """Identify semantic field of a term."""
         return self.philosophical_context_analyzer._identify_semantic_field(context)
 
-    def _extract_context_window(self, text: str, start_pos: int, end_pos: int, window_size: int = 50) -> str:
+    def _extract_context_window(
+        self, text: str, start_pos: int, end_pos: int, window_size: int = 50
+    ) -> str:
         """Extract context window around a term."""
         start = max(0, start_pos - window_size)
         end = min(len(text), end_pos + window_size)
@@ -831,13 +1026,13 @@ class NeologismDetector:
         # Penalize unusual consonant clusters (only rare/non-standard clusters)
         # Note: Common German clusters like 'sch', 'ch', 'st', 'sp' are
         # intentionally excluded as they are standard in German phonotactics
-        unusual_clusters = ['tsch', 'pf', 'tz', 'ck']
+        unusual_clusters = ["tsch", "pf", "tz", "ck"]
         for cluster in unusual_clusters:
             if cluster in term.lower():
                 score -= 0.1
 
         # Penalize very long words without vowels
-        vowels = 'aeiouäöü'
+        vowels = "aeiouäöü"
         vowel_count = sum(1 for c in term.lower() if c in vowels)
         if len(term) > 8 and vowel_count < 2:
             score -= 0.3

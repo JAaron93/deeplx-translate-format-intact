@@ -231,7 +231,7 @@ class PhilosophicalContextAnalyzer:
 
         for word in words:
             # Strip punctuation from word
-            clean_word = re.sub(r'[^\w]', '', word)
+            clean_word = re.sub(r"[^\w]", "", word)
             if clean_word in self.philosophical_indicators:
                 keywords.append(clean_word)
 

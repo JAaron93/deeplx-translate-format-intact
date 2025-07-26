@@ -1,0 +1,78 @@
+{
+  "compound_words": [
+    {
+      "word": "Bewusstsein",
+      "description": "Basic consciousness term",
+      "context": "Das Bewusstsein ist ein zentraler Begriff der Philosophie."
+    },
+    {
+      "word": "Wirklichkeitsbewusstsein",
+      "description": "Complex compound: reality-consciousness",
+      "context": "Das Wirklichkeitsbewusstsein prägt unsere Wahrnehmung der Welt."
+    },
+    {
+      "word": "Bewusstseinsphilosophie",
+      "description": "Philosophical compound: consciousness-philosophy",
+      "context": "Die Bewusstseinsphilosophie untersucht die Natur des Geistes."
+    },
+    {
+      "word": "Lebensweltthematik",
+      "description": "Complex philosophical compound: life-world-thematics",
+      "context": "Die Lebensweltthematik ist ein wichtiger Aspekt der Phänomenologie."
+    },
+    {
+      "word": "Zeitlichkeitsanalyse",
+      "description": "Technical philosophical term: temporality-analysis",
+      "context": "Die Zeitlichkeitsanalyse zeigt die Struktur des Daseins auf."
+    },
+    {
+      "word": "Seinsverständnis",
+      "description": "Heidegger-style compound: being-understanding",
+      "context": "Das Seinsverständnis ist fundamental für das Dasein."
+    },
+    {
+      "word": "Weltanschauungsphilosophie",
+      "description": "Long philosophical compound: worldview-philosophy",
+      "context": "Die Weltanschauungsphilosophie beschäftigt sich mit Weltbildern."
+    },
+    {
+      "word": "Geistesgeschichte",
+      "description": "Standard compound: spirit/mind-history",
+      "context": "Die Geistesgeschichte zeigt die Entwicklung des Denkens."
+    }
+  ],
+  "simple_words": [
+    {
+      "word": "Philosophie",
+      "description": "Basic philosophical term",
+      "context": "Die Philosophie ist die Liebe zur Weisheit."
+    },
+    {
+      "word": "Denken",
+      "description": "Simple philosophical concept",
+      "context": "Das Denken ist eine grundlegende menschliche Fähigkeit."
+    },
+    {
+      "word": "Haus",
+      "description": "Non-philosophical simple word",
+      "context": "Das Haus steht auf dem Hügel."
+    }
+  ],
+  "neologisms": [
+    {
+      "word": "Daseinsanalytik",
+      "description": "Heidegger neologism: being-there-analytics",
+      "context": "Die Daseinsanalytik ist Heideggers Methode der Fundamentalontologie."
+    },
+    {
+      "word": "Zuhandenheit",
+      "description": "Heidegger neologism: readiness-to-hand",
+      "context": "Die Zuhandenheit charakterisiert unser praktisches Verhältnis zu Dingen."
+    },
+    {
+      "word": "Weltlichkeit",
+      "description": "Philosophical neologism: worldliness",
+      "context": "Die Weltlichkeit des Daseins zeigt sich in der Sorge."
+    }
+  ]
+}
