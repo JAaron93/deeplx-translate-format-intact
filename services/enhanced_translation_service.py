@@ -1,12 +1,11 @@
-"""
-Enhanced translation service that integrates parallel processing capabilities
-with the existing translation workflow.
+"""Enhanced translation service for Dolphin OCR Translate, integrating parallel-processing
+capabilities into the existing translation workflow.
+
 
 This module provides a drop-in replacement for the standard translation service
 with significant performance improvements for large documents.
 """
 
-import asyncio
 import logging
 import time
 from typing import Any, Callable, Dict, List, Optional
@@ -16,6 +15,7 @@ from services.parallel_translation_service import (
     ParallelTranslationConfig,
     ParallelTranslationService,
 )
+
 from .translation_service import TranslationService
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,9 @@ class EnhancedTranslationService(TranslationService):
         """Get or create parallel translation service."""
         if self._parallel_service is None:
             api_key = self._get_lingo_api_key()
-            self._parallel_service = ParallelTranslationService(api_key, self.parallel_config)
+            self._parallel_service = ParallelTranslationService(
+                api_key, self.parallel_config
+            )
 
         return self._parallel_service
 
@@ -63,12 +65,6 @@ class EnhancedTranslationService(TranslationService):
 
         return lingo_provider.api_key
 
-        else:
-            logger.info("Using sequential processing for %d texts", len(non_empty_texts))
-            translated_texts = await super().translate_batch(
-                non_empty_texts, source_lang, target_lang, provider, progress_callback
-            )
-            self.performance_stats["sequential_requests"] += 1
     async def _translate_batch_parallel(
         self,
         texts: List[str],
@@ -105,13 +101,19 @@ class EnhancedTranslationService(TranslationService):
         use_parallel = self._should_use_parallel_processing(len(text_blocks))
 
         if use_parallel:
-            logger.info("Using parallel processing for document with %d text blocks", len(text_blocks))
+            logger.info(
+                "Using parallel processing for document with %d text blocks",
+                len(text_blocks),
+            )
             result = await self._translate_document_parallel(
                 content, source_lang, target_lang, progress_callback
             )
             self.performance_stats["parallel_requests"] += 1
         else:
-            logger.info("Using sequential processing for document with %d text blocks", len(text_blocks))
+            logger.info(
+                "Using sequential processing for document with %d text blocks",
+                len(text_blocks),
+            )
             result = await super().translate_document(
                 content, source_lang, target_lang, provider, progress_callback
             )
@@ -122,8 +124,8 @@ class EnhancedTranslationService(TranslationService):
         self.performance_stats["total_requests"] += 1
         self.performance_stats["total_processing_time"] += processing_time
         self.performance_stats["average_request_time"] = (
-            self.performance_stats["total_processing_time"] /
-            self.performance_stats["total_requests"]
+            self.performance_stats["total_processing_time"]
+            / self.performance_stats["total_requests"]
         )
 
         return result
@@ -169,6 +171,7 @@ class EnhancedTranslationService(TranslationService):
                 text_blocks.append(layout.text)
 
         return text_blocks
+
     def get_performance_stats(self) -> Dict[str, Any]:
         """Get performance statistics."""
         stats = self.performance_stats.copy()
@@ -201,17 +204,15 @@ class EnhancedTranslationService(TranslationService):
     async def close(self) -> None:
         """Close the enhanced translation service and cleanup resources."""
         if self._parallel_service:
-            try:
-                await self._parallel_service.__aexit__(None, None, None)
-            except Exception as e:
-                logger.warning("Error closing parallel service: %s", e)
-            finally:
-                self._parallel_service = None
+            # ParallelTranslationService is designed to be used as an async context manager
+            # and doesn't maintain persistent state that requires explicit cleanup.
+            # Simply clear the reference to allow garbage collection.
+            self._parallel_service = None
 
 
 # Convenience function for easy integration
 async def create_enhanced_translation_service(
-    terminology_path: Optional[str] = None
+    terminology_path: Optional[str] = None,
 ) -> EnhancedTranslationService:
     """Create and initialize an enhanced translation service."""
     service = EnhancedTranslationService(terminology_path)
