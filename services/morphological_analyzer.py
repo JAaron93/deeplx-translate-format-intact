@@ -147,11 +147,11 @@ class MorphologicalAnalyzer:
         # Store split positions rather than hardcoded capitalizations to preserve original casing
         known_compound_splits = {
             "wirklichkeitsbewusstsein": 13,  # Split after "Wirklichkeits" (13 chars, includes linking 's')
-            "lebensphilosophie": 6,          # Split after "Lebens" (6 chars)
-            "weltanschauung": 4,             # Split after "Welt" (4 chars)
-            "erkenntnistheorie": 10,         # Split after "Erkenntnis" (10 chars)
-            "bewusstseinsphilosophie": 12,   # Split after "Bewusstseins" (12 chars)
-            "lebensweltthematik": 10,        # Split after "Lebenswelt" (10 chars)
+            "lebensphilosophie": 6,  # Split after "Lebens" (6 chars)
+            "weltanschauung": 4,  # Split after "Welt" (4 chars)
+            "erkenntnistheorie": 10,  # Split after "Erkenntnis" (10 chars)
+            "bewusstseinsphilosophie": 12,  # Split after "Bewusstseins" (12 chars)
+            "lebensweltthematik": 10,  # Split after "Lebenswelt" (10 chars)
         }
 
         term_lower = term.lower()
@@ -162,13 +162,17 @@ class MorphologicalAnalyzer:
             return [prefix, suffix]
 
         # Try to split based on common philosophical endings
-        philosophical_endings = self.german_morphological_patterns["philosophical_endings"]
+        philosophical_endings = self.german_morphological_patterns[
+            "philosophical_endings"
+        ]
 
         for ending in philosophical_endings:
             if term_lower.endswith(ending) and len(term_lower) > len(ending):
                 prefix_length = len(term) - len(ending)
                 prefix = term[:prefix_length]
-                ending_part = term[prefix_length:]  # Extract ending with original casing
+                ending_part = term[
+                    prefix_length:
+                ]  # Extract ending with original casing
                 if len(prefix) >= 3:  # Meaningful prefix
                     return [prefix, ending_part]
 
@@ -176,9 +180,9 @@ class MorphologicalAnalyzer:
         linking_elements = self.german_morphological_patterns["compound_linking"]
         for i in range(3, len(term) - 3):  # Don't split too close to edges
             for link in linking_elements:
-                if term[i:i+len(link)].lower() == link:
+                if term[i : i + len(link)].lower() == link:
                     prefix = term[:i]
-                    suffix = term[i+len(link):]
+                    suffix = term[i + len(link) :]
                     if len(prefix) >= 3 and len(suffix) >= 3:
                         return [prefix, suffix]
 
@@ -269,7 +273,11 @@ class MorphologicalAnalyzer:
         """Get cache statistics."""
         if hasattr(self, "analyze") and hasattr(self.analyze, "cache_info"):
             cache_info = self.analyze.cache_info()
-            hit_rate = cache_info.hits / (cache_info.hits + cache_info.misses) if (cache_info.hits + cache_info.misses) > 0 else 0.0
+            hit_rate = (
+                cache_info.hits / (cache_info.hits + cache_info.misses)
+                if (cache_info.hits + cache_info.misses) > 0
+                else 0.0
+            )
             return {
                 "hits": cache_info.hits,
                 "misses": cache_info.misses,

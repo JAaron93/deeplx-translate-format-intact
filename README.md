@@ -1,6 +1,6 @@
-# Advanced Document Translator
+# Dolphin OCR Translate
 
-Professional document translation with comprehensive formatting preservation based on the amazon-translate-pdf approach.
+Professional document translation with OCR capabilities and comprehensive formatting preservation. Combines advanced document understanding with high-performance parallel translation.
 
 ## 🚀 Features
 

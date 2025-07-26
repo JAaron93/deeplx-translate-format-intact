@@ -1,0 +1,21 @@
+{
+  "expected_dirs": [
+    "services",
+    "models",
+    "scripts",
+    "database",
+    "config",
+    "tests"
+  ],
+  "expected_files": [
+    "app.py",
+    "requirements.txt",
+    "README.md",
+    "pyproject.toml"
+  ],
+  "critical_files": [
+    "services/neologism_detector.py",
+    "services/philosophy_enhanced_translation_service.py",
+    "models/neologism_models.py"
+  ]
+}

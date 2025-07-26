@@ -54,7 +54,9 @@ import psutil
 # Uses Path.resolve() to handle symbolic links, relative path traversal,
 # and ensure independence from current working directory context
 project_root = Path(__file__).parent.parent.resolve()
-sys.path.insert(0, str(project_root))
+if str(project_root) not in sys.path:
+    # Add at end to avoid overriding system packages
+    sys.path.append(str(project_root))
 
 from services.neologism_detector import NeologismDetector  # noqa: E402
 

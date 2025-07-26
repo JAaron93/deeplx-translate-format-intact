@@ -165,8 +165,12 @@ class TestNeologismDetector:
         field2 = detector._identify_semantic_field("Sein", existence_text)
 
         # Update assertions to match actual implementation behavior
-        assert field1 in ["consciousness", "mental", "unknown"]  # More flexible assertion
-        assert field2 in ["existence", "ontology", "unknown"]   # More flexible assertion
+        assert field1 in [
+            "consciousness",
+            "mental",
+            "unknown",
+        ]  # More flexible assertion
+        assert field2 in ["existence", "ontology", "unknown"]  # More flexible assertion
 
     def test_confidence_factors_calculation(self, detector):
         """Test confidence factors calculation."""

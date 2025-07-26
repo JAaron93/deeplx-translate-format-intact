@@ -19,7 +19,7 @@ def poorly_formatted_function(arg1, arg2, arg3=None):
     if arg1 == arg2:
         print("Equal values")
     else:
-        print("Different values")  # inconsistent indentation
+        print("Different values")  # inconsistent indentation (6 spaces instead of 8)
 
     # Dead code (Ruff F841)
     unused_variable = 42

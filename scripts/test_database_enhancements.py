@@ -9,18 +9,53 @@ import os
 import sys
 import tempfile
 import time
+import traceback
+from contextlib import contextmanager
 from datetime import datetime
 
-# Add the project root to the path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add the project root to the path (at end to avoid overriding system packages)
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
-from database.choice_database import ChoiceDatabase  # noqa: E402
-from models.user_choice_models import (  # noqa: E402
+from database.choice_database import ChoiceDatabase
+from models.user_choice_models import (
     ChoiceScope,
+    ChoiceSession,
     ChoiceType,
+    ConflictResolution,
+    SessionStatus,
     TranslationContext,
     UserChoice,
 )
+
+
+@contextmanager
+def temporary_database_file(suffix=".db"):
+    """Context manager for temporary database files with guaranteed cleanup.
+
+    This ensures that temporary files are always cleaned up, even if exceptions
+    occur during database operations.
+
+    Args:
+        suffix: File suffix for the temporary file
+
+    Yields:
+        str: Path to the temporary database file
+    """
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        temp_path = tmp.name
+
+    try:
+        yield temp_path
+    finally:
+        # Ensure cleanup happens even if exceptions occur
+        try:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+        except OSError:
+            # If cleanup fails, at least don't crash the test
+            pass
 
 
 def test_alpha_parameter_configuration():
@@ -129,8 +164,8 @@ def test_json_encoding_configuration():
     )
 
     # Test with ensure_ascii=False (should preserve international characters)
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db = ChoiceDatabase(tmp.name, ensure_ascii=False)
+    with temporary_database_file() as temp_db_path:
+        db = ChoiceDatabase(temp_db_path, ensure_ascii=False)
         save_result = db.save_user_choice(choice)
         if save_result:
             json_data = db.export_choices_to_json()
@@ -148,12 +183,9 @@ def test_json_encoding_configuration():
         else:
             print("⚠ JSON export test skipped - save failed")
 
-        # Clean up
-        os.unlink(tmp.name)
-
     # Test with ensure_ascii=True (should escape international characters)
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db = ChoiceDatabase(tmp.name, ensure_ascii=True)
+    with temporary_database_file() as temp_db_path:
+        db = ChoiceDatabase(temp_db_path, ensure_ascii=True)
         save_result = db.save_user_choice(choice)
         if save_result:
             json_data = db.export_choices_to_json()
@@ -167,9 +199,6 @@ def test_json_encoding_configuration():
         else:
             print("⚠ JSON export test skipped - save failed")
 
-        # Clean up
-        os.unlink(tmp.name)
-
     print("✅ JSON Encoding Configuration: ALL TESTS PASSED\n")
 
 
@@ -178,13 +207,10 @@ def test_batch_import_optimization():
     print("🧪 Testing Batch Import Optimization...")
 
     # Test 1: Basic batch import
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db = ChoiceDatabase(tmp.name, batch_size=500)
+    with temporary_database_file() as temp_db_path:
+        db = ChoiceDatabase(temp_db_path, batch_size=500)
         assert db.batch_size == 500, f"Expected batch_size 500, got {db.batch_size}"
         print("✓ Custom batch size works")
-
-        # Clean up
-        os.unlink(tmp.name)
 
     # Test 2: Generate test data for batch import
     print("📊 Generating test data for batch import...")
@@ -228,16 +254,10 @@ def test_batch_import_optimization():
     )
 
     # Test 4: Batch import performance test
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db = ChoiceDatabase(tmp.name, batch_size=500)
+    with temporary_database_file() as temp_db_path:
+        db = ChoiceDatabase(temp_db_path, batch_size=500)
 
         # Create a session first to avoid foreign key constraint issues
-        from models.user_choice_models import (
-            ChoiceSession,
-            ConflictResolution,
-            SessionStatus,
-        )
-
         session = ChoiceSession(
             session_id="test_batch_session",
             session_name="Batch Test Session",
@@ -260,6 +280,12 @@ def test_batch_import_optimization():
         print(f"✓ Imported {imported_count} choices in {duration:.2f}s")
         print(f"✓ Performance: {imported_count/duration:.1f} choices/second")
 
+        # Assert minimum performance requirement (e.g., at least 100 choices/second)
+        min_performance = 100  # choices per second
+        actual_performance = imported_count / duration
+        assert (
+            actual_performance >= min_performance
+        ), f"Performance below threshold: {actual_performance:.1f} < {min_performance} choices/second"
         # Test 5: Verify data integrity
         print("🔍 Verifying data integrity after batch import...")
 
@@ -310,9 +336,6 @@ def test_batch_import_optimization():
         ), f"Expected 0 imported from invalid data, got {imported_count}"
         print("✓ Validation error handling works correctly")
 
-        # Clean up
-        os.unlink(tmp.name)
-
     print("✅ Batch Import Optimization: ALL TESTS PASSED\n")
 
 
@@ -321,8 +344,8 @@ def test_backward_compatibility():
     print("🧪 Testing Backward Compatibility...")
 
     # Test 1: Default constructor still works
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db = ChoiceDatabase(tmp.name)
+    with temporary_database_file() as temp_db_path:
+        db = ChoiceDatabase(temp_db_path)
         assert db.learning_rate_alpha == 0.1
         assert db.ensure_ascii is False
         assert db.batch_size == 1000
@@ -360,9 +383,6 @@ def test_backward_compatibility():
 
         print("✓ Existing export functionality works")
 
-        # Clean up
-        os.unlink(tmp.name)
-
     print("✅ Backward Compatibility: ALL TESTS PASSED\n")
 
 
@@ -385,8 +405,6 @@ def main():
 
     except Exception as e:
         print(f"❌ TEST FAILED: {e}")
-        import traceback
-
         traceback.print_exc()
         sys.exit(1)
 

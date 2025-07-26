@@ -97,7 +97,7 @@ class TestPhilosophyEnhancedTranslationServiceIntegration:
         assert philosophy_service.user_choice_manager is not None
         assert philosophy_service.preserve_marker_prefix == "NEOLOGISM_PRESERVE_"
         assert philosophy_service.preserve_marker_suffix == "_PRESERVE_END"
-        
+
         # Verify only Lingo provider is available
         available_providers = philosophy_service.get_available_providers()
         assert "lingo" in available_providers

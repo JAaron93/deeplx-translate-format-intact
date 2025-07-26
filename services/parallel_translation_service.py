@@ -1,5 +1,4 @@
-"""
-Parallel translation service for high-performance document processing.
+"""Parallel translation service for Dolphin OCR Translate document processing.
 
 This module implements parallelized translation capabilities using asyncio,
 aiohttp, and intelligent rate limiting to efficiently process large documents
@@ -8,10 +7,11 @@ while respecting API constraints.
 
 import asyncio
 import logging
+import os
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
-from urllib.parse import urljoin
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
@@ -19,6 +19,42 @@ from aiohttp import ClientSession, ClientTimeout
 # Import will be done locally to avoid circular imports
 
 logger = logging.getLogger(__name__)
+
+
+def _get_version() -> str:
+    """Get version from pyproject.toml or fallback to default."""
+    try:
+        # Try to get version from pyproject.toml
+        import toml
+
+        project_root = Path(__file__).parent.parent
+        pyproject_path = project_root / "pyproject.toml"
+
+        if pyproject_path.exists():
+            with open(pyproject_path, encoding="utf-8") as f:
+                pyproject_data = toml.load(f)
+                version = (
+                    pyproject_data.get("tool", {}).get("poetry", {}).get("version")
+                )
+                if version:
+                    return version
+    except (ImportError, Exception):
+        pass
+
+    try:
+        # Fallback to pkg_resources
+        import pkg_resources
+
+        return pkg_resources.get_distribution("dolphin-ocr-translate").version
+    except (ImportError, Exception):
+        pass
+
+    # Final fallback to environment variable or default
+    return os.getenv("APP_VERSION", "2.0.0")
+
+
+# Module-level constants
+USER_AGENT = f"Dolphin-OCR-Translate-Parallel/{_get_version()}"
 
 
 @dataclass
@@ -44,16 +80,19 @@ class ParallelTranslationConfig:
     burst_allowance: int = 2
 
     @classmethod
-    def from_config(cls) -> 'ParallelTranslationConfig':
+    def from_config(cls) -> "ParallelTranslationConfig":
         """Create configuration from environment/config settings."""
         import os
+
         return cls(
             max_concurrent_requests=int(os.getenv("MAX_CONCURRENT_REQUESTS", "10")),
             max_requests_per_second=float(os.getenv("MAX_REQUESTS_PER_SECOND", "5.0")),
             batch_size=int(os.getenv("TRANSLATION_BATCH_SIZE", "50")),
             max_retries=int(os.getenv("TRANSLATION_MAX_RETRIES", "3")),
             retry_delay=float(os.getenv("TRANSLATION_RETRY_DELAY", "1.0")),
-            backoff_multiplier=float(os.getenv("TRANSLATION_BACKOFF_MULTIPLIER", "2.0")),
+            backoff_multiplier=float(
+                os.getenv("TRANSLATION_BACKOFF_MULTIPLIER", "2.0")
+            ),
             request_timeout=float(os.getenv("TRANSLATION_REQUEST_TIMEOUT", "30.0")),
             total_timeout=float(os.getenv("TRANSLATION_TOTAL_TIMEOUT", "300.0")),
             rate_limit_window=float(os.getenv("TRANSLATION_RATE_LIMIT_WINDOW", "1.0")),
@@ -138,7 +177,7 @@ class RateLimiter:
             # Add tokens based on elapsed time
             self.tokens = min(
                 self.max_requests_per_second + self.burst_allowance,
-                self.tokens + elapsed * self.max_requests_per_second
+                self.tokens + elapsed * self.max_requests_per_second,
             )
             self.last_update = now
 
@@ -154,7 +193,12 @@ class RateLimiter:
 class ParallelLingoTranslator:
     """High-performance parallel translator using Lingo API."""
 
-    def __init__(self, api_key: str, config: Optional[ParallelTranslationConfig] = None, base_url: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: str,
+        config: Optional[ParallelTranslationConfig] = None,
+        base_url: Optional[str] = None,
+    ):
         if not api_key:
             raise ValueError("LINGO_API_KEY is required")
 
@@ -164,8 +208,7 @@ class ParallelLingoTranslator:
 
         # Rate limiting
         self.rate_limiter = RateLimiter(
-            self.config.max_requests_per_second,
-            self.config.burst_allowance
+            self.config.max_requests_per_second, self.config.burst_allowance
         )
 
         # Concurrency control
@@ -187,14 +230,13 @@ class ParallelLingoTranslator:
         """Ensure aiohttp session is created."""
         if self._session is None or self._session.closed:
             timeout = ClientTimeout(
-                total=self.config.total_timeout,
-                sock_read=self.config.request_timeout
+                total=self.config.total_timeout, sock_read=self.config.request_timeout
             )
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
-                "User-Agent": "PDF-Translator-Parallel/2.0",
+                "User-Agent": USER_AGENT,
             }
 
             self._session = ClientSession(
@@ -205,7 +247,7 @@ class ParallelLingoTranslator:
                     limit_per_host=self.config.max_concurrent_requests,
                     ttl_dns_cache=300,
                     use_dns_cache=True,
-                )
+                ),
             )
 
         return self._session
@@ -215,7 +257,9 @@ class ParallelLingoTranslator:
         if self._session and not self._session.closed:
             await self._session.close()
 
-    async def _translate_single_with_retry(self, task: TranslationTask) -> TranslationResult:
+    async def _translate_single_with_retry(
+        self, task: TranslationTask
+    ) -> TranslationResult:
         """Translate a single text with retry logic."""
         start_time = time.time()
         last_error = None
@@ -247,13 +291,15 @@ class ParallelLingoTranslator:
                                 success=True,
                                 retry_count=attempt,
                                 processing_time=time.time() - start_time,
-                                metadata=task.metadata
+                                metadata=task.metadata,
                             )
 
                         if response.status == 429:  # Rate limited
-                            retry_after = int(response.headers.get('Retry-After', 1))
+                            retry_after = int(response.headers.get("Retry-After", 1))
                             await asyncio.sleep(retry_after)
-                            last_error = f"Rate limited (429), retry after {retry_after}s"
+                            last_error = (
+                                f"Rate limited (429), retry after {retry_after}s"
+                            )
                             continue
 
                         # Handle other HTTP errors
@@ -273,7 +319,9 @@ class ParallelLingoTranslator:
 
             # Wait before retry (exponential backoff)
             if attempt < self.config.max_retries:
-                delay = self.config.retry_delay * (self.config.backoff_multiplier ** attempt)
+                delay = self.config.retry_delay * (
+                    self.config.backoff_multiplier**attempt
+                )
                 await asyncio.sleep(delay)
 
         # All retries failed
@@ -285,7 +333,7 @@ class ParallelLingoTranslator:
             error=last_error,
             retry_count=self.config.max_retries,
             processing_time=time.time() - start_time,
-            metadata=task.metadata
+            metadata=task.metadata,
         )
 
     def _extract_translation(self, response_data: Dict[str, Any]) -> str:
@@ -301,7 +349,7 @@ class ParallelLingoTranslator:
     async def translate_batch_parallel(
         self,
         tasks: List[TranslationTask],
-        progress_callback: Optional[Callable[[BatchProgress], None]] = None
+        progress_callback: Optional[Callable[[BatchProgress], None]] = None,
     ) -> List[TranslationResult]:
         """Translate multiple texts in parallel with progress tracking."""
         if not tasks:
@@ -333,24 +381,27 @@ class ParallelLingoTranslator:
 
         # Execute all tasks concurrently
         results = await asyncio.gather(
-            *[translate_with_progress(task) for task in tasks],
-            return_exceptions=True
+            *[translate_with_progress(task) for task in tasks], return_exceptions=True
         )
 
         # Handle any exceptions that weren't caught
         final_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error("Unhandled exception for task %s: %s", tasks[i].task_id, result)
-                final_results.append(TranslationResult(
-                    task_id=tasks[i].task_id,
-                    original_text=tasks[i].text,
-                    translated_text=tasks[i].text,
-                    success=False,
-                    error=str(result),
-                    processing_time=0.0,
-                    metadata=tasks[i].metadata
-                ))
+                logger.error(
+                    "Unhandled exception for task %s: %s", tasks[i].task_id, result
+                )
+                final_results.append(
+                    TranslationResult(
+                        task_id=tasks[i].task_id,
+                        original_text=tasks[i].text,
+                        translated_text=tasks[i].text,
+                        success=False,
+                        error=str(result),
+                        processing_time=0.0,
+                        metadata=tasks[i].metadata,
+                    )
+                )
             else:
                 final_results.append(result)
 
@@ -361,7 +412,7 @@ class ParallelLingoTranslator:
         texts: List[str],
         source_lang: str,
         target_lang: str,
-        progress_callback: Optional[Callable[[BatchProgress], None]] = None
+        progress_callback: Optional[Callable[[BatchProgress], None]] = None,
     ) -> List[str]:
         """Translate a list of texts in parallel (simplified interface)."""
         if not texts:
@@ -374,7 +425,7 @@ class ParallelLingoTranslator:
                 source_lang=source_lang,
                 target_lang=target_lang,
                 task_id=f"task_{i}",
-                metadata={"index": i}
+                metadata={"index": i},
             )
             for i, text in enumerate(texts)
         ]
@@ -390,7 +441,9 @@ class ParallelLingoTranslator:
             if index is not None and 0 <= index < len(texts):
                 translated_texts[index] = result.translated_text
             else:
-                logger.warning("Invalid or missing index in result metadata: %s", result.task_id)
+                logger.warning(
+                    "Invalid or missing index in result metadata: %s", result.task_id
+                )
         return translated_texts
 
     async def translate_document_parallel(
@@ -398,7 +451,7 @@ class ParallelLingoTranslator:
         content: Dict[str, Any],
         source_lang: str,
         target_lang: str,
-        progress_callback: Optional[Callable[[BatchProgress], None]] = None
+        progress_callback: Optional[Callable[[BatchProgress], None]] = None,
     ) -> Dict[str, Any]:
         """Translate document content in parallel."""
         # Extract text blocks for translation
@@ -411,13 +464,15 @@ class ParallelLingoTranslator:
         tasks = []
         for i, (block_id, text) in enumerate(text_blocks):
             if text.strip():  # Only translate non-empty texts
-                tasks.append(TranslationTask(
-                    text=text,
-                    source_lang=source_lang,
-                    target_lang=target_lang,
-                    task_id=block_id,
-                    metadata={"block_id": block_id, "index": i}
-                ))
+                tasks.append(
+                    TranslationTask(
+                        text=text,
+                        source_lang=source_lang,
+                        target_lang=target_lang,
+                        task_id=block_id,
+                        metadata={"block_id": block_id, "index": i},
+                    )
+                )
 
         # Execute parallel translation
         results = await self.translate_batch_parallel(tasks, progress_callback)
@@ -446,9 +501,7 @@ class ParallelLingoTranslator:
         return text_blocks
 
     def _apply_translations_to_content(
-        self,
-        content: Dict[str, Any],
-        results: List[TranslationResult]
+        self, content: Dict[str, Any], results: List[TranslationResult]
     ) -> Dict[str, Any]:
         """Apply translation results back to document content."""
         import copy
@@ -481,7 +534,9 @@ class ParallelLingoTranslator:
 class ParallelTranslationService:
     """High-level service for parallel document translation."""
 
-    def __init__(self, api_key: str, config: Optional[ParallelTranslationConfig] = None):
+    def __init__(
+        self, api_key: str, config: Optional[ParallelTranslationConfig] = None
+    ):
         self.api_key = api_key
         self.config = config or ParallelTranslationConfig.from_config()
         self._translator: Optional[ParallelLingoTranslator] = None
@@ -502,7 +557,7 @@ class ParallelTranslationService:
         content: Dict[str, Any],
         source_lang: str,
         target_lang: str,
-        progress_callback: Optional[Callable[[BatchProgress], None]] = None
+        progress_callback: Optional[Callable[[BatchProgress], None]] = None,
     ) -> Dict[str, Any]:
         """Translate large document with optimal parallel processing."""
         if not self._translator:
@@ -517,7 +572,7 @@ class ParallelTranslationService:
         texts: List[str],
         source_lang: str,
         target_lang: str,
-        progress_callback: Optional[Callable[[BatchProgress], None]] = None
+        progress_callback: Optional[Callable[[BatchProgress], None]] = None,
     ) -> List[str]:
         """Translate batch of texts with parallel processing."""
         if not self._translator:

@@ -2,19 +2,20 @@
 """Test runner that loads environment variables from .env file."""
 
 import os
-import sys
 import subprocess
+import sys
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Verify that the API key is loaded
-api_key = os.getenv('LINGO_API_KEY')
-if api_key:
+api_key = os.getenv("LINGO_API_KEY")
+if api_key and api_key.strip():
     print("✓ LINGO_API_KEY loaded successfully")
 else:
-    print("✗ LINGO_API_KEY not found")
+    print("✗ LINGO_API_KEY not found or empty")
     # Uncomment the next line if tests require the API key
     # sys.exit(1)
 
@@ -22,9 +23,10 @@ else:
 if __name__ == "__main__":
     # Pass any command line arguments to pytest
     pytest_args = sys.argv[1:] if len(sys.argv) > 1 else ["tests/", "-v", "--tb=short"]
-    
+
     # Run pytest
     try:
+        # Run pytest with current environment (including loaded .env variables)
         result = subprocess.run(["pytest"] + pytest_args, env=os.environ.copy())
         sys.exit(result.returncode)
     except FileNotFoundError:

@@ -28,8 +28,9 @@ from models.user_choice_models import (
     UserChoice,
 )
 
-# Add the project root to the path if needed
-sys.path.insert(0, ".")
+# Add the project root to the path if needed (at end to avoid overriding system packages)
+if "." not in sys.path:
+    sys.path.append(".")
 
 # Global list to track temporary files for cleanup
 _temp_files = []

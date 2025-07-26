@@ -2,11 +2,15 @@
 .env
 *.env
 .env.*
+!.env.example
 env.json
 secrets.json
 *.secret
 *.secrets
-
+*.key
+*.keys
+# (keep the specific patterns only if you have a concrete need to *track* certain .key files)
+api_keys.json
 # Python bytecode and caches
 __pycache__/
 *.py[cod]
@@ -60,10 +64,11 @@ cov.xml
 
 # Logs and databases
 *.log
+logs/
 *.sql
+*.db
 *.sqlite
 *.sqlite3
-*.db
 *.pid
 *.seed
 *.pid.lock
@@ -101,8 +106,6 @@ cov.xml
 .Spotlight-V100
 .Trashes
 Icon?
-ehthumbs.db
-Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 *.cab
@@ -190,6 +193,12 @@ static/generated/
 media/
 staticfiles/
 
+# Dolphin OCR Translate specific
+translation_cache/
+processed_documents/
+ocr_cache/
+dolphin_cache/
+
 # Documentation build artifacts
 docs/_build/
 docs/.doctrees/
@@ -236,14 +245,7 @@ celerybeat.pid
 # SageMath
 *.sage.py
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# Environments (duplicates removed - see top of file)
 
 # Cython
 *.c
@@ -301,18 +303,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
-
-# Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-/media
-/static
-
-# Flask
-instance/
-.webassets-cache
 
 # Scrapy
 .scrapy

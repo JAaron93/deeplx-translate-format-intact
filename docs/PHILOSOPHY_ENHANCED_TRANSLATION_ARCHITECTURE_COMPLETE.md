@@ -7,7 +7,7 @@ This document outlines a comprehensive architecture for enhancing the existing P
 ## Current System Analysis
 
 ### Existing Strengths
-- **Robust Translation Pipeline**: Multi-provider support (DeepL, DeepLX, Google, Azure)
+- **Robust Translation Pipeline**: Lingo.dev API integration with high-performance parallel processing
 - **Advanced PDF Processing**: High-resolution rendering with precise text positioning via `AdvancedPDFProcessor`
 - **Comprehensive Document Support**: PDF, DOCX, TXT with format preservation
 - **Layout Preservation**: Image-text overlay technique with 300 DPI rendering

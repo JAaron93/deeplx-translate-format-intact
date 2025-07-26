@@ -37,7 +37,6 @@ from services.philosophy_enhanced_document_processor import (
     PhilosophyDocumentResult,
     PhilosophyEnhancedDocumentProcessor,
     PhilosophyProcessingProgress,
-    create_philosophy_enhanced_document_processor,
     process_document_with_philosophy_awareness,
 )
 from services.philosophy_enhanced_translation_service import (
@@ -280,7 +279,9 @@ class TestCompletePhilosophyEnhancedIntegration:
             assert result["neologism_analysis"] is not None
             total_neologisms += result["neologism_analysis"]["total_detections"]
 
-        logger.info(f"✓ Batch translation completed with {total_neologisms} total neologisms")
+        logger.info(
+            f"✓ Batch translation completed with {total_neologisms} total neologisms"
+        )
 
     @pytest.mark.asyncio
     async def test_6_document_processing_integration(self, temp_document_file):

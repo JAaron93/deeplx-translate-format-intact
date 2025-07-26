@@ -9,9 +9,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-# Add the project root to the path
+# Add the project root to the path (at end to avoid overriding system packages)
 project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
+if str(project_root) not in sys.path:
+    sys.path.append(str(project_root))
 
 from models.neologism_models import (
     DetectedNeologism,
