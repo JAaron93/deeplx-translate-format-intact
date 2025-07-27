@@ -42,7 +42,7 @@ app_router = APIRouter()
 
 @app_router.get("/")
 async def root() -> Dict[str, Any]:
-    """Root endpoint"""
+    """Root endpoint."""
     return {
         "message": "Advanced Document Translator API",
         "ui_url": "/ui",
@@ -61,14 +61,14 @@ async def root() -> Dict[str, Any]:
 
 @app_router.get("/philosophy", response_class=HTMLResponse)
 async def philosophy_interface(request: Request) -> HTMLResponse:
-    """Philosophy-enhanced translation interface"""
+    """Philosophy-enhanced translation interface."""
     return templates.TemplateResponse("philosophy_interface.html", {"request": request})
 
 
 # Philosophy API Endpoints
 @api_router.post("/philosophy/choice")
 async def save_user_choice(choice_data: Dict[str, Any]):
-    """Save a user choice for a neologism"""
+    """Save a user choice for a neologism."""
     try:
         # Extract choice data
         term = choice_data.get("term")
@@ -122,7 +122,7 @@ async def save_user_choice(choice_data: Dict[str, Any]):
 
 @api_router.get("/philosophy/neologisms")
 async def get_detected_neologisms(_session_id: Optional[str] = None):
-    """Get detected neologisms for the current session
+    """Get detected neologisms for the current session.
 
     Args:
         _session_id: Session identifier (reserved for future session-based functionality)
@@ -147,7 +147,7 @@ async def get_detected_neologisms(_session_id: Optional[str] = None):
 
 @api_router.get("/philosophy/progress")
 async def get_philosophy_progress():
-    """Get current philosophy processing progress"""
+    """Get current philosophy processing progress."""
     try:
         total_neologisms = 0
         if state.neologism_analysis and isinstance(state.neologism_analysis, dict):
@@ -178,7 +178,7 @@ async def get_philosophy_progress():
 
 @api_router.post("/philosophy/export-choices")
 async def export_user_choices(export_data: Dict[str, Any]):
-    """Export user choices to JSON"""
+    """Export user choices to JSON."""
     try:
         session_id = export_data.get("session_id")
 
@@ -206,7 +206,7 @@ async def export_user_choices(export_data: Dict[str, Any]):
 
 @api_router.post("/philosophy/import-choices")
 async def import_user_choices(import_data: Dict[str, Any]):
-    """Import user choices from dictionary"""
+    """Import user choices from dictionary."""
     try:
         choices = import_data.get("choices", {})
         session_id = import_data.get("session_id")
@@ -236,7 +236,7 @@ async def import_user_choices(import_data: Dict[str, Any]):
 
 @api_router.get("/philosophy/terminology")
 async def get_terminology():
-    """Get current terminology database"""
+    """Get current terminology database."""
     try:
         # Get terminology from neologism detector
         terminology = neologism_detector.terminology_map
@@ -249,7 +249,7 @@ async def get_terminology():
 
 @api_router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
-    """Enhanced upload endpoint with advanced processing"""
+    """Enhanced upload endpoint with advanced processing."""
     try:
         # Validate file
         validation_result = file_validator.validate_upload_file(file)
@@ -299,7 +299,7 @@ async def translate_document(
     source_language: str,
     target_language: str,
 ):
-    """Enhanced translation endpoint"""
+    """Enhanced translation endpoint."""
     try:
         import uuid
 
@@ -337,7 +337,7 @@ async def translate_document(
 
 @api_router.get("/status/{job_id}")
 async def get_job_status(job_id: str):
-    """Get enhanced job status"""
+    """Get enhanced job status."""
     if job_id not in translation_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -346,7 +346,7 @@ async def get_job_status(job_id: str):
 
 @api_router.get("/download/{job_id}")
 async def download_result(job_id: str):
-    """Download translated file with enhanced metadata"""
+    """Download translated file with enhanced metadata."""
     if job_id not in translation_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
 

@@ -1,4 +1,4 @@
-"""Input validation utilities"""
+"""Input validation utilities."""
 
 from __future__ import annotations
 
