@@ -1,4 +1,5 @@
 """Enhanced document processor with comprehensive formatting preservation.
+
 Integrates advanced PDF processing with other document formats.
 """
 
@@ -77,6 +78,7 @@ class DocumentMetadata:
 
 class EnhancedDocumentProcessor:
     """Enhanced document processor with comprehensive formatting preservation.
+
     Supports PDF, DOCX, and TXT with advanced layout preservation for PDFs.
     """
 

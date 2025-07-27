@@ -1,5 +1,6 @@
-"""Core services package containing document processing, translation,
-and language detection functionality.
+"""Core services package containing document processing, translation.
+
+And language detection functionality.
 """
 
 import logging

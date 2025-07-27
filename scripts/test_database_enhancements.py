@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Test script for database enhancements in choice_database.py
+"""Test script for database enhancements in choice_database.py.
+
 Tests alpha parameter configuration, JSON encoding, and batch import
 optimization.
 """

@@ -8,11 +8,14 @@ format.
 
 from __future__ import annotations
 
+import logging
 import os
 import pathlib
 from typing import Any, Union
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_ENDPOINT = "http://localhost:8501/layout"
 DEFAULT_TIMEOUT = 120  # seconds
@@ -60,7 +63,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
     try:
         data = response.json()
     except ValueError as e:
-        raise ValueError(f"Invalid JSON response from Dolphin service: {e}")
+        raise ValueError(f"Invalid JSON response from Dolphin service: {e}") from e
 
     # Basic validation - check if response has the expected structure
     if not isinstance(data, dict) or "pages" not in data:

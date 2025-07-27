@@ -1,8 +1,13 @@
 """Thread-safe state management for document translation."""
 
+import logging
 import threading
 import time
+from contextlib import contextmanager
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class AdvancedTranslationState:

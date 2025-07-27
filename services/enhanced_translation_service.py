@@ -1,6 +1,6 @@
-"""Enhanced translation service for Dolphin OCR Translate, integrating parallel-processing
-capabilities into the existing translation workflow.
+"""Enhanced translation service for Dolphin OCR Translate.
 
+Integrating parallel-processing capabilities into the existing translation workflow.
 
 This module provides a drop-in replacement for the standard translation service
 with significant performance improvements for large documents.

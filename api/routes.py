@@ -117,7 +117,7 @@ async def save_user_choice(choice_data: Dict[str, Any]):
 
     except Exception as e:
         logger.error(f"Error saving user choice: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.get("/philosophy/neologisms")
@@ -142,7 +142,7 @@ async def get_detected_neologisms(_session_id: Optional[str] = None):
         return {"neologisms": neologisms, "total": total}
     except Exception as e:
         logger.error(f"Error getting neologisms: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.get("/philosophy/progress")
@@ -173,7 +173,7 @@ async def get_philosophy_progress():
         }
     except Exception as e:
         logger.error(f"Error getting progress: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.post("/philosophy/export-choices")
@@ -201,7 +201,7 @@ async def export_user_choices(export_data: Dict[str, Any]):
 
     except Exception as e:
         logger.error(f"Error exporting choices: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.post("/philosophy/import-choices")
@@ -228,10 +228,10 @@ async def import_user_choices(import_data: Dict[str, Any]):
 
     except ValueError as e:
         logger.error(f"Validation error importing choices: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error importing choices: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.get("/philosophy/terminology")
@@ -244,7 +244,7 @@ async def get_terminology():
 
     except Exception as e:
         logger.error(f"Error getting terminology: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.post("/upload")
@@ -289,7 +289,7 @@ async def upload_file(file: UploadFile = File(...)):
 
     except Exception as e:
         logger.error(f"Enhanced upload error: {e!s}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.post("/translate")
@@ -332,7 +332,7 @@ async def translate_document(
 
     except Exception as e:
         logger.error(f"Enhanced translation start error: {e!s}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.get("/status/{job_id}")

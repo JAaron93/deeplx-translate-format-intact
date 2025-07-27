@@ -40,7 +40,7 @@ def test_import(module_name: str, from_module: Optional[str] = None) -> bool:
             except Exception as validation_error:
                 raise ImportError(
                     f"'{module_name}' from '{from_module}' is not usable: {validation_error}"
-                )
+                ) from validation_error
 
             print(f"✓ Successfully imported {module_name} from {from_module}")
         else:

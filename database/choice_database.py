@@ -1186,14 +1186,14 @@ class ChoiceDatabase:
         try:
             choice_type = ChoiceType(choice_data["choice_type"])
         except ValueError as e:
-            raise ValueError(f"Invalid choice_type: {e}")
+            raise ValueError(f"Invalid choice_type: {e}") from e
 
         # Validate choice_scope
         choice_scope_value = choice_data.get("choice_scope", "contextual")
         try:
             choice_scope = ChoiceScope(choice_scope_value)
         except ValueError as e:
-            raise ValueError(f"Invalid choice_scope: {e}")
+            raise ValueError(f"Invalid choice_scope: {e}") from e
 
         # Validate numeric fields
         confidence_level = choice_data.get("confidence_level", 1.0)

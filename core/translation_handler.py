@@ -77,7 +77,7 @@ def extract_file_info(file) -> Tuple[str, str, int]:
             file_size = os.path.getsize(file_path)
         except OSError as e:
             logger.error(f"Failed to stat uploaded file: {e}")
-            raise ValueError(f"Could not read uploaded file: {e!s}")
+            raise ValueError(f"Could not read uploaded file: {e!s}") from e
 
     # Case 2: FileData (dict-like) with .name / .size / .data attributes
     elif hasattr(file, "size") and hasattr(file, "name"):
@@ -87,7 +87,7 @@ def extract_file_info(file) -> Tuple[str, str, int]:
             file_path = file_handler.save_uploaded_file(file)
         except Exception as e:
             logger.error(f"Failed to save uploaded file: {e}")
-            raise ValueError(f"Could not save uploaded file: {e!s}")
+            raise ValueError(f"Could not save uploaded file: {e!s}") from e
 
     # Case 3: Legacy file-like object
     elif hasattr(file, "read"):
@@ -101,7 +101,7 @@ def extract_file_info(file) -> Tuple[str, str, int]:
             file_path = file_handler.save_uploaded_file(file)
         except Exception as e:
             logger.error(f"Failed to process file-like object: {e}")
-            raise ValueError(f"Could not process uploaded file: {e!s}")
+            raise ValueError(f"Could not process uploaded file: {e!s}") from e
 
     else:
         raise ValueError("Unsupported file object returned by Gradio")

@@ -1,4 +1,5 @@
 """Advanced PDF processor with comprehensive formatting preservation.
+
 Based on amazon-translate-pdf approach using image rendering + text overlay.
 """
 
@@ -63,6 +64,7 @@ class PageLayout:
 
 class AdvancedPDFProcessor:
     """Advanced PDF processor with comprehensive formatting preservation.
+
     Uses image-based rendering with precise text overlay for maximum accuracy.
     """
 
