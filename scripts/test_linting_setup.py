@@ -15,7 +15,7 @@ really_long_variable_name_that_should_trigger_line_length_formatting = "This is 
 
 
 # Test function with poor formatting
-def poorly_formatted_function(arg1, arg2, arg3=None):
+def poorly_formatted_function(arg1, arg2, _arg3=None):  # _arg3 unused to test ARG001
     """Docstring with trailing whitespace."""
     # Inconsistent indentation and spacing
     if arg1 == arg2:
@@ -67,7 +67,7 @@ messy_dict = dict(zip(["a", "b", "c"], [1, 2, 3]))
 
 
 # Test type annotations with poor spacing
-def typed_function(arg1: str, arg2: int) -> Optional[Dict[str, List[int]]]:
+def typed_function(_arg1: str, _arg2: int) -> Optional[Dict[str, List[int]]]:  # Args unused to test ARG001
     """Function with type hints."""
     return None
 
