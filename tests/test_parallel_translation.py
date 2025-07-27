@@ -12,14 +12,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from services.parallel_translation_service import (
-    BatchProgress,
-    ParallelLingoTranslator,
-    ParallelTranslationConfig,
-    ParallelTranslationService,
-    RateLimiter,
-    TranslationTask,
-)
+from services.parallel_translation_service import (BatchProgress,
+                                                   ParallelLingoTranslator,
+                                                   ParallelTranslationConfig,
+                                                   ParallelTranslationService,
+                                                   RateLimiter,
+                                                   TranslationTask)
 
 
 class TestRateLimiter:

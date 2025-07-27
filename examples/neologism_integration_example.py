@@ -14,10 +14,7 @@ project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from models.neologism_models import (
-    DetectedNeologism,
-    NeologismAnalysis,
-)
+from models.neologism_models import DetectedNeologism, NeologismAnalysis
 from services.neologism_detector import NeologismDetector
 from services.translation_service import TranslationService
 

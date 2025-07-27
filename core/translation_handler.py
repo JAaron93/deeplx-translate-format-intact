@@ -14,9 +14,8 @@ from core.state_manager import state, translation_jobs
 from services.enhanced_document_processor import EnhancedDocumentProcessor
 from services.language_detector import LanguageDetector
 from services.neologism_detector import NeologismDetector
-from services.philosophy_enhanced_translation_service import (
-    PhilosophyEnhancedTranslationService,
-)
+from services.philosophy_enhanced_translation_service import \
+    PhilosophyEnhancedTranslationService
 from services.translation_service import TranslationService
 from services.user_choice_manager import UserChoiceManager
 from utils.file_handler import FileHandler
@@ -463,7 +462,11 @@ def get_translation_status() -> Tuple[str, int, bool]:
             False,
         )
     elif state.translation_status == "completed":
-        return ("✅ Advanced translation completed with format preservation!", 100, True)
+        return (
+            "✅ Advanced translation completed with format preservation!",
+            100,
+            True,
+        )
     elif state.translation_status == "error":
         return f"❌ Translation failed: {state.error_message}", 0, False
     else:

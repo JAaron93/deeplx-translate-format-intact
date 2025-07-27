@@ -285,7 +285,7 @@ class DetectedNeologism:
         """Create DetectedNeologism instance from dictionary data."""
         # Create nested objects from dictionaries
         morphological_analysis = MorphologicalAnalysis()
-        if "morphological_analysis" in data and data["morphological_analysis"]:
+        if data.get("morphological_analysis"):
             morph_data = data["morphological_analysis"]
             morphological_analysis = MorphologicalAnalysis(
                 root_words=morph_data.get("root_words", []),
@@ -304,7 +304,7 @@ class DetectedNeologism:
             )
 
         philosophical_context = PhilosophicalContext()
-        if "philosophical_context" in data and data["philosophical_context"]:
+        if data.get("philosophical_context"):
             phil_data = data["philosophical_context"]
             philosophical_context = PhilosophicalContext(
                 philosophical_density=phil_data.get("philosophical_density", 0.0),
@@ -321,7 +321,7 @@ class DetectedNeologism:
             )
 
         confidence_factors = ConfidenceFactors()
-        if "confidence_factors" in data and data["confidence_factors"]:
+        if data.get("confidence_factors"):
             conf_data = data["confidence_factors"]
             confidence_factors = ConfidenceFactors(
                 morphological_complexity=conf_data.get("morphological_complexity", 0.0),

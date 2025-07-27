@@ -19,15 +19,9 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from database.choice_database import ChoiceDatabase
-from models.user_choice_models import (
-    ChoiceScope,
-    ChoiceSession,
-    ChoiceType,
-    ConflictResolution,
-    SessionStatus,
-    TranslationContext,
-    UserChoice,
-)
+from models.user_choice_models import (ChoiceScope, ChoiceSession, ChoiceType,
+                                       ConflictResolution, SessionStatus,
+                                       TranslationContext, UserChoice)
 
 
 @contextmanager
@@ -89,7 +83,7 @@ def test_alpha_parameter_configuration():
     # Test 4: Alpha validation - invalid range
     try:
         ChoiceDatabase(":memory:", learning_rate_alpha=2.0)
-        assert False, (
+        raise AssertionError(
             "Should have raised ValueError for learning_rate_alpha parameter "
             "with invalid value 2.0 (exceeds maximum of 1.0)"
         )
@@ -99,7 +93,7 @@ def test_alpha_parameter_configuration():
 
     try:
         ChoiceDatabase(":memory:", learning_rate_alpha=0.0005)
-        assert False, (
+        raise AssertionError(
             "Should have raised ValueError for learning_rate_alpha parameter "
             "with invalid value 0.0005 (below minimum of 0.001)"
         )
@@ -110,7 +104,7 @@ def test_alpha_parameter_configuration():
     # Test 5: Alpha validation - invalid type
     try:
         ChoiceDatabase(":memory:", learning_rate_alpha="0.1")
-        assert False, (
+        raise AssertionError(
             "Should have raised ValueError for learning_rate_alpha parameter "
             "with invalid type 'str' (value: '0.1')"
         )

@@ -26,12 +26,8 @@ def test_basic_imports():
     """
     try:
         # Test models import
-        from models.user_choice_models import (
-            ChoiceScope,
-            ChoiceType,
-            TranslationContext,
-            UserChoice,
-        )
+        from models.user_choice_models import (ChoiceScope, ChoiceType,
+                                               TranslationContext, UserChoice)
 
         print("✓ Successfully imported user choice models")
 
@@ -51,7 +47,7 @@ def test_basic_imports():
         print("✓ Successfully created TranslationContext")
 
         # Test choice creation
-        choice = UserChoice(
+        UserChoice(
             choice_id="test_id",
             neologism_term="test_term",
             choice_type=ChoiceType.TRANSLATE,

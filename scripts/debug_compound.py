@@ -11,7 +11,7 @@ import json
 import sys
 import traceback
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 # Add project root to path for imports (insert at end to minimize conflicts)
 project_root = Path(__file__).parent.parent
@@ -61,8 +61,8 @@ def get_categories_from_config(config_path: str) -> List[str]:
 
 
 def load_test_words(
-    config_path: str = None,
-    categories: List[str] = None,
+    config_path: Optional[str] = None,
+    categories: Optional[List[str]] = None,
     auto_detect_categories: bool = True,
 ) -> List[Dict[str, Any]]:
     """Load test words from configuration file with flexible category selection.
@@ -202,11 +202,11 @@ def format_debug_output(word_info: Dict[str, Any], debug_result: Dict[str, Any])
 
 
 def debug_compound_detection(
-    test_words: List[str] = None,
-    config_path: str = None,
+    test_words: Optional[List[str]] = None,
+    config_path: Optional[str] = None,
     verbose: bool = True,
-    filter_category: str = None,
-    categories: List[str] = None,
+    filter_category: Optional[str] = None,
+    categories: Optional[List[str]] = None,
 ) -> None:
     """Debug compound word detection using public NeologismDetector API.
 
@@ -298,7 +298,7 @@ def debug_compound_detection(
         sys.exit(1)
 
 
-def get_available_categories(config_path: str = None) -> List[str]:
+def get_available_categories(config_path: Optional[str] = None) -> List[str]:
     """Get available categories for command line argument choices.
 
     Args:

@@ -8,16 +8,10 @@ from datetime import datetime, timedelta
 import pytest
 
 from database.choice_database import ChoiceDatabase
-from models.user_choice_models import (
-    ChoiceConflict,
-    ChoiceScope,
-    ChoiceSession,
-    ChoiceType,
-    ConflictResolution,
-    SessionStatus,
-    TranslationContext,
-    UserChoice,
-)
+from models.user_choice_models import (ChoiceConflict, ChoiceScope,
+                                       ChoiceSession, ChoiceType,
+                                       ConflictResolution, SessionStatus,
+                                       TranslationContext, UserChoice)
 
 
 @pytest.fixture

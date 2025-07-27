@@ -4,22 +4,15 @@ import json
 
 import pytest
 
-from models.user_choice_models import (
-    ChoiceConflict,
-    ChoiceScope,
-    ChoiceSession,
-    ChoiceType,
-    ConflictResolution,
-    SessionStatus,
-    TranslationContext,
-    UserChoice,
-    create_choice_id,
-    create_conflict_id,
-    create_session_id,
-    detect_choice_conflicts,
-    filter_choices_by_context,
-    find_best_matching_choice,
-)
+from models.user_choice_models import (ChoiceConflict, ChoiceScope,
+                                       ChoiceSession, ChoiceType,
+                                       ConflictResolution, SessionStatus,
+                                       TranslationContext, UserChoice,
+                                       create_choice_id, create_conflict_id,
+                                       create_session_id,
+                                       detect_choice_conflicts,
+                                       filter_choices_by_context,
+                                       find_best_matching_choice)
 
 
 class TestTranslationContext:

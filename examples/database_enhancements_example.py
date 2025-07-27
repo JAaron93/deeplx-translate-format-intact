@@ -18,15 +18,9 @@ from datetime import datetime
 
 # Local imports (must come before sys.path modification)
 from database.choice_database import ChoiceDatabase
-from models.user_choice_models import (
-    ChoiceScope,
-    ChoiceSession,
-    ChoiceType,
-    ConflictResolution,
-    SessionStatus,
-    TranslationContext,
-    UserChoice,
-)
+from models.user_choice_models import (ChoiceScope, ChoiceSession, ChoiceType,
+                                       ConflictResolution, SessionStatus,
+                                       TranslationContext, UserChoice)
 
 # Add the project root to the path if needed (at end to avoid overriding system packages)
 if "." not in sys.path:
