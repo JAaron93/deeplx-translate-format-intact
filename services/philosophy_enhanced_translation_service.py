@@ -123,9 +123,9 @@ class PhilosophyEnhancedTranslationService:
         """
         # Initialize base translation service
         self.translation_service = translation_service or TranslationService(
-            terminology_map=self._load_terminology(terminology_path)
-            if terminology_path
-            else None
+            terminology_map=(
+                self._load_terminology(terminology_path) if terminology_path else None
+            )
         )
 
         # Initialize neologism detection
@@ -480,7 +480,9 @@ class PhilosophyEnhancedTranslationService:
         pattern = rf"\b{re.escape(neologism.term)}\b"
         return re.sub(pattern, marker, text, flags=re.IGNORECASE)
 
-    def _preserve_neologisms_in_text(self, text: str, neologisms: list[DetectedNeologism]) -> tuple[str, dict[str, str]]:
+    def _preserve_neologisms_in_text(
+        self, text: str, neologisms: list[DetectedNeologism]
+    ) -> tuple[str, dict[str, str]]:
         """Preserve neologisms in text by replacing them with markers.
 
         Args:
@@ -497,9 +499,10 @@ class PhilosophyEnhancedTranslationService:
         sorted_neologisms = sorted(neologisms, key=lambda n: n.start_pos, reverse=True)
 
         for i, neologism in enumerate(sorted_neologisms):
--            marker = f"NEOLOGISM_PRESERVE_{i}_PRESERVE_END"
-+            marker = self._create_preservation_marker(neologism.term)
-            preserved_text = self._replace_term_with_marker(preserved_text, neologism, marker)
+            marker = self._create_preservation_marker(neologism.term)
+            preserved_text = self._replace_term_with_marker(
+                preserved_text, neologism, marker
+            )
             markers[marker] = neologism.term
 
         return preserved_text, markers

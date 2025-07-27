@@ -9,9 +9,10 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 
-def find_project_root(start_path: Path = None, max_depth: int = 10) -> Path:
+def find_project_root(start_path: Optional[Path] = None, max_depth: int = 10) -> Path:
     """Find the project root by searching upward for known indicators.
 
     Args:
@@ -108,7 +109,7 @@ def find_project_root(start_path: Path = None, max_depth: int = 10) -> Path:
     return fallback_root
 
 
-def add_project_root_to_path(project_root: Path = None) -> Path:
+def add_project_root_to_path(project_root: Optional[Path] = None) -> Path:
     """Add project root to sys.path safely.
 
     Args:
@@ -136,10 +137,8 @@ print("🔍 Searching for project root...")
 project_root = add_project_root_to_path()
 
 # Import the flexible validation functions
-from scripts.debug_candidates import (
-    find_and_validate_project_root,
-    load_project_validation_config,
-)
+from scripts.debug_candidates import (find_and_validate_project_root,
+                                      load_project_validation_config)
 
 
 def example_default_validation():

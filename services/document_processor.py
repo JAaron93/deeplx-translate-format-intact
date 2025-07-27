@@ -75,9 +75,11 @@ class DocumentProcessor:
                                 {
                                     "index": img_index,
                                     "xref": xref,
-                                    "bbox": page.get_image_rects(xref)[0]
-                                    if page.get_image_rects(xref)
-                                    else None,
+                                    "bbox": (
+                                        page.get_image_rects(xref)[0]
+                                        if page.get_image_rects(xref)
+                                        else None
+                                    ),
                                     "data": pix.tobytes("png"),
                                 }
                             )

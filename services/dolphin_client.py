@@ -5,6 +5,7 @@ upload of a PDF file and returns JSON describing the page layouts.  This helper
 wraps the HTTP call so the rest of the codebase doesn’t need to know the wire
 format.
 """
+
 from __future__ import annotations
 
 import os

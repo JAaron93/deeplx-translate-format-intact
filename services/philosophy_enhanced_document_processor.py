@@ -16,9 +16,7 @@ from models.neologism_models import NeologismAnalysis
 from .enhanced_document_processor import EnhancedDocumentProcessor
 from .neologism_detector import NeologismDetector
 from .philosophy_enhanced_translation_service import (
-    PhilosophyEnhancedTranslationService,
-    PhilosophyTranslationProgress,
-)
+    PhilosophyEnhancedTranslationService, PhilosophyTranslationProgress)
 from .user_choice_manager import UserChoiceManager
 
 logger = logging.getLogger(__name__)
@@ -477,9 +475,7 @@ class PhilosophyEnhancedDocumentProcessor:
             if "text_by_page" in content:
                 for page_text in content["text_by_page"].values():
                     all_text += page_text + "\n\n"
-        elif content.get("type") == "docx":
-            all_text = content.get("text_content", "")
-        elif content.get("type") == "txt":
+        elif content.get("type") == "docx" or content.get("type") == "txt":
             all_text = content.get("text_content", "")
         elif "pages" in content:
             for page in content["pages"]:

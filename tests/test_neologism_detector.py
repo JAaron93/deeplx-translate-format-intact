@@ -8,16 +8,12 @@ from unittest.mock import patch
 
 import pytest
 
-from models.neologism_models import (
-    ConfidenceFactors,
-    ConfidenceLevel,
-    DetectedNeologism,
-    MorphologicalAnalysis,
-    NeologismAnalysis,
-    NeologismType,
-    PhilosophicalContext,
-)
-from services.neologism_detector import NeologismDetector, analyze_document_batch
+from models.neologism_models import (ConfidenceFactors, ConfidenceLevel,
+                                     DetectedNeologism, MorphologicalAnalysis,
+                                     NeologismAnalysis, NeologismType,
+                                     PhilosophicalContext)
+from services.neologism_detector import (NeologismDetector,
+                                         analyze_document_batch)
 
 
 class TestNeologismDetector:

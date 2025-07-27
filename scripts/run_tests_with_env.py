@@ -27,7 +27,7 @@ if __name__ == "__main__":
     # Run pytest
     try:
         # Run pytest with current environment (including loaded .env variables)
-        result = subprocess.run(["pytest"] + pytest_args, env=os.environ.copy())
+        result = subprocess.run(["pytest", *pytest_args], env=os.environ.copy())
         sys.exit(result.returncode)
     except FileNotFoundError:
         print("✗ Error: pytest not found. Please install pytest first.")

@@ -7,19 +7,12 @@ from unittest.mock import patch
 
 import pytest
 
-from models.neologism_models import (
-    DetectedNeologism,
-    MorphologicalAnalysis,
-    NeologismAnalysis,
-    NeologismType,
-    PhilosophicalContext,
-)
-from models.user_choice_models import (
-    ChoiceScope,
-    ChoiceType,
-    SessionStatus,
-)
-from services.user_choice_manager import UserChoiceManager, create_choice_manager
+from models.neologism_models import (DetectedNeologism, MorphologicalAnalysis,
+                                     NeologismAnalysis, NeologismType,
+                                     PhilosophicalContext)
+from models.user_choice_models import ChoiceScope, ChoiceType, SessionStatus
+from services.user_choice_manager import (UserChoiceManager,
+                                          create_choice_manager)
 
 
 @pytest.fixture

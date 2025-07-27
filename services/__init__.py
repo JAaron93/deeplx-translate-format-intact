@@ -43,7 +43,8 @@ except ImportError as e:
     _service_availability["LANGUAGE_DETECTOR_AVAILABLE"] = False
 
 try:
-    from .enhanced_document_processor import EnhancedDocumentProcessor  # noqa: F401
+    from .enhanced_document_processor import \
+        EnhancedDocumentProcessor  # noqa: F401
 
     _available_services.append("EnhancedDocumentProcessor")
     _service_availability["ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE"] = True

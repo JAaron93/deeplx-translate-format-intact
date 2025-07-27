@@ -222,9 +222,11 @@ class EnhancedDocumentProcessor:
                 "text_content": text_content,
                 "paragraphs": paragraphs,
                 "metadata": metadata,
-                "preview": text_content[:1000] + "..."
-                if len(text_content) > 1000
-                else text_content,
+                "preview": (
+                    text_content[:1000] + "..."
+                    if len(text_content) > 1000
+                    else text_content
+                ),
             }
 
         except Exception as e:
@@ -268,9 +270,11 @@ class EnhancedDocumentProcessor:
                 "text_content": text_content,
                 "lines": lines,
                 "metadata": metadata,
-                "preview": text_content[:1000] + "..."
-                if len(text_content) > 1000
-                else text_content,
+                "preview": (
+                    text_content[:1000] + "..."
+                    if len(text_content) > 1000
+                    else text_content
+                ),
             }
 
         except Exception as e:

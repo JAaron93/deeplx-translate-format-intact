@@ -12,10 +12,8 @@ import time
 from typing import List
 
 from services.enhanced_translation_service import EnhancedTranslationService
-from services.parallel_translation_service import (
-    BatchProgress,
-    ParallelTranslationConfig,
-)
+from services.parallel_translation_service import (BatchProgress,
+                                                   ParallelTranslationConfig)
 
 # Configure logging
 logging.basicConfig(

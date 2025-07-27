@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Debug script for testing neologism candidate extraction functionality.
+r"""Debug script for testing neologism candidate extraction functionality.
 
 This script provides debugging capabilities for the neologism detection system,
 specifically focusing on the candidate extraction process. It tests both manual

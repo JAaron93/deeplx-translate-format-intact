@@ -9,11 +9,9 @@ import traceback
 
 from models.user_choice_models import ChoiceScope, ChoiceType
 from services.neologism_detector import NeologismDetector
-
 # Import the philosophy enhanced services
-from services.philosophy_enhanced_translation_service import (
-    PhilosophyEnhancedTranslationService,
-)
+from services.philosophy_enhanced_translation_service import \
+    PhilosophyEnhancedTranslationService
 from services.user_choice_manager import UserChoiceManager
 
 # Configure logging

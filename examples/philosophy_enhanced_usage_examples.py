@@ -21,12 +21,9 @@ from models.user_choice_models import ChoiceType
 from services.philosophy_enhanced_document_processor import (
     PhilosophyProcessingProgress,
     create_philosophy_enhanced_document_processor,
-    process_document_with_philosophy_awareness,
-)
+    process_document_with_philosophy_awareness)
 from services.philosophy_enhanced_translation_service import (
-    PhilosophyEnhancedTranslationService,
-    PhilosophyTranslationProgress,
-)
+    PhilosophyEnhancedTranslationService, PhilosophyTranslationProgress)
 from services.user_choice_manager import UserChoiceManager
 
 

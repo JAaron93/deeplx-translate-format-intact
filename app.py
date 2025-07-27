@@ -2,8 +2,7 @@
 Refactored main application entry point
 """
 
--import \1  # Found import statement
-+import logging
+import logging
 import os
 
 import gradio as gr
@@ -13,7 +12,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from api.routes import api_router, app_router
-
 # Import refactored components
 from ui.gradio_interface import create_gradio_interface
 
