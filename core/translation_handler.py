@@ -110,7 +110,7 @@ def extract_file_info(file) -> Tuple[str, str, int]:
 
 
 async def process_file_upload(file) -> Tuple[str, str, str, str]:
-    """Process uploaded file with advanced content extraction"""
+    """Process uploaded file with advanced content extraction."""
     try:
         # Extract file information using the new function
         try:
@@ -187,7 +187,7 @@ async def process_file_upload(file) -> Tuple[str, str, str, str]:
 async def start_translation(
     target_language: str, max_pages: int, philosophy_mode: bool
 ) -> Tuple[str, str, bool]:
-    """Start the advanced translation process"""
+    """Start the advanced translation process."""
     try:
         if not state.current_file or not state.current_content:
             return "❌ No file processed", "", False
@@ -380,7 +380,7 @@ async def translate_content(
 
 
 async def perform_advanced_translation() -> None:
-    """Perform the advanced translation process with format preservation"""
+    """Perform the advanced translation process with format preservation."""
     try:
         state.translation_status = "processing"
         logger.info(
@@ -438,19 +438,19 @@ async def perform_advanced_translation() -> None:
 
 
 def update_translation_progress(progress: int) -> None:
-    """Update translation progress"""
+    """Update translation progress."""
     state.translation_progress = min(30 + (progress * 0.6), 90)
 
 
 def generate_output_filename(original_filename: str, target_language: str) -> str:
-    """Generate output filename with proper format"""
+    """Generate output filename with proper format."""
     name = Path(original_filename).stem
     ext = Path(original_filename).suffix
     return f"translated_{name}_{target_language.lower()}_advanced{ext}"
 
 
 def get_translation_status() -> Tuple[str, int, bool]:
-    """Get current translation status with detailed info"""
+    """Get current translation status with detailed info."""
     if state.translation_status == "idle":
         return "Ready for advanced translation", 0, False
     elif state.translation_status == "starting":
@@ -475,7 +475,7 @@ def get_translation_status() -> Tuple[str, int, bool]:
 
 
 def download_translated_file(output_format: str) -> str:
-    """Prepare file for download with format conversion if needed"""
+    """Prepare file for download with format conversion if needed."""
     try:
         if not state.output_file or state.translation_status != "completed":
             return "❌ No translated file available"
@@ -497,7 +497,7 @@ def download_translated_file(output_format: str) -> str:
 async def process_advanced_translation_job(
     job_id: str, file_path: str, source_lang: str, target_lang: str
 ) -> None:
-    """Process translation job with advanced formatting preservation"""
+    """Process translation job with advanced formatting preservation."""
     try:
         job = translation_jobs[job_id]
         job["status"] = "processing"

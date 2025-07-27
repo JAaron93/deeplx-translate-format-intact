@@ -197,7 +197,7 @@ class Config:
 
     @classmethod
     def get_available_providers(cls) -> list[str]:
-        """Get list of available translation providers"""
+        """Get list of available translation providers."""
         providers = []
 
         if cls.LINGO_API_KEY:

@@ -267,7 +267,7 @@ class Settings:
             os.makedirs(directory, exist_ok=True)
 
     def get_available_translators(self) -> list:
-        """Get list of available translation services"""
+        """Get list of available translation services."""
         available = []
 
         if self.LINGO_API_KEY:
@@ -276,7 +276,7 @@ class Settings:
         return available
 
     def validate_configuration(self) -> bool:
-        """Validate that required configuration is present and all settings are valid"""
+        """Validate that required configuration is present and all settings are valid."""
         validation_results = [
             self._validate_api_key(),
             self._validate_language_settings(),
@@ -296,14 +296,14 @@ class Settings:
         return overall_valid
 
     def _validate_api_key(self) -> bool:
-        """Validate API key configuration"""
+        """Validate API key configuration."""
         if not self.LINGO_API_KEY:
             logger.error("LINGO_API_KEY is required but not configured")
             return False
         return True
 
     def _validate_language_settings(self) -> bool:
-        """Validate language code settings"""
+        """Validate language code settings."""
         valid = True
 
         if self.SOURCE_LANGUAGE.upper() not in VALID_LANGUAGE_CODES:
@@ -323,7 +323,7 @@ class Settings:
         return valid
 
     def _validate_directories(self) -> bool:
-        """Validate directory accessibility and writability"""
+        """Validate directory accessibility and writability."""
         directories_to_check = [
             self.UPLOAD_DIR,
             self.DOWNLOAD_DIR,
@@ -340,7 +340,7 @@ class Settings:
         return valid
 
     def _validate_numeric_settings(self) -> bool:
-        """Validate numeric configuration settings"""
+        """Validate numeric configuration settings."""
         valid = True
 
         if self.PORT < 1 or self.PORT > 65535:
@@ -372,13 +372,13 @@ class Settings:
         return valid
 
     def _validate_boolean_settings(self) -> bool:
-        """Validate boolean configuration settings"""
+        """Validate boolean configuration settings."""
         # Boolean settings are validated during parsing by _parse_bool_env
         # This method can be extended for additional boolean-specific validations
         return True
 
     def _validate_terminology(self) -> bool:
-        """Validate terminology and translation settings"""
+        """Validate terminology and translation settings."""
         valid = True
 
         # Check if source and target languages are different
@@ -392,7 +392,7 @@ class Settings:
         return valid
 
     def _check_directory_writable(self, directory: str) -> bool:
-        """Check if a directory is writable by attempting to create a test file"""
+        """Check if a directory is writable by attempting to create a test file."""
         try:
             # Ensure directory exists
             os.makedirs(directory, exist_ok=True)
