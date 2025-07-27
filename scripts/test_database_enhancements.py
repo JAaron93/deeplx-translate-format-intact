@@ -19,9 +19,15 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from database.choice_database import ChoiceDatabase
-from models.user_choice_models import (ChoiceScope, ChoiceSession, ChoiceType,
-                                       ConflictResolution, SessionStatus,
-                                       TranslationContext, UserChoice)
+from models.user_choice_models import (
+    ChoiceScope,
+    ChoiceSession,
+    ChoiceType,
+    ConflictResolution,
+    SessionStatus,
+    TranslationContext,
+    UserChoice,
+)
 
 
 @contextmanager
