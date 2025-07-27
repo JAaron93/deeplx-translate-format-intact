@@ -6,17 +6,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from models.neologism_models import (DetectedNeologism, NeologismAnalysis,
-                                     NeologismType)
+from models.neologism_models import (
+    DetectedNeologism,
+    NeologismAnalysis,
+    NeologismType,
+)
 from models.user_choice_models import ChoiceType, UserChoice
 from services.philosophy_enhanced_document_processor import (
-    PhilosophyDocumentResult, PhilosophyEnhancedDocumentProcessor,
+    PhilosophyDocumentResult,
+    PhilosophyEnhancedDocumentProcessor,
     PhilosophyProcessingProgress,
     create_philosophy_enhanced_document_processor,
-    process_document_with_philosophy_awareness)
+    process_document_with_philosophy_awareness,
+)
 from services.philosophy_enhanced_translation_service import (
-    NeologismPreservationResult, PhilosophyEnhancedTranslationService,
-    PhilosophyTranslationProgress)
+    NeologismPreservationResult,
+    PhilosophyEnhancedTranslationService,
+    PhilosophyTranslationProgress,
+)
 
 
 class TestPhilosophyEnhancedTranslationServiceIntegration:

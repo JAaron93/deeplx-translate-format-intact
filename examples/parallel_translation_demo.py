@@ -12,8 +12,7 @@ import time
 from typing import List
 
 from services.enhanced_translation_service import EnhancedTranslationService
-from services.parallel_translation_service import (BatchProgress,
-                                                   ParallelTranslationConfig)
+from services.parallel_translation_service import ParallelTranslationConfig
 
 # Configure logging
 logging.basicConfig(
@@ -97,23 +96,6 @@ class ProgressTracker:
                 elapsed,
             )
             self.last_update = percentage
-
-    def update_batch_progress(self, progress: BatchProgress):
-        """Update progress for batch operations."""
-        elapsed = progress.elapsed_time
-        rate = progress.completed_tasks / elapsed if elapsed > 0 else 0
-        remaining = progress.estimated_remaining_time
-
-        logger.info(
-            "%s: %d/%d (%.1f%%) - %.1f items/sec - %.1fs elapsed, ~%.1fs remaining",
-            self.description,
-            progress.completed_tasks,
-            progress.total_tasks,
-            progress.progress_percentage,
-            rate,
-            elapsed,
-            remaining,
-        )
 
 
 async def demo_basic_parallel_translation():

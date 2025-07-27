@@ -26,7 +26,7 @@ def poorly_formatted_function(arg1, arg2, arg3=None):
     # Dead code (Ruff F841)
 
     # Using deprecated syntax (for Ruff UP rules)
-    f"arg1: {arg1}, arg2: {arg2}"
+    f"arg1: {arg1}, arg2: {arg2}"  # Unused expression to test F841 (unused variable/expression)
 
     # Unnecessary parentheses
     return arg1 + arg2

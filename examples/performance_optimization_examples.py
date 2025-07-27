@@ -18,8 +18,9 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 
 import psutil
 
-from services.philosophy_enhanced_document_processor import \
-    create_philosophy_enhanced_document_processor
+from services.philosophy_enhanced_document_processor import (
+    create_philosophy_enhanced_document_processor,
+)
 
 # Configure logging
 logging.basicConfig(

@@ -93,6 +93,20 @@ class EnhancedDocumentProcessor:
             dpi=dpi, preserve_images=preserve_images
         )
 
+    def _generate_text_preview(self, text: str, max_chars: int = 1000) -> str:
+        """Generate a text preview with ellipsis if needed.
+
+        Args:
+            text: The text to generate a preview for
+            max_chars: Maximum number of characters in the preview (default: 1000)
+
+        Returns:
+            str: The text preview, truncated with ellipsis if longer than max_chars
+        """
+        if len(text) > max_chars:
+            return text[:max_chars] + "..."
+        return text
+
     def extract_content(self, file_path: str) -> dict[str, Any]:
         """Extract content from document with format-specific processing.
 
@@ -222,11 +236,7 @@ class EnhancedDocumentProcessor:
                 "text_content": text_content,
                 "paragraphs": paragraphs,
                 "metadata": metadata,
-                "preview": (
-                    text_content[:1000] + "..."
-                    if len(text_content) > 1000
-                    else text_content
-                ),
+                "preview": self._generate_text_preview(text_content),
             }
 
         except Exception as e:
@@ -270,11 +280,7 @@ class EnhancedDocumentProcessor:
                 "text_content": text_content,
                 "lines": lines,
                 "metadata": metadata,
-                "preview": (
-                    text_content[:1000] + "..."
-                    if len(text_content) > 1000
-                    else text_content
-                ),
+                "preview": self._generate_text_preview(text_content),
             }
 
         except Exception as e:

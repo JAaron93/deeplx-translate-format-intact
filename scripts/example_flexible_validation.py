@@ -16,7 +16,8 @@ def find_project_root(start_path: Optional[Path] = None, max_depth: int = 10) ->
     """Find the project root by searching upward for known indicators.
 
     Args:
-        start_path: Starting path for search (default: current script location)
+        start_path: Optional starting path for the search.
+            If ``None`` (default), the search starts at the current script location.
         max_depth: Maximum number of parent directories to search
 
     Returns:
@@ -113,7 +114,8 @@ def add_project_root_to_path(project_root: Optional[Path] = None) -> Path:
     """Add project root to sys.path safely.
 
     Args:
-        project_root: Project root path (auto-detected if None)
+        project_root: Optional project root path.
+            If ``None`` (default), the root is auto-detected.
 
     Returns:
         The project root path that was added
@@ -137,8 +139,10 @@ print("🔍 Searching for project root...")
 project_root = add_project_root_to_path()
 
 # Import the flexible validation functions
-from scripts.debug_candidates import (find_and_validate_project_root,
-                                      load_project_validation_config)
+from scripts.debug_candidates import (
+    find_and_validate_project_root,
+    load_project_validation_config,
+)
 
 
 def example_default_validation():

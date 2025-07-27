@@ -11,7 +11,8 @@ import json
 import sys
 import traceback
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+-from typing import Any, Dict, List, Optional
++from typing import Any, Dict, List, Optional, Union
 
 # Add project root to path for imports (insert at end to minimize conflicts)
 project_root = Path(__file__).parent.parent
@@ -59,11 +60,11 @@ def get_categories_from_config(config_path: str) -> List[str]:
         print(f"⚠️  Warning: Could not read config file {config_path}: {e}")
         return get_default_categories()
 
-
 def load_test_words(
-    config_path: Optional[str] = None,
+    config_path: Optional[Union[str, Path]] = None,
     categories: Optional[List[str]] = None,
     auto_detect_categories: bool = True,
+) -> List[Dict[str, Any]]:
 ) -> List[Dict[str, Any]]:
     """Load test words from configuration file with flexible category selection.
 
@@ -203,10 +204,11 @@ def format_debug_output(word_info: Dict[str, Any], debug_result: Dict[str, Any])
 
 def debug_compound_detection(
     test_words: Optional[List[str]] = None,
-    config_path: Optional[str] = None,
+    config_path: Optional[Union[str, Path]] = None,
     verbose: bool = True,
     filter_category: Optional[str] = None,
     categories: Optional[List[str]] = None,
+) -> None:
 ) -> None:
     """Debug compound word detection using public NeologismDetector API.
 

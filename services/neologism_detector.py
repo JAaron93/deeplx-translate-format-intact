@@ -21,14 +21,19 @@ except ImportError:
     SPACY_AVAILABLE = False
 
 # Import our data models
-from models.neologism_models import (ConfidenceFactors, DetectedNeologism,
-                                     MorphologicalAnalysis, NeologismAnalysis,
-                                     NeologismType, PhilosophicalContext)
+from models.neologism_models import (
+    ConfidenceFactors,
+    DetectedNeologism,
+    MorphologicalAnalysis,
+    NeologismAnalysis,
+    NeologismType,
+    PhilosophicalContext,
+)
 from services.confidence_scorer import ConfidenceScorer
+
 # Import the new component classes
 from services.morphological_analyzer import MorphologicalAnalyzer
-from services.philosophical_context_analyzer import \
-    PhilosophicalContextAnalyzer
+from services.philosophical_context_analyzer import PhilosophicalContextAnalyzer
 
 logger = logging.getLogger(__name__)
 

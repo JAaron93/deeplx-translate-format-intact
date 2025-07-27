@@ -3,11 +3,13 @@ Example demonstrating the integration of the Neologism Detection Engine
 with the existing translation system for philosophy-focused translation.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 # Add the project root to the path (at end to avoid overriding system packages)
 project_root = Path(__file__).parent.parent
@@ -64,7 +66,7 @@ class PhilosophyEnhancedTranslator:
         source_lang: str = "de",
         target_lang: str = "en",
         provider: str = "auto",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Translate text with integrated neologism detection and preservation.
 
@@ -125,7 +127,7 @@ class PhilosophyEnhancedTranslator:
 
     def _prepare_text_for_translation(
         self, text: str, analysis: NeologismAnalysis
-    ) -> tuple[str, Dict[str, DetectedNeologism]]:
+    ) -> tuple[str, dict[str, DetectedNeologism]]:
         """
         Prepare text for translation by marking neologisms for preservation.
 
@@ -166,7 +168,7 @@ class PhilosophyEnhancedTranslator:
         return prepared_text, neologism_map
 
     def _post_process_translation(
-        self, translated_text: str, neologism_map: Dict[str, DetectedNeologism]
+        self, translated_text: str, neologism_map: dict[str, DetectedNeologism]
     ) -> str:
         """
         Post-process translation to handle preserved neologisms.
@@ -197,7 +199,7 @@ class PhilosophyEnhancedTranslator:
 
     def _generate_neologism_suggestions(
         self, analysis: NeologismAnalysis, target_lang: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Generate translation suggestions for detected neologisms.
 
@@ -238,7 +240,7 @@ class PhilosophyEnhancedTranslator:
 
     def _generate_morphological_breakdown(
         self, neologism: DetectedNeologism
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate morphological breakdown for a neologism."""
         morphological = neologism.morphological_analysis
 
@@ -261,7 +263,7 @@ class PhilosophyEnhancedTranslator:
 
     def _generate_contextual_suggestions(
         self, neologism: DetectedNeologism, target_lang: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate contextual translation suggestions."""
         suggestions = []
 
@@ -283,7 +285,7 @@ class PhilosophyEnhancedTranslator:
 
         return suggestions[:5]  # Limit to top 5 suggestions
 
-    def get_detector_statistics(self) -> Dict[str, Any]:
+    def get_detector_statistics(self) -> dict[str, Any]:
         """Get statistics from the neologism detector."""
         return self.neologism_detector.get_statistics()
 

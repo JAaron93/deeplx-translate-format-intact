@@ -14,8 +14,9 @@ from core.state_manager import state, translation_jobs
 from services.enhanced_document_processor import EnhancedDocumentProcessor
 from services.language_detector import LanguageDetector
 from services.neologism_detector import NeologismDetector
-from services.philosophy_enhanced_translation_service import \
-    PhilosophyEnhancedTranslationService
+from services.philosophy_enhanced_translation_service import (
+    PhilosophyEnhancedTranslationService,
+)
 from services.translation_service import TranslationService
 from services.user_choice_manager import UserChoiceManager
 from utils.file_handler import FileHandler

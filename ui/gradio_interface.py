@@ -5,9 +5,12 @@ from pathlib import Path
 import gradio as gr
 
 from config.settings import Settings
-from core.translation_handler import (download_translated_file,
-                                      get_translation_status,
-                                      process_file_upload, start_translation)
+from core.translation_handler import (
+    download_translated_file,
+    get_translation_status,
+    process_file_upload,
+    start_translation,
+)
 
 
 def create_gradio_interface() -> gr.Blocks:

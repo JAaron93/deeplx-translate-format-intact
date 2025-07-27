@@ -34,10 +34,15 @@ def get_memory_limit_mb():
 from models.neologism_models import NeologismAnalysis
 from models.user_choice_models import ChoiceType
 from services.philosophy_enhanced_document_processor import (
-    PhilosophyDocumentResult, PhilosophyEnhancedDocumentProcessor,
-    PhilosophyProcessingProgress, process_document_with_philosophy_awareness)
+    PhilosophyDocumentResult,
+    PhilosophyEnhancedDocumentProcessor,
+    PhilosophyProcessingProgress,
+    process_document_with_philosophy_awareness,
+)
 from services.philosophy_enhanced_translation_service import (
-    NeologismPreservationResult, PhilosophyEnhancedTranslationService)
+    NeologismPreservationResult,
+    PhilosophyEnhancedTranslationService,
+)
 
 
 class TestCompletePhilosophyEnhancedIntegration:
