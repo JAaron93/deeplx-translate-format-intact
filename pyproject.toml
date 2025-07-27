@@ -16,6 +16,23 @@ extend-exclude = '''
 '''
 
 [tool.ruff]
+# Configure to match Black
+line-length = 88
+target-version = "py38"
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    "build",
+    "dist",
+    "node_modules",
+]
+
+[tool.ruff.lint]
 # Enable all rules that replace our current tools
 select = [
     "E",    # pycodestyle errors
@@ -34,22 +51,6 @@ select = [
     "RUF",  # Ruff-specific rules
 ]
 
-# Configure to match Black
-line-length = 88
-target-version = "py38"
-
-# Exclude common directories
-exclude = [
-    ".git",
-    ".venv",
-    "__pycache__",
-    ".mypy_cache",
-    ".pytest_cache",
-    "build",
-    "dist",
-    "node_modules",
-]
-
 # Ignore specific rules (based on current Flake8 config)
 ignore = [
     "E203",  # whitespace before ':'
@@ -62,15 +63,15 @@ ignore = [
 fixable = ["ALL"]
 unfixable = []
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Ignore specific rules for test files
 "tests/*" = ["D", "S101"]  # No docstrings required, assert allowed
 "examples/*" = ["D"]  # No docstrings required
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"  # or "numpy" based on project preference
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["services", "models", "utils", "database", "config"]
 
 # Development dependencies for code formatting and linting
