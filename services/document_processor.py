@@ -71,15 +71,12 @@ class DocumentProcessor:
                         xref = img[0]
                         pix = fitz.Pixmap(doc, xref)
                         if pix.n - pix.alpha < 4:
+                            image_rects = page.get_image_rects(xref)
                             images.append(
                                 {
                                     "index": img_index,
                                     "xref": xref,
-                                    "bbox": (
-                                        page.get_image_rects(xref)[0]
-                                        if page.get_image_rects(xref)
-                                        else None
-                                    ),
+                                    "bbox": image_rects[0] if image_rects else None,
                                     "data": pix.tobytes("png"),
                                 }
                             )

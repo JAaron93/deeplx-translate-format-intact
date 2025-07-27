@@ -498,7 +498,7 @@ class PhilosophyEnhancedTranslationService:
         # Sort neologisms by position (reverse order to avoid position shifts)
         sorted_neologisms = sorted(neologisms, key=lambda n: n.start_pos, reverse=True)
 
-        for i, neologism in enumerate(sorted_neologisms):
+        for neologism in sorted_neologisms:
             marker = self._create_preservation_marker(neologism.term)
             preserved_text = self._replace_term_with_marker(
                 preserved_text, neologism, marker

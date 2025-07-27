@@ -12,12 +12,14 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from services.parallel_translation_service import (BatchProgress,
-                                                   ParallelLingoTranslator,
-                                                   ParallelTranslationConfig,
-                                                   ParallelTranslationService,
-                                                   RateLimiter,
-                                                   TranslationTask)
+from services.parallel_translation_service import (
+    BatchProgress,
+    ParallelLingoTranslator,
+    ParallelTranslationConfig,
+    ParallelTranslationService,
+    RateLimiter,
+    TranslationTask,
+)
 
 
 class TestRateLimiter:
@@ -303,8 +305,13 @@ class TestParallelTranslationService:
                 assert all(r == "Translated" for r in results)
 
 
+@pytest.mark.slow
 async def test_basic_functionality():
-    """Basic functionality test that can be run directly."""
+    """Basic functionality test that can be run directly.
+
+    Note: This test duplicates coverage from TestRateLimiter.test_rate_limiter_basic
+    but is kept for standalone execution. Marked as slow to exclude from default runs.
+    """
     print("Testing rate limiter...")
     limiter = RateLimiter(2.0)
 

@@ -6,8 +6,11 @@ import logging
 import re
 from typing import Any, Optional
 
-from models.neologism_models import (ConfidenceFactors, MorphologicalAnalysis,
-                                     PhilosophicalContext)
+from models.neologism_models import (
+    ConfidenceFactors,
+    MorphologicalAnalysis,
+    PhilosophicalContext,
+)
 
 logger = logging.getLogger(__name__)
 

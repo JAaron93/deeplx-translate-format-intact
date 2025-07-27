@@ -6,14 +6,21 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from database.choice_database import ChoiceDatabase
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
-from models.user_choice_models import (ChoiceConflict, ChoiceScope,
-                                       ChoiceSession, ChoiceType,
-                                       ConflictResolution, SessionStatus,
-                                       TranslationContext, UserChoice,
-                                       create_choice_id, create_session_id,
-                                       detect_choice_conflicts,
-                                       filter_choices_by_context,
-                                       find_best_matching_choice)
+from models.user_choice_models import (
+    ChoiceConflict,
+    ChoiceScope,
+    ChoiceSession,
+    ChoiceType,
+    ConflictResolution,
+    SessionStatus,
+    TranslationContext,
+    UserChoice,
+    create_choice_id,
+    create_session_id,
+    detect_choice_conflicts,
+    filter_choices_by_context,
+    find_best_matching_choice,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -374,10 +381,8 @@ class UserChoiceManager:
             paragraph_context=neologism.paragraph_context,
             semantic_field=neologism.philosophical_context.semantic_field,
             philosophical_domain=neologism.philosophical_context.semantic_field,
-            author=(
-                neologism.philosophical_context.author_terminology[0]
-                if neologism.philosophical_context.author_terminology
-                else ""
+            author=next(
+                iter(neologism.philosophical_context.author_terminology or []), ""
             ),
             page_number=neologism.page_number,
             surrounding_terms=neologism.philosophical_context.surrounding_terms[:10],
@@ -492,9 +497,10 @@ class UserChoiceManager:
                         "neologism": neologism.term,
                         "confidence": neologism.confidence,
                         "context": (
-                            neologism.sentence_context[:100] + "..."
-                            if len(neologism.sentence_context) > 100
-                            else neologism.sentence_context
+                            (neologism.sentence_context or "")[:100] + "..."
+                            if neologism.sentence_context
+                            and len(neologism.sentence_context) > 100
+                            else (neologism.sentence_context or "")
                         ),
                     }
                 )
