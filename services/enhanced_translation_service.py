@@ -10,9 +10,11 @@ import logging
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-from services.parallel_translation_service import (BatchProgress,
-                                                   ParallelTranslationConfig,
-                                                   ParallelTranslationService)
+from services.parallel_translation_service import (
+    BatchProgress,
+    ParallelTranslationConfig,
+    ParallelTranslationService,
+)
 
 from .translation_service import TranslationService
 

@@ -8,10 +8,16 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from models.user_choice_models import (ChoiceConflict, ChoiceScope,
-                                       ChoiceSession, ChoiceType,
-                                       ConflictResolution, SessionStatus,
-                                       TranslationContext, UserChoice)
+from models.user_choice_models import (
+    ChoiceConflict,
+    ChoiceScope,
+    ChoiceSession,
+    ChoiceType,
+    ConflictResolution,
+    SessionStatus,
+    TranslationContext,
+    UserChoice,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -14,11 +14,9 @@ Usage:
 
 import os
 
-from models.user_choice_models import (ChoiceScope, ChoiceType,
-                                       ConflictResolution)
+from models.user_choice_models import ChoiceScope, ChoiceType, ConflictResolution
 from services.neologism_detector import NeologismDetector
-from services.user_choice_manager import (UserChoiceManager,
-                                          create_session_for_document)
+from services.user_choice_manager import UserChoiceManager, create_session_for_document
 
 
 def setup_example_environment():

@@ -46,9 +46,13 @@ def run_test(test_name, test_func):
 
 def test_user_choice_models():
     """Test user choice models basic functionality."""
-    from models.user_choice_models import (ChoiceScope, ChoiceType,
-                                           TranslationContext, UserChoice,
-                                           create_choice_id)
+    from models.user_choice_models import (
+        ChoiceScope,
+        ChoiceType,
+        TranslationContext,
+        UserChoice,
+        create_choice_id,
+    )
 
     # Test TranslationContext creation
     context = TranslationContext(
@@ -88,8 +92,12 @@ def test_choice_database():
     import tempfile
 
     from database.choice_database import ChoiceDatabase
-    from models.user_choice_models import (ChoiceScope, ChoiceType,
-                                           TranslationContext, UserChoice)
+    from models.user_choice_models import (
+        ChoiceScope,
+        ChoiceType,
+        TranslationContext,
+        UserChoice,
+    )
 
     # Create temporary database
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
@@ -140,10 +148,14 @@ def test_choice_database():
 
 def test_neologism_models():
     """Test neologism models basic functionality."""
-    from models.neologism_models import (ConfidenceFactors, ConfidenceLevel,
-                                         DetectedNeologism,
-                                         MorphologicalAnalysis, NeologismType,
-                                         PhilosophicalContext)
+    from models.neologism_models import (
+        ConfidenceFactors,
+        ConfidenceLevel,
+        DetectedNeologism,
+        MorphologicalAnalysis,
+        NeologismType,
+        PhilosophicalContext,
+    )
 
     # Test NeologismType enum
     assert NeologismType.COMPOUND.value == "compound"

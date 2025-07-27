@@ -16,7 +16,9 @@ from models.neologism_models import NeologismAnalysis
 from .enhanced_document_processor import EnhancedDocumentProcessor
 from .neologism_detector import NeologismDetector
 from .philosophy_enhanced_translation_service import (
-    PhilosophyEnhancedTranslationService, PhilosophyTranslationProgress)
+    PhilosophyEnhancedTranslationService,
+    PhilosophyTranslationProgress,
+)
 from .user_choice_manager import UserChoiceManager
 
 logger = logging.getLogger(__name__)

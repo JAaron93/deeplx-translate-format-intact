@@ -5,21 +5,29 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import (APIRouter, BackgroundTasks, File, HTTPException, Request,
-                     UploadFile)
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from core.state_manager import state, translation_jobs
-from core.translation_handler import (document_processor, file_handler,
-                                      file_validator, language_detector,
-                                      neologism_detector,
-                                      process_advanced_translation_job,
-                                      user_choice_manager)
-from models.user_choice_models import (ChoiceScope, ChoiceType,
-                                       ConfidenceFactors, DetectedNeologism,
-                                       MorphologicalAnalysis, NeologismType,
-                                       PhilosophicalContext)
+from core.translation_handler import (
+    document_processor,
+    file_handler,
+    file_validator,
+    language_detector,
+    neologism_detector,
+    process_advanced_translation_job,
+    user_choice_manager,
+)
+from models.user_choice_models import (
+    ChoiceScope,
+    ChoiceType,
+    ConfidenceFactors,
+    DetectedNeologism,
+    MorphologicalAnalysis,
+    NeologismType,
+    PhilosophicalContext,
+)
 from utils.language_utils import extract_text_sample_for_language_detection
 
 logger = logging.getLogger(__name__)
