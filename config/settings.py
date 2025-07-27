@@ -214,7 +214,7 @@ def _parse_bool_env(env_var: str, default: str = "false") -> bool:
             raise ValueError(f"Invalid boolean value for {env_var}: {value}")
     except AttributeError as e:
         logger.error(f"Error parsing boolean environment variable {env_var}: {e}")
-        raise ValueError(f"Error parsing {env_var}: {e}")
+        raise ValueError(f"Error parsing {env_var}: {e}") from e
 
 
 class Settings:

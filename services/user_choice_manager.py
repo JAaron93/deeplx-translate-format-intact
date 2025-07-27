@@ -552,7 +552,7 @@ class UserChoiceManager:
             json_data = json.dumps(choices_dict)
             return self.db.import_choices_from_json(json_data, session_id)
         except (TypeError, ValueError) as e:
-            raise ValueError(f"Invalid choice data format: {e!s}")
+            raise ValueError(f"Invalid choice data format: {e!s}") from e
 
     def import_terminology_as_choices(
         self,
