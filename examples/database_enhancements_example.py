@@ -162,7 +162,8 @@ def demonstrate_json_encoding():
 
     json_ascii = db2.export_choices_to_json()
     print("\nASCII-Only Encoding:")
-    print(f"Contains Unicode escapes: '\\u' in json_ascii: " f"{'\\u' in json_ascii}")
+    unicode_marker = "\\u"
+    print(f"Contains Unicode escapes: '{unicode_marker}' in json_ascii: {unicode_marker in json_ascii}")
     print(f"File size ASCII: {len(json_ascii)} bytes")
 
     # Example 3: Runtime encoding adjustment

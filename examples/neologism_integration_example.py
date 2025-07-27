@@ -9,7 +9,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # Add the project root to the path (at end to avoid overriding system packages)
 project_root = Path(__file__).parent.parent
@@ -34,7 +34,7 @@ class PhilosophyEnhancedTranslator:
 
     def __init__(
         self,
-        terminology_path: str = None,
+        terminology_path: Optional[str] = None,
         min_confidence: float = 0.6,
         preserve_neologisms: bool = True,
     ):

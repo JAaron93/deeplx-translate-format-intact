@@ -11,8 +11,7 @@ import json
 import sys
 import traceback
 from pathlib import Path
--from typing import Any, Dict, List, Optional
-+from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 # Add project root to path for imports (insert at end to minimize conflicts)
 project_root = Path(__file__).parent.parent
@@ -64,7 +63,6 @@ def load_test_words(
     config_path: Optional[Union[str, Path]] = None,
     categories: Optional[List[str]] = None,
     auto_detect_categories: bool = True,
-) -> List[Dict[str, Any]]:
 ) -> List[Dict[str, Any]]:
     """Load test words from configuration file with flexible category selection.
 
@@ -208,7 +206,6 @@ def debug_compound_detection(
     verbose: bool = True,
     filter_category: Optional[str] = None,
     categories: Optional[List[str]] = None,
-) -> None:
 ) -> None:
     """Debug compound word detection using public NeologismDetector API.
 
