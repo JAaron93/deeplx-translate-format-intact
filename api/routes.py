@@ -113,8 +113,12 @@ async def save_user_choice(choice_data: Dict[str, Any]):
 
 
 @api_router.get("/philosophy/neologisms")
-async def get_detected_neologisms(session_id: Optional[str] = None):
-    """Get detected neologisms for the current session"""
+async def get_detected_neologisms(_session_id: Optional[str] = None):
+    """Get detected neologisms for the current session
+
+    Args:
+        _session_id: Session identifier (reserved for future session-based functionality)
+    """
     try:
         # Return neologisms from state
         neologisms = (
