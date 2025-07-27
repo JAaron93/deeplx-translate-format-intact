@@ -1,5 +1,6 @@
-"""Professional Document Translator with Advanced Formatting Preservation
-Refactored main application entry point
+"""Professional Document Translator with Advanced Formatting Preservation.
+
+Refactored main application entry point.
 """
 
 import logging
@@ -52,7 +53,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("startup")
 async def startup_event():
-    """Create required directories on startup"""
+    """Create required directories on startup."""
     required_directories = [
         "static",
         "uploads",
@@ -69,7 +70,7 @@ async def startup_event():
 
 
 def main() -> None:
-    """Main application entry point"""
+    """Main application entry point."""
     logger.info("Starting Advanced Document Translator")
 
     # Create Gradio interface

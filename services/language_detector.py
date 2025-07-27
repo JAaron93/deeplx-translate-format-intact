@@ -1,4 +1,4 @@
-"""Language detection service"""
+"""Language detection service."""
 
 from __future__ import annotations
 

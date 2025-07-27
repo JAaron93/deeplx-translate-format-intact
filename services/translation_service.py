@@ -1,4 +1,4 @@
-"""Translation service for Dolphin OCR Translate with Lingo.dev provider support"""
+"""Translation service for Dolphin OCR Translate with Lingo.dev provider support."""
 
 from __future__ import annotations
 

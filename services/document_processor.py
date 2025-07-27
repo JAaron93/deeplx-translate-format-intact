@@ -1,4 +1,4 @@
-"""Document processing service for multiple file formats"""
+"""Document processing service for multiple file formats."""
 
 from __future__ import annotations
 

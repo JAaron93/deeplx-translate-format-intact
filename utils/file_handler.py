@@ -1,4 +1,4 @@
-"""File handling utilities"""
+"""File handling utilities."""
 
 from __future__ import annotations
 
