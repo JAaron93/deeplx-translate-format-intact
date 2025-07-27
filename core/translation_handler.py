@@ -7,7 +7,7 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 from config.settings import Settings
 from core.state_manager import state, translation_jobs
@@ -243,10 +243,10 @@ async def translate_content(
     content: dict,
     source_language: str,
     target_language: str,
-    max_pages: int = None,
+    max_pages: Optional[int] = None,
     progress_callback=None,
     philosophy_mode: bool = False,
-    session_id: str = None,
+    session_id: Optional[str] = None,
 ) -> Tuple[dict, str]:
     """Core translation function that handles text extraction and translation.
 
