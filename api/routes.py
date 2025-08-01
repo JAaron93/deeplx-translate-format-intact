@@ -248,7 +248,7 @@ async def get_terminology():
 
 
 @api_router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...)):  # noqa: B008
     """Enhanced upload endpoint with advanced processing."""
     try:
         # Validate file

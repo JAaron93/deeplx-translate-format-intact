@@ -252,6 +252,7 @@ class PhilosophyEnhancedDocumentProcessor:
             provider: Translation provider to use
             user_id: User ID for session management
             session_id: Existing session ID or None to create new
+            philosophy_mode: Enable philosophy-aware processing features
             progress_callback: Optional progress callback
 
         Returns:
@@ -501,7 +502,7 @@ class PhilosophyEnhancedDocumentProcessor:
         total_choices_applied = 0
 
         # Process each detected neologism
-        for i, neologism in enumerate(document_analysis.detected_neologisms):
+        for neologism in document_analysis.detected_neologisms:
             # Check for existing user choice
             existing_choice = await asyncio.to_thread(
                 self.user_choice_manager.get_choice_for_neologism, neologism, session_id

@@ -48,7 +48,7 @@ class PhilosophicalContextAnalyzer:
                     config_data = json.load(f)
 
                     # Load indicators from each category
-                    for category, terms in config_data.items():
+                    for _, terms in config_data.items():
                         if isinstance(terms, list):
                             indicators.update(term.lower() for term in terms)
 

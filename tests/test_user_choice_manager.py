@@ -163,14 +163,14 @@ class TestUserChoiceManager:
         session = temp_manager.create_session(session_name="Test Session")
 
         # Make some choices
-        choice1 = temp_manager.make_choice(
+        _choice1 = temp_manager.make_choice(
             neologism=sample_neologism,
             choice_type=ChoiceType.TRANSLATE,
             translation_result="being-there",
             session_id=session.session_id,
         )
 
-        choice2 = temp_manager.make_choice(
+        _choice2 = temp_manager.make_choice(
             neologism=sample_neologism,
             choice_type=ChoiceType.TRANSLATE,
             translation_result="being-there",
@@ -248,7 +248,7 @@ class TestUserChoiceManager:
     def test_get_choice_for_similar_context(self, temp_manager, sample_neologism):
         """Test getting choice for similar context."""
         # Create choice with specific context
-        original_choice = temp_manager.make_choice(
+        _original_choice = temp_manager.make_choice(
             neologism=sample_neologism,
             choice_type=ChoiceType.TRANSLATE,
             translation_result="being-there",
@@ -372,7 +372,7 @@ class TestUserChoiceManager:
         session = temp_manager.create_session(session_name="Conflict Test")
 
         # Make first choice
-        choice1 = temp_manager.make_choice(
+        _choice1 = temp_manager.make_choice(
             neologism=sample_neologism,
             choice_type=ChoiceType.TRANSLATE,
             translation_result="being-there",
@@ -380,7 +380,7 @@ class TestUserChoiceManager:
         )
 
         # Make conflicting choice (same term, different choice type)
-        choice2 = temp_manager.make_choice(
+        _choice2 = temp_manager.make_choice(
             neologism=sample_neologism,
             choice_type=ChoiceType.PRESERVE,
             translation_result="",
@@ -388,7 +388,7 @@ class TestUserChoiceManager:
         )
 
         # Check that conflicts were detected and resolved
-        unresolved_conflicts = temp_manager.get_unresolved_conflicts()
+        _unresolved_conflicts = temp_manager.get_unresolved_conflicts()
 
         # With auto-resolution, there should be few or no unresolved conflicts
         if temp_manager.auto_resolve_conflicts:
@@ -468,7 +468,7 @@ class TestUserChoiceManager:
         # Create session and make choices
         session = temp_manager.create_session(session_name="Export Test")
 
-        choice1 = temp_manager.make_choice(
+        _choice1 = temp_manager.make_choice(
             neologism=sample_neologism,
             choice_type=ChoiceType.TRANSLATE,
             translation_result="being-there",
@@ -496,7 +496,7 @@ class TestUserChoiceManager:
             old_time = datetime.now() - timedelta(hours=25)
             mock_datetime.now.return_value = old_time
 
-            old_session = temp_manager.create_session(session_name="Old Session")
+            _old_session = temp_manager.create_session(session_name="Old Session")
 
         # Create recent session
         recent_session = temp_manager.create_session(session_name="Recent Session")
@@ -516,7 +516,7 @@ class TestUserChoiceManager:
         """Test getting comprehensive statistics."""
         # Create session and make choices
         session = temp_manager.create_session(session_name="Stats Test")
-        choice = temp_manager.make_choice(
+        _choice = temp_manager.make_choice(
             neologism=sample_neologism,
             choice_type=ChoiceType.TRANSLATE,
             translation_result="being-there",

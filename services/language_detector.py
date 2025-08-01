@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 try:
-    from langdetect import detect, detect_langs
+    from langdetect import detect
 
     LANGDETECT_AVAILABLE = True
 except ImportError:
@@ -31,9 +31,10 @@ logger = logging.getLogger(__name__)
 
 
 class LanguageDetector:
-    """Detects language of document content"""
+    """Detects language of document content."""
 
     def __init__(self) -> None:
+        """Initialize language detector with supported language mappings."""
         self.language_map: dict[str, str] = {
             "en": "English",
             "es": "Spanish",
@@ -53,7 +54,7 @@ class LanguageDetector:
         }
 
     def detect_language(self, file_path: str) -> str:
-        """Detect language of document"""
+        """Detect language of document."""
         try:
             # Extract sample text from document
             sample_text = self._extract_sample_text(file_path)
@@ -74,7 +75,7 @@ class LanguageDetector:
             return "Unknown"
 
     def _extract_sample_text(self, file_path: str, max_chars: int = 2000) -> str:
-        """Extract sample text for language detection"""
+        """Extract sample text for language detection."""
         try:
             file_ext = Path(file_path).suffix.lower()
 
@@ -111,7 +112,7 @@ class LanguageDetector:
             return ""
 
     def _simple_language_detection(self, text: str) -> str:
-        """Simple language detection based on character patterns
+        """Simple language detection based on character patterns.
 
         Args:
             text: Input text to analyze
@@ -226,7 +227,7 @@ class LanguageDetector:
         return "Unknown"
 
     def detect_language_from_text(self, text: str) -> str:
-        """Detect language from provided text"""
+        """Detect language from provided text."""
         try:
             if not text or len(text.strip()) < 10:
                 return "Unknown"
@@ -244,5 +245,5 @@ class LanguageDetector:
             return "Unknown"
 
     def get_supported_languages(self) -> list[str]:
-        """Get list of supported languages"""
+        """Get list of supported languages."""
         return list(self.language_map.values())

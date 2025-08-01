@@ -146,7 +146,7 @@ class EnhancedDocumentProcessor:
         try:
             try:
                 # Try to get the current event loop
-                loop = asyncio.get_running_loop()
+                asyncio.get_running_loop()
                 # If we're in an async context, we need to run in a thread
                 import concurrent.futures
 
@@ -361,7 +361,7 @@ class EnhancedDocumentProcessor:
             if para_info["style"] != "Normal":
                 try:
                     paragraph.style = para_info["style"]
-                except:
+                except (KeyError, ValueError, AttributeError):
                     pass  # Style might not exist in new document
 
         # Save document

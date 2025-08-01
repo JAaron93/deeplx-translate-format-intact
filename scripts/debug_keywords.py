@@ -14,6 +14,7 @@ from services.neologism_detector import NeologismDetector  # noqa: E402
 
 
 def debug_keywords():
+    """Debug and verify philosophical keyword detection functionality."""
     try:
         detector = NeologismDetector()
 

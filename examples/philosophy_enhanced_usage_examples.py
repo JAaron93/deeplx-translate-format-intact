@@ -10,13 +10,6 @@ import asyncio
 import logging
 from pathlib import Path
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
-# Import the philosophy-enhanced services
 from models.user_choice_models import ChoiceType
 from services.philosophy_enhanced_document_processor import (
     PhilosophyProcessingProgress,
@@ -28,6 +21,16 @@ from services.philosophy_enhanced_translation_service import (
     PhilosophyTranslationProgress,
 )
 from services.user_choice_manager import UserChoiceManager
+
+
+def _configure_logging():
+    """Configure logging for the examples."""
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+
+logger = logging.getLogger(__name__)
 
 
 class PhilosophyTranslationExamples:
@@ -399,6 +402,8 @@ class StatisticsAndPerformanceExamples:
 
 async def main():
     """Main function to run all examples."""
+    _configure_logging()
+
     print("Philosophy-Enhanced Translation System Examples")
     print("=" * 80)
 

@@ -218,6 +218,8 @@ def _parse_bool_env(env_var: str, default: str = "false") -> bool:
 
 
 class Settings:
+    """Application settings with environment variable configuration."""
+
     # Translation API settings - Only Lingo.dev
     LINGO_API_KEY: str = os.getenv("LINGO_API_KEY")
 
@@ -257,14 +259,32 @@ class Settings:
     MAX_FILE_AGE_HOURS: int = int(os.getenv("MAX_FILE_AGE_HOURS", "48"))
 
     def __init__(self):
-        # Create required directories
+        """Initialize settings and create required directories."""
+        # Create required directories with proper error handling
         for directory in [
             self.UPLOAD_DIR,
             self.DOWNLOAD_DIR,
             self.TEMP_DIR,
             self.IMAGE_CACHE_DIR,
         ]:
-            os.makedirs(directory, exist_ok=True)
+            # Normalize path to absolute path
+            normalized_path = os.path.abspath(directory)
+
+            try:
+                os.makedirs(normalized_path, exist_ok=True)
+                logger.debug(f"Successfully created/verified directory: {normalized_path}")
+            except PermissionError as e:
+                logger.error(
+                    f"Permission denied when creating directory '{normalized_path}': {e}. "
+                    f"Check file system permissions for the application."
+                )
+                raise
+            except OSError as e:
+                logger.error(
+                    f"OS error when creating directory '{normalized_path}': {e}. "
+                    f"Check path validity and available disk space."
+                )
+                raise
 
     def get_available_translators(self) -> list:
         """Get list of available translation services."""

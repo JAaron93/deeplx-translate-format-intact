@@ -354,7 +354,7 @@ class ChoiceSession:
 
         # Calculate consistency within groups
         consistency_scores = []
-        for term, term_choices in term_groups.items():
+        for _term, term_choices in term_groups.items():
             if len(term_choices) < 2:
                 consistency_scores.append(1.0)
                 continue

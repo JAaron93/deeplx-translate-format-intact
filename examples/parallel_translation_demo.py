@@ -280,7 +280,7 @@ async def demo_error_handling_and_resilience():
     try:
         start_time = time.time()
 
-        for i, text in enumerate(texts):
+        for i, _ in enumerate(texts):
             # Simulate processing with occasional "failures"
             if i == 2:  # Simulate failure on third item
                 logger.warning("Simulating API failure for text %d", i + 1)

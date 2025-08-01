@@ -24,27 +24,28 @@ logger = logging.getLogger(__name__)
 
 
 class BaseTranslator(ABC):
-    """Abstract base class for translation providers"""
+    """Abstract base class for translation providers."""
 
     @abstractmethod
     async def translate_text(
         self, text: str, source_lang: str, target_lang: str
     ) -> str:
-        """Translate a single text string"""
+        """Translate a single text string."""
         pass
 
     @abstractmethod
     async def translate_batch(
         self, texts: list[str], source_lang: str, target_lang: str
     ) -> list[str]:
-        """Translate a batch of text strings"""
+        """Translate a batch of text strings."""
         pass
 
 
 class LingoTranslator(BaseTranslator):
-    """Lingo.dev translation implementation"""
+    """Lingo.dev translation implementation."""
 
     def __init__(self, api_key: str):
+        """Initialize Lingo translator with API key and session configuration."""
         if not api_key:
             raise ValueError("LINGO_API_KEY is required")
 
@@ -62,6 +63,7 @@ class LingoTranslator(BaseTranslator):
     async def translate_text(
         self, text: str, source_lang: str, target_lang: str
     ) -> str:
+        """Translate text using Lingo.dev API."""
         try:
             if not text.strip():
                 return text
@@ -98,7 +100,7 @@ class LingoTranslator(BaseTranslator):
     async def translate_batch(
         self, texts: list[str], source_lang: str, target_lang: str
     ) -> list[str]:
-        """Translate batch of texts using Lingo.dev"""
+        """Translate batch of texts using Lingo.dev."""
         results = []
 
         # Process texts individually for better error handling
@@ -117,9 +119,10 @@ class LingoTranslator(BaseTranslator):
 
 
 class TranslationService:
-    """Main translation service with Lingo.dev provider"""
+    """Main translation service with Lingo.dev provider."""
 
     def __init__(self, terminology_map: Optional[dict[str, str]] = None) -> None:
+        """Initialize translation service with optional terminology mapping."""
         # Mapping of provider name to translator instance
         self.providers: dict[str, BaseTranslator] = {}
         # Optional terminology mapping for preprocessing
@@ -127,7 +130,7 @@ class TranslationService:
         self._initialize_providers()
 
     def _initialize_providers(self) -> None:
-        """Initialize Lingo.dev translation provider"""
+        """Initialize Lingo.dev translation provider."""
         try:
             lingo_key = os.getenv("LINGO_API_KEY")
             if lingo_key:
@@ -140,7 +143,7 @@ class TranslationService:
             raise
 
     def get_available_providers(self) -> list[str]:
-        """Get list of available translation providers"""
+        """Get list of available translation providers."""
         return list(self.providers.keys())
 
     async def translate_batch(
@@ -212,7 +215,7 @@ class TranslationService:
         provider: str = "auto",
         progress_callback: Optional[Callable[[int], None]] = None,
     ) -> dict[str, Any]:
-        """Translate document content"""
+        """Translate document content."""
         # Select provider
         if provider == "auto":
             provider = self._select_best_provider()
@@ -340,7 +343,7 @@ class TranslationService:
     def _apply_terminology(self, text: str) -> str:
         """Replace terms in text using self.terminology_map with word-boundary safety."""
         processed = text
-        for source, target in self.terminology_map.items():
+        for source in self.terminology_map:
             # Wrap term in HTML span with translate="no" to preserve it
             pattern = rf"(?<!\w){re.escape(source)}(?!\w)"
             processed = re.sub(

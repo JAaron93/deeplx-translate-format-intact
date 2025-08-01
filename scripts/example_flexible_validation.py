@@ -134,18 +134,10 @@ def add_project_root_to_path(project_root: Optional[Path] = None) -> Path:
     return project_root
 
 
-# Find and add project root to path using robust method
-print("🔍 Searching for project root...")
-project_root = add_project_root_to_path()
-
-# Import the flexible validation functions
-from scripts.debug_candidates import (
-    find_and_validate_project_root,
-    load_project_validation_config,
-)
 
 
-def example_default_validation():
+
+def example_default_validation(find_and_validate_project_root):
     """Example 1: Use default validation (backward compatible)."""
     print("=== Example 1: Default Validation ===")
     try:
@@ -157,7 +149,7 @@ def example_default_validation():
         return None
 
 
-def example_custom_parameters():
+def example_custom_parameters(find_and_validate_project_root):
     """Example 2: Use custom validation parameters."""
     print("\n=== Example 2: Custom Parameters ===")
     try:
@@ -226,7 +218,7 @@ def create_sample_config_safely(config_file: Path) -> bool:
         return False
 
 
-def example_config_file():
+def example_config_file(find_and_validate_project_root):
     """Example 3: Use configuration file."""
     print("\n=== Example 3: Configuration File ===")
     # Use the robust project root finder
@@ -252,7 +244,7 @@ def example_config_file():
         return None
 
 
-def example_environment_variables():
+def example_environment_variables(find_and_validate_project_root, load_project_validation_config):
     """Example 4: Use environment variables."""
     print("\n=== Example 4: Environment Variables ===")
 
@@ -282,7 +274,7 @@ def example_environment_variables():
             os.environ.pop(key, None)
 
 
-def example_non_strict_validation():
+def example_non_strict_validation(find_and_validate_project_root):
     """Example 5: Non-strict validation (warnings only)."""
     print("\n=== Example 5: Non-Strict Validation ===")
     try:
@@ -305,17 +297,27 @@ def main():
     print("Flexible Project Root Validation Examples")
     print("=" * 50)
 
+    # Set up sys.path and import required modules
+    print("🔍 Searching for project root...")
+    _ = add_project_root_to_path()
+
+    # Import the flexible validation functions after path setup
+    from scripts.debug_candidates import (
+        find_and_validate_project_root,
+        load_project_validation_config,
+    )
+
     examples = [
-        example_default_validation,
-        example_custom_parameters,
-        example_config_file,
-        example_environment_variables,
-        example_non_strict_validation,
+        (example_default_validation, [find_and_validate_project_root]),
+        (example_custom_parameters, [find_and_validate_project_root]),
+        (example_config_file, [find_and_validate_project_root]),
+        (example_environment_variables, [find_and_validate_project_root, load_project_validation_config]),
+        (example_non_strict_validation, [find_and_validate_project_root]),
     ]
 
     results = []
-    for example_func in examples:
-        result = example_func()
+    for example_func, args in examples:
+        result = example_func(*args)
         results.append(result is not None)
 
     print("\n=== Summary ===")

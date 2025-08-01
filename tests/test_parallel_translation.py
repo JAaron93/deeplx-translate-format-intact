@@ -50,7 +50,6 @@ class TestRateLimiter:
             return time.time()
 
         # Make 10 concurrent requests
-        start_time = time.time()
         tasks = [make_request() for _ in range(10)]
         results = await asyncio.gather(*tasks)
 
@@ -324,13 +323,15 @@ async def test_basic_functionality():
     print(f"Rate limiter test completed in {elapsed:.2f}s")
     assert elapsed >= 0.4
 
-    print("Basic tests passed!")
-
-
 if __name__ == "__main__":
     # Run basic tests
     asyncio.run(test_basic_functionality())
-    """Basic functionality test that can be run directly."""
+    asyncio.run(test_rate_limiter())
+    print("Basic tests passed!")
+
+
+async def test_rate_limiter():
+    """Test rate limiter functionality."""
     print("Testing rate limiter...")
     limiter = RateLimiter(2.0)
 
@@ -343,4 +344,8 @@ if __name__ == "__main__":
     print(f"Rate limiter test completed in {elapsed:.2f}s")
     assert elapsed >= 0.4
 
+
+if __name__ == "__main__":
+    # Run basic tests
+    asyncio.run(test_rate_limiter())
     print("Basic tests passed!")

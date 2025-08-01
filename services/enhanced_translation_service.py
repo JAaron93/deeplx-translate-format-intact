@@ -25,6 +25,20 @@ class EnhancedTranslationService(TranslationService):
     """Enhanced translation service with parallel processing capabilities."""
 
     def __init__(self, terminology_path: Optional[str] = None):
+        """Initialize enhanced translation service with parallel processing.
+
+        Args:
+            terminology_path: Optional path to JSON file containing terminology
+                            mappings for translation preprocessing. If provided,
+                            terms in the file will be preserved during
+                            translation using HTML span tags.
+
+        Side Effects:
+            - Initializes parent TranslationService with terminology mapping
+            - Sets up parallel_config from ParallelTranslationConfig.from_config()
+            - Initializes performance_stats dictionary with tracking metrics
+            - Sets _parallel_service to None for lazy initialization
+        """
         super().__init__(terminology_path)
 
         # Parallel processing configuration
