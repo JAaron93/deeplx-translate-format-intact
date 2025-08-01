@@ -32,3 +32,8 @@ class badClassName:  # Class name should be PascalCase (violates N801)
         return l,d  # Missing space after comma (violates E999)
 
 # Missing final newline (violates W292)
+
+# Adding more violations to trigger hooks
+def another_function():
+    x=1+2+3  # No spaces around operators
+    return x
