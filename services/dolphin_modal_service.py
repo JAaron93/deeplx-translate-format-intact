@@ -4,9 +4,6 @@ This service replaces the HuggingFace Spaces API approach with a direct
 Modal deployment of the Dolphin OCR model for better performance and control.
 """
 
-import io
-import os
-from pathlib import Path
 from typing import Any, Dict, List
 
 import modal
@@ -48,12 +45,14 @@ dolphin_image = (
         "uvicorn[standard]>=0.23.0",
         "python-multipart>=0.0.6",
     )
-    .env({
-        "HF_HUB_ENABLE_HF_TRANSFER": "1",
-        "HF_HUB_CACHE": MODEL_CACHE_PATH,
-        "TRANSFORMERS_CACHE": MODEL_CACHE_PATH,
-        "TORCH_HOME": MODEL_CACHE_PATH,
-    })
+    .env(
+        {
+            "HF_HUB_ENABLE_HF_TRANSFER": "1",
+            "HF_HUB_CACHE": MODEL_CACHE_PATH,
+            "TRANSFORMERS_CACHE": MODEL_CACHE_PATH,
+            "TORCH_HOME": MODEL_CACHE_PATH,
+        }
+    )
 )
 
 # Create a persistent volume for model storage
@@ -71,9 +70,9 @@ model_volume = modal.Volume.from_name("dolphin-ocr-models", create_if_missing=Tr
 def download_model():
     """Download and cache the Dolphin OCR model."""
     from huggingface_hub import snapshot_download
-    
+
     print("Downloading Dolphin OCR model...")
-    
+
     # Download the model to the persistent volume
     model_path = snapshot_download(
         repo_id=DOLPHIN_MODEL_ID,
@@ -81,7 +80,7 @@ def download_model():
         local_dir=f"{MODEL_CACHE_PATH}/dolphin",
         local_dir_use_symlinks=False,
     )
-    
+
     print(f"Model downloaded to: {model_path}")
     return model_path
 
@@ -95,23 +94,20 @@ def download_model():
     container_idle_timeout=600,
 )
 def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
-    """
-    Process a PDF with Dolphin OCR and return structured layout data.
-    
+    """Process a PDF with Dolphin OCR and return structured layout data.
+
     Args:
         pdf_bytes: Raw PDF file bytes
-        
+
     Returns:
         Dictionary containing OCR results with layout information
     """
     import torch
-    from transformers import AutoProcessor, AutoModelForVision2Seq
     from pdf2image import convert_from_bytes
-    from PIL import Image
-    import numpy as np
-    
+    from transformers import AutoModelForVision2Seq, AutoProcessor
+
     print("Loading Dolphin OCR model...")
-    
+
     # Load the model and processor
     model_path = f"{MODEL_CACHE_PATH}/dolphin"
     processor = AutoProcessor.from_pretrained(model_path)
@@ -120,9 +116,9 @@ def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
         torch_dtype=torch.float16,
         device_map="auto",
     )
-    
+
     print("Converting PDF to images...")
-    
+
     # Convert PDF to images
     images = convert_from_bytes(
         pdf_bytes,
@@ -130,17 +126,17 @@ def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
         fmt="RGB",
         thread_count=2,
     )
-    
+
     print(f"Processing {len(images)} pages...")
-    
+
     results = []
-    
+
     for page_num, image in enumerate(images):
         print(f"Processing page {page_num + 1}/{len(images)}")
-        
+
         # Process the image with Dolphin
         inputs = processor(images=image, return_tensors="pt").to(model.device)
-        
+
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
@@ -148,12 +144,10 @@ def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
                 do_sample=False,
                 temperature=0.0,
             )
-        
+
         # Decode the output
-        generated_text = processor.batch_decode(
-            outputs, skip_special_tokens=True
-        )[0]
-        
+        generated_text = processor.batch_decode(outputs, skip_special_tokens=True)[0]
+
         # Parse the Dolphin output (this will need to be adapted based on actual format)
         page_result = {
             "page_number": page_num + 1,
@@ -162,9 +156,9 @@ def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
             "text_blocks": parse_dolphin_output(generated_text),
             "raw_output": generated_text,
         }
-        
+
         results.append(page_result)
-    
+
     return {
         "pages": results,
         "total_pages": len(results),
@@ -172,14 +166,13 @@ def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
             "processor": "dolphin_ocr_modal",
             "model_id": DOLPHIN_MODEL_ID,
             "dpi": PDF2IMAGE_DPI,
-        }
+        },
     }
 
 
 def parse_dolphin_output(raw_output: str) -> List[Dict[str, Any]]:
-    """
-    Parse Dolphin OCR output into structured text blocks.
-    
+    """Parse Dolphin OCR output into structured text blocks.
+
     This function will need to be implemented based on the actual
     output format of the Dolphin model.
     """
@@ -200,9 +193,10 @@ def parse_dolphin_output(raw_output: str) -> List[Dict[str, Any]]:
     timeout=30,
 )
 @modal.web_endpoint(method="POST", docs=True)
-def dolphin_ocr_endpoint(pdf_file: bytes = modal.web_endpoint.FileUpload()) -> Dict[str, Any]:
-    """
-    HTTP endpoint for Dolphin OCR processing.
+def dolphin_ocr_endpoint(
+    pdf_file: bytes = modal.web_endpoint.FileUpload(),
+) -> Dict[str, Any]:
+    """HTTP endpoint for Dolphin OCR processing.
     Compatible with the existing dolphin_client.py interface.
     """
     try:

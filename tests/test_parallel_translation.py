@@ -323,6 +323,7 @@ async def test_basic_functionality():
     print(f"Rate limiter test completed in {elapsed:.2f}s")
     assert elapsed >= 0.4
 
+
 if __name__ == "__main__":
     # Run basic tests
     asyncio.run(test_basic_functionality())

@@ -272,7 +272,9 @@ class Settings:
 
             try:
                 os.makedirs(normalized_path, exist_ok=True)
-                logger.debug(f"Successfully created/verified directory: {normalized_path}")
+                logger.debug(
+                    f"Successfully created/verified directory: {normalized_path}"
+                )
             except PermissionError as e:
                 logger.error(
                     f"Permission denied when creating directory '{normalized_path}': {e}. "

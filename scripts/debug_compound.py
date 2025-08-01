@@ -64,6 +64,7 @@ def get_categories_from_config(config_path: str) -> List[str]:
         print(f"⚠️  Warning: Could not read config file {config_path}: {e}")
         return get_default_categories()
 
+
 def load_test_words(
     config_path: Optional[Union[str, Path]] = None,
     categories: Optional[List[str]] = None,

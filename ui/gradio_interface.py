@@ -62,10 +62,7 @@ def create_gradio_interface() -> gr.Blocks:
                 )
 
                 upload_status = gr.Textbox(
-                    label="Upload Status",
-                    interactive=False,
-                    lines=4,
-                    max_lines=6
+                    label="Upload Status", interactive=False, lines=4, max_lines=6
                 )
 
                 # Pre-processing Display

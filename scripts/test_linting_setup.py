@@ -73,7 +73,9 @@ messy_dict = dict(zip(["a", "b", "c"], [1, 2, 3]))
 
 
 # Test type annotations with poor spacing
-def typed_function(_arg1: str, _arg2: int) -> Optional[Dict[str, List[int]]]:  # Args unused to test ARG001
+def typed_function(
+    _arg1: str, _arg2: int
+) -> Optional[Dict[str, List[int]]]:  # Args unused to test ARG001
     """Function with type hints."""
     return None
 
