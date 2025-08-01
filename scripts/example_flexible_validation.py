@@ -134,9 +134,6 @@ def add_project_root_to_path(project_root: Optional[Path] = None) -> Path:
     return project_root
 
 
-
-
-
 def example_default_validation(find_and_validate_project_root):
     """Example 1: Use default validation (backward compatible)."""
     print("=== Example 1: Default Validation ===")
@@ -244,7 +241,9 @@ def example_config_file(find_and_validate_project_root):
         return None
 
 
-def example_environment_variables(find_and_validate_project_root, load_project_validation_config):
+def example_environment_variables(
+    find_and_validate_project_root, load_project_validation_config
+):
     """Example 4: Use environment variables."""
     print("\n=== Example 4: Environment Variables ===")
 
@@ -311,7 +310,10 @@ def main():
         (example_default_validation, [find_and_validate_project_root]),
         (example_custom_parameters, [find_and_validate_project_root]),
         (example_config_file, [find_and_validate_project_root]),
-        (example_environment_variables, [find_and_validate_project_root, load_project_validation_config]),
+        (
+            example_environment_variables,
+            [find_and_validate_project_root, load_project_validation_config],
+        ),
         (example_non_strict_validation, [find_and_validate_project_root]),
     ]
 

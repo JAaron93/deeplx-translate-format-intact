@@ -9,6 +9,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 
+# Import for PDF preprocessing
+import fitz  # PyMuPDF for PDF info
+
 from config.settings import Settings
 from core.state_manager import state, translation_jobs
 from services.enhanced_document_processor import EnhancedDocumentProcessor
@@ -22,9 +25,6 @@ from services.user_choice_manager import UserChoiceManager
 from utils.file_handler import FileHandler
 from utils.language_utils import extract_text_sample_for_language_detection
 from utils.validators import FileValidator
-
-# Import for PDF preprocessing
-import fitz  # PyMuPDF for PDF info
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ async def process_file_upload(file) -> Tuple[str, str, str, str, str]:
             return "", f"❌ {validation_result['error']}", "", "", ""
 
         # Check if file is PDF
-        if not file_name.lower().endswith('.pdf'):
+        if not file_name.lower().endswith(".pdf"):
             return "", "❌ Only PDF files are supported", "", "", ""
 
         state.current_file = file_path
@@ -565,21 +565,27 @@ async def _show_pdf_preprocessing_steps(file_path: str, file_size: int) -> str:
 
         preprocessing_steps.append(f"   📄 Pages detected: {page_count}")
         preprocessing_steps.append(f"   💾 File size: {file_size / (1024*1024):.2f} MB")
-        if doc_info.get('title'):
+        if doc_info.get("title"):
             preprocessing_steps.append(f"   📝 Title: {doc_info['title']}")
 
         # Step 2: PDF-to-Image Conversion Planning
         preprocessing_steps.append("\n🖼️ Step 2: PDF-to-Image Conversion")
         dpi = 300  # Standard high-resolution
-        estimated_image_size = (page_count * 2.5)  # Rough estimate MB per page
+        estimated_image_size = page_count * 2.5  # Rough estimate MB per page
         preprocessing_steps.append(f"   🎯 Target resolution: {dpi} DPI")
-        preprocessing_steps.append(f"   📊 Estimated image data: ~{estimated_image_size:.1f} MB")
-        preprocessing_steps.append(f"   🔄 Conversion method: pdf2image library")
+        preprocessing_steps.append(
+            f"   📊 Estimated image data: ~{estimated_image_size:.1f} MB"
+        )
+        preprocessing_steps.append("   🔄 Conversion method: pdf2image library")
 
         # Step 3: Dolphin OCR Preparation
         preprocessing_steps.append("\n🤖 Step 3: Dolphin OCR Preparation")
-        preprocessing_steps.append("   🚀 Target: ByteDance Dolphin via HuggingFace Spaces")
-        preprocessing_steps.append("   📋 Expected output: Layout + text + bounding boxes")
+        preprocessing_steps.append(
+            "   🚀 Target: ByteDance Dolphin via HuggingFace Spaces"
+        )
+        preprocessing_steps.append(
+            "   📋 Expected output: Layout + text + bounding boxes"
+        )
         preprocessing_steps.append("   🎯 Processing mode: Page-by-page analysis")
 
         # Step 4: Ready for Translation
@@ -592,4 +598,4 @@ async def _show_pdf_preprocessing_steps(file_path: str, file_size: int) -> str:
 
     except Exception as e:
         logger.error(f"Preprocessing display error: {e}")
-        return f"❌ Preprocessing analysis failed: {str(e)}"
+        return f"❌ Preprocessing analysis failed: {e!s}"
