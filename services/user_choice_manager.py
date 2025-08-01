@@ -347,7 +347,7 @@ class UserChoiceManager:
                 strategy = ConflictResolution.LATEST_WINS
 
             # Resolve the conflict
-            resolved_choice_id = conflict.resolve_conflict(strategy)
+            _ = conflict.resolve_conflict(strategy)
 
             # Save the conflict resolution
             if self.db.save_conflict(conflict):

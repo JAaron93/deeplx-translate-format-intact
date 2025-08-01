@@ -162,6 +162,7 @@ class RateLimiter:
     """Token bucket rate limiter for API requests."""
 
     def __init__(self, max_requests_per_second: float, burst_allowance: int = 2):
+        """Initialize rate limiter with token bucket parameters."""
         self.max_requests_per_second = max_requests_per_second
         self.burst_allowance = burst_allowance
         self.tokens = max_requests_per_second + burst_allowance
@@ -199,6 +200,7 @@ class ParallelLingoTranslator:
         config: Optional[ParallelTranslationConfig] = None,
         base_url: Optional[str] = None,
     ):
+        """Initialize parallel translator with API configuration and rate limiting."""
         if not api_key:
             raise ValueError("LINGO_API_KEY is required")
 
@@ -516,7 +518,7 @@ class ParallelLingoTranslator:
         if "pages" in translated_content:
             for page_num, page_data in translated_content["pages"].items():
                 if isinstance(page_data, dict):
-                    for block_id, block_text in page_data.items():
+                    for block_id, _block_text in page_data.items():
                         translation_key = f"page_{page_num}_{block_id}"
                         if translation_key in translations:
                             page_data[block_id] = translations[translation_key]
@@ -537,6 +539,7 @@ class ParallelTranslationService:
     def __init__(
         self, api_key: str, config: Optional[ParallelTranslationConfig] = None
     ):
+        """Initialize parallel translation service with API key and configuration."""
         self.api_key = api_key
         self.config = config or ParallelTranslationConfig.from_config()
         self._translator: Optional[ParallelLingoTranslator] = None

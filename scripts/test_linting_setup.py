@@ -37,10 +37,16 @@ class TestClass:
     """Class docstring."""
 
     def __init__(self, value):
+        """Initialize test class with value and unused attribute for linting tests.
+
+        Args:
+            value: The value to store in the instance for testing purposes.
+        """
         self.value = value
         self.unused_attr = "unused"  # Ruff might flag this
 
     def method_with_complexity(self, x, y, z):
+        """Test method with intentional complexity for linting demonstration."""
         # Complex conditional that could be simplified (Ruff SIM rules)
         if x:  # Should use 'if x:'
             if not y:  # Should use 'if not y:'
@@ -81,7 +87,7 @@ old_format = f"Hello {name}!"
 value = 5
 if value is None:  # Should use 'is None'
     pass
-if type(value) == int:  # Should use isinstance()
+if isinstance(value, int):  # Should use isinstance()
     pass
 
 # Test trailing whitespace and blank lines issues

@@ -416,7 +416,7 @@ class AdvancedPDFProcessor:
         """Generate a text preview of the document layout."""
         preview_lines = []
 
-        for i, layout in enumerate(layouts[:max_pages]):
+        for _i, layout in enumerate(layouts[:max_pages]):
             preview_lines.append(f"=== Page {layout.page_num + 1} ===")
             preview_lines.append(f"Size: {layout.width:.1f} x {layout.height:.1f}")
             preview_lines.append(f"Text elements: {len(layout.text_elements)}")
@@ -481,7 +481,7 @@ class AdvancedPDFProcessor:
         try:
             memory_percent = psutil.virtual_memory().percent / 100
             return memory_percent > self.memory_threshold
-        except:
+        except (ImportError, AttributeError, OSError):
             return False
 
     def get_text_for_translation(

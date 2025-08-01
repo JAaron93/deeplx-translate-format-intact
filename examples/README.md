@@ -11,20 +11,26 @@ This directory contains examples demonstrating the use of the Neologism Detectio
 
 ### Prerequisites
 
-1. Install required dependencies:
-```bash
-pip install -r requirements.txt
-```
+1. Install the project (choose one):
+   - **Editable package installation (recommended):**
+     ```bash
+     pip install -e .
+     ```
+
+   - **Direct dependency installation:**
+     ```bash
+     pip install -r requirements.txt
+     ```
 
 2. Optionally, install spaCy German model for better linguistic analysis:
-```bash
-python -m spacy download de_core_news_sm
-```
+   ```bash
+   python -m spacy download de_core_news_sm
+   ```
 
 3. Set up environment variables for translation services:
-```bash
-export LINGO_API_KEY=your_lingo_api_key
-```
+   ```bash
+   export LINGO_API_KEY=your_lingo_api_key
+   ```
 
 ### Running the Integration Example
 

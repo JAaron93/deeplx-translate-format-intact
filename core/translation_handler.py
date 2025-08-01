@@ -23,6 +23,9 @@ from utils.file_handler import FileHandler
 from utils.language_utils import extract_text_sample_for_language_detection
 from utils.validators import FileValidator
 
+# Import for PDF preprocessing
+import fitz  # PyMuPDF for PDF info
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -109,23 +112,30 @@ def extract_file_info(file) -> Tuple[str, str, int]:
     return file_path, file_name, file_size
 
 
-async def process_file_upload(file) -> Tuple[str, str, str, str]:
-    """Process uploaded file with advanced content extraction."""
+async def process_file_upload(file) -> Tuple[str, str, str, str, str]:
+    """Process uploaded PDF file with pre-processing display."""
     try:
         # Extract file information using the new function
         try:
             file_path, file_name, file_size = extract_file_info(file)
         except ValueError as e:
-            return "", f"❌ {e!s}", "", ""
+            return "", f"❌ {e!s}", "", "", ""
 
-        # Validate file
+        # Validate file - only PDFs allowed
         validation_result = file_validator.validate_file(file_name, file_size)
         if not validation_result["valid"]:
-            return "", f"❌ {validation_result['error']}", "", ""
+            return "", f"❌ {validation_result['error']}", "", "", ""
+
+        # Check if file is PDF
+        if not file_name.lower().endswith('.pdf'):
+            return "", "❌ Only PDF files are supported", "", "", ""
 
         state.current_file = file_path
 
-        logger.info(f"Starting advanced processing of: {file_name}")
+        logger.info(f"Starting PDF pre-processing: {file_name}")
+
+        # Show PDF-to-image preprocessing steps
+        preprocessing_info = await _show_pdf_preprocessing_steps(file_path, file_size)
 
         # Extract content with advanced processing
         content = document_processor.extract_content(file_path)
@@ -177,11 +187,11 @@ async def process_file_upload(file) -> Tuple[str, str, str, str]:
         processing_details = json.dumps(state.processing_info, indent=2)
 
         logger.info(f"Advanced processing complete: {file_name}")
-        return preview, status, detected_lang, processing_details
+        return preview, status, detected_lang, preprocessing_info, processing_details
 
     except Exception as e:
         logger.error(f"File upload error: {e!s}")
-        return "", f"❌ Upload failed: {e!s}", "", ""
+        return "", f"❌ Upload failed: {e!s}", "", "", ""
 
 
 async def start_translation(
@@ -539,3 +549,47 @@ async def process_advanced_translation_job(
         logger.error(f"Error in advanced translation job {job_id}: {e!s}")
         job["status"] = "failed"
         job["error"] = str(e)
+
+
+async def _show_pdf_preprocessing_steps(file_path: str, file_size: int) -> str:
+    """Show detailed PDF-to-image preprocessing steps."""
+    try:
+        preprocessing_steps = []
+
+        # Step 1: PDF Analysis
+        preprocessing_steps.append("🔍 Step 1: PDF Analysis")
+        doc = fitz.open(file_path)
+        page_count = len(doc)
+        doc_info = doc.metadata
+        doc.close()
+
+        preprocessing_steps.append(f"   📄 Pages detected: {page_count}")
+        preprocessing_steps.append(f"   💾 File size: {file_size / (1024*1024):.2f} MB")
+        if doc_info.get('title'):
+            preprocessing_steps.append(f"   📝 Title: {doc_info['title']}")
+
+        # Step 2: PDF-to-Image Conversion Planning
+        preprocessing_steps.append("\n🖼️ Step 2: PDF-to-Image Conversion")
+        dpi = 300  # Standard high-resolution
+        estimated_image_size = (page_count * 2.5)  # Rough estimate MB per page
+        preprocessing_steps.append(f"   🎯 Target resolution: {dpi} DPI")
+        preprocessing_steps.append(f"   📊 Estimated image data: ~{estimated_image_size:.1f} MB")
+        preprocessing_steps.append(f"   🔄 Conversion method: pdf2image library")
+
+        # Step 3: Dolphin OCR Preparation
+        preprocessing_steps.append("\n🤖 Step 3: Dolphin OCR Preparation")
+        preprocessing_steps.append("   🚀 Target: ByteDance Dolphin via HuggingFace Spaces")
+        preprocessing_steps.append("   📋 Expected output: Layout + text + bounding boxes")
+        preprocessing_steps.append("   🎯 Processing mode: Page-by-page analysis")
+
+        # Step 4: Ready for Translation
+        preprocessing_steps.append("\n✅ Step 4: Ready for Translation Pipeline")
+        preprocessing_steps.append("   🌐 Translation service: Lingo.dev API")
+        preprocessing_steps.append("   🎨 Layout preservation: Advanced text fitting")
+        preprocessing_steps.append("   📄 Output format: PDF with preserved formatting")
+
+        return "\n".join(preprocessing_steps)
+
+    except Exception as e:
+        logger.error(f"Preprocessing display error: {e}")
+        return f"❌ Preprocessing analysis failed: {str(e)}"

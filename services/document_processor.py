@@ -14,13 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class DocumentProcessor:
-    """Handles document processing for multiple formats"""
+    """Handles document processing for multiple formats."""
 
     def __init__(self) -> None:
+        """Initialize document processor with supported file formats."""
         self.supported_formats: list[str] = [".pdf", ".docx", ".txt"]
 
     def extract_content(self, file_path: str) -> dict[str, Any]:
-        """Extract content from document based on file type"""
+        """Extract content from document based on file type."""
         file_ext = Path(file_path).suffix.lower()
 
         if file_ext == ".pdf":
@@ -33,7 +34,7 @@ class DocumentProcessor:
             raise ValueError(f"Unsupported file format: {file_ext}")
 
     def _extract_pdf_content(self, file_path: str) -> dict[str, Any]:
-        """Extract content from PDF file"""
+        """Extract content from PDF file."""
         try:
             doc = fitz.open(file_path)
             pages = []
@@ -112,7 +113,7 @@ class DocumentProcessor:
             raise
 
     def _extract_docx_content(self, file_path: str) -> dict[str, Any]:
-        """Extract content from DOCX file"""
+        """Extract content from DOCX file."""
         try:
             doc = Document(file_path)
 
@@ -174,7 +175,7 @@ class DocumentProcessor:
             raise
 
     def _extract_txt_content(self, file_path: str) -> dict[str, Any]:
-        """Extract content from TXT file"""
+        """Extract content from TXT file."""
         try:
             # Check file size before reading
             file_size = os.path.getsize(file_path)
@@ -210,7 +211,7 @@ class DocumentProcessor:
             raise
 
     def generate_preview(self, file_path: str, max_chars: int = 1000) -> str:
-        """Generate a preview of the document content"""
+        """Generate a preview of the document content."""
         try:
             content = self.extract_content(file_path)
 
@@ -241,7 +242,7 @@ class DocumentProcessor:
         output_filename: str,
         original_format: str,
     ) -> str:
-        """Create translated document in specified format"""
+        """Create translated document in specified format."""
         output_dir = "downloads"
         os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(output_dir, output_filename)
@@ -256,7 +257,7 @@ class DocumentProcessor:
             raise ValueError(f"Unsupported output format: {original_format}")
 
     def _create_pdf_document(self, content: dict[str, Any], output_path: str) -> str:
-        """Create PDF document with translated content"""
+        """Create PDF document with translated content."""
         try:
             doc = fitz.open()
 
@@ -305,7 +306,7 @@ class DocumentProcessor:
             raise
 
     def _create_docx_document(self, content: dict[str, Any], output_path: str) -> str:
-        """Create DOCX document with translated content"""
+        """Create DOCX document with translated content."""
         try:
             doc = Document()
 
@@ -318,7 +319,7 @@ class DocumentProcessor:
                     if "style" in formatting:
                         try:
                             paragraph.style = formatting["style"]
-                        except:
+                        except (KeyError, ValueError, AttributeError):
                             pass
 
                     # Add text with run-level formatting
@@ -342,7 +343,7 @@ class DocumentProcessor:
             raise
 
     def _create_txt_document(self, content: dict[str, Any], output_path: str) -> str:
-        """Create TXT document with translated content"""
+        """Create TXT document with translated content."""
         try:
             with open(output_path, "w", encoding="utf-8") as f:
                 for page_data in content["pages"]:
@@ -356,7 +357,7 @@ class DocumentProcessor:
             raise
 
     def _normalize_color(self, color_value: Any) -> tuple[float, float, float]:
-        """Convert color to RGB tuple"""
+        """Convert color to RGB tuple."""
         if isinstance(color_value, int):
             r = (color_value >> 16) & 0xFF
             g = (color_value >> 8) & 0xFF
@@ -365,7 +366,7 @@ class DocumentProcessor:
         return (0, 0, 0)
 
     def convert_format(self, input_file: str, target_format: str) -> str:
-        """Convert document to different format"""
+        """Convert document to different format."""
         try:
             # Extract content from input file
             content = self.extract_content(input_file)

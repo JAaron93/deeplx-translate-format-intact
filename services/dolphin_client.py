@@ -1,9 +1,12 @@
 """Async client for the Dolphin PDF layout micro-service.
 
-The micro-service exposes a single endpoint `/layout` that accepts a multipart
-upload of a PDF file and returns JSON describing the page layouts.  This helper
-wraps the HTTP call so the rest of the codebase doesn’t need to know the wire
-format.
+This client now supports both local microservice and Modal Labs deployment.
+The Modal endpoint provides better performance and scalability compared to
+the previous HuggingFace Spaces API approach.
+
+The service exposes an endpoint that accepts a multipart upload of a PDF file
+and returns JSON describing the page layouts. This helper wraps the HTTP call
+so the rest of the codebase doesn’t need to know the wire format.
 """
 
 from __future__ import annotations
@@ -17,8 +20,12 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ENDPOINT = "http://localhost:8501/layout"
-DEFAULT_TIMEOUT = 120  # seconds
+# Default endpoints - Modal Labs takes priority
+DEFAULT_MODAL_ENDPOINT = (
+    "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run"
+)
+DEFAULT_LOCAL_ENDPOINT = "http://localhost:8501/layout"
+DEFAULT_TIMEOUT = 300  # seconds (increased for Modal processing)
 
 
 async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
@@ -35,7 +42,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
         Whatever JSON structure the Dolphin service responds with.  The caller
         is responsible for interpreting the schema.
     """
-    endpoint = os.getenv("DOLPHIN_ENDPOINT", DEFAULT_ENDPOINT)
+    endpoint = os.getenv("DOLPHIN_ENDPOINT", DEFAULT_MODAL_ENDPOINT)
     pdf_path = pathlib.Path(pdf_path)
 
     if not pdf_path.exists():
@@ -48,7 +55,8 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
         )
     except ValueError:
         logger.warning(
-            f"Invalid DOLPHIN_TIMEOUT_SECONDS value, using default: {DEFAULT_TIMEOUT}"
+            f"Invalid DOLPHIN_TIMEOUT_SECONDS value, using default: "
+            f"{DEFAULT_TIMEOUT}"
         )
         timeout_seconds = DEFAULT_TIMEOUT
 
@@ -63,7 +71,9 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
     try:
         data = response.json()
     except ValueError as e:
-        raise ValueError(f"Invalid JSON response from Dolphin service: {e}") from e
+        raise ValueError(
+            f"Invalid JSON response from Dolphin service: {e}"
+        ) from e
 
     # Basic validation - check if response has the expected structure
     if not isinstance(data, dict) or "pages" not in data:
@@ -73,7 +83,8 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
 
     if not isinstance(data["pages"], list):
         raise ValueError(
-            "Invalid response format from Dolphin service: 'pages' is not a list"
+            "Invalid response format from Dolphin service: "
+            "'pages' is not a list"
         )
 
     # Validate each page in the response
@@ -81,31 +92,36 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
         if not isinstance(page, dict):
             raise ValueError(f"Page {i} is not a dictionary")
 
-        # Check for required page-level fields
-        required_fields = ["page_number", "width", "height", "elements"]
+        # Check for required page-level fields (updated for Modal format)
+        required_fields = ["page_number", "width", "height", "text_blocks"]
         for field in required_fields:
             if field not in page:
-                raise ValueError(f"Page {i} is missing required field: {field}")
+                raise ValueError(
+                    f"Page {i} is missing required field: {field}"
+                )
 
-        # Validate elements array
-        if not isinstance(page["elements"], list):
-            raise ValueError(f"Page {i} 'elements' is not a list")
+        # Validate text_blocks array (Modal format uses text_blocks)
+        if not isinstance(page["text_blocks"], list):
+            raise ValueError(f"Page {i} 'text_blocks' is not a list")
 
-        # Validate each element in the page
-        for j, element in enumerate(page["elements"]):
-            if not isinstance(element, dict):
-                raise ValueError(f"Element {j} in page {i} is not a dictionary")
+        # Validate each text block in the page
+        for j, block in enumerate(page["text_blocks"]):
+            if not isinstance(block, dict):
+                raise ValueError(
+                    f"Text block {j} in page {i} is not a dictionary"
+                )
 
-            # Check for required element fields
-            element_required = ["type", "bbox", "text"]
-            for field in element_required:
-                if field not in element:
+            # Check for required text block fields (Modal format)
+            block_required = ["text", "bbox", "confidence", "block_type"]
+            for field in block_required:
+                if field not in block:
                     raise ValueError(
-                        f"Element {j} in page {i} is missing required field: {field}"
+                        f"Text block {j} in page {i} is missing required "
+                        f"field: {field}"
                     )
 
             # Validate bbox format [x0, y0, x1, y1]
-            bbox = element.get("bbox", [])
+            bbox = block.get("bbox", [])
             if not (
                 isinstance(bbox, list)
                 and len(bbox) == 4

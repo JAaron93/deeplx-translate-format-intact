@@ -229,7 +229,7 @@ def demonstrate_conflict_resolution(manager, detector):
 
     if dasein_neologism:
         # First choice: different translation
-        choice1 = manager.make_choice(
+        manager.make_choice(
             neologism=dasein_neologism,
             choice_type=ChoiceType.TRANSLATE,
             translation_result="existence",  # Different from previous "being-there"
@@ -241,7 +241,7 @@ def demonstrate_conflict_resolution(manager, detector):
         print("✓ Made conflicting choice: TRANSLATE → 'existence'")
 
         # Second choice: preserve instead of translate
-        choice2 = manager.make_choice(
+        manager.make_choice(
             neologism=dasein_neologism,
             choice_type=ChoiceType.PRESERVE,
             translation_result="",
@@ -444,7 +444,7 @@ def demonstrate_advanced_features(manager, detector):
                 choice_type = ChoiceType.PRESERVE
                 translation = ""
 
-            choice = manager.make_choice(
+            manager.make_choice(
                 neologism=neologism,
                 choice_type=choice_type,
                 translation_result=translation,

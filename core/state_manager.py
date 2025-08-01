@@ -14,6 +14,7 @@ class AdvancedTranslationState:
     """Enhanced translation state management with comprehensive processing."""
 
     def __init__(self):
+        """Initialize translation state with default values."""
         self.current_file: Optional[str] = None
         self.current_content: Optional[Dict[str, Any]] = None
         self.source_language: Optional[str] = None
@@ -137,8 +138,9 @@ class StateManager:
     """Manages request-scoped state instances."""
 
     def __init__(self):
+        """Initialize state manager with empty state dictionary and thread lock."""
         self._states: Dict[str, AdvancedTranslationState] = {}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def get_state(self, session_id: str) -> AdvancedTranslationState:
         """Get or create state for a session."""

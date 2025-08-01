@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class Config:
+    """Configuration settings for the Dolphin OCR Translate application."""
+
     # Translation API settings - Only Lingo.dev
     LINGO_API_KEY = os.getenv("LINGO_API_KEY")
 

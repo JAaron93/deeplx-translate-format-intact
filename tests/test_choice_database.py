@@ -655,7 +655,7 @@ class TestChoiceDatabase:
     def test_database_error_handling(self, temp_db):
         """Test database error handling."""
         # Test with invalid choice data
-        with pytest.raises(Exception):
+        with pytest.raises((AttributeError, TypeError)):
             temp_db.save_user_choice(None)
 
         # Test getting choice with invalid ID

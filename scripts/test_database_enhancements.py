@@ -14,11 +14,6 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime
 
-# Add the project root to the path (at end to avoid overriding system packages)
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if project_root not in sys.path:
-    sys.path.append(project_root)
-
 from database.choice_database import ChoiceDatabase
 from models.user_choice_models import (
     ChoiceScope,

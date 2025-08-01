@@ -13,22 +13,44 @@ logger = logging.getLogger(__name__)
 
 
 class FileValidator:
-    """Validates file uploads and inputs"""
+    """Validates file uploads and inputs."""
 
     def __init__(self) -> None:
+        """Initialize validator with file size limits and allowed formats.
+
+        Attributes:
+            max_file_size: Maximum allowed file size in bytes, derived from
+                         Settings.MAX_FILE_SIZE_MB converted to bytes.
+            allowed_extensions: Set of permitted file extensions (e.g.,
+                              {'.pdf', '.docx', '.txt'}) loaded from config.
+            allowed_mimetypes: Set of permitted MIME types for file
+                             validation, including PDF, Word documents,
+                             and plain text files.
+        """
         from config.settings import Settings
 
         settings = Settings()
         self.max_file_size: int = settings.MAX_FILE_SIZE_MB * 1024 * 1024
-        self.allowed_extensions: set[str] = set(settings.ALLOWED_EXTENSIONS)
+        # Only PDF files are supported
+        self.allowed_extensions: set[str] = {".pdf"}
         self.allowed_mimetypes: set[str] = {
             "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "text/plain",
         }
 
     def validate_file(self, filename: str, file_size: int) -> dict[str, Any]:
-        """Validate file upload"""
+        """Validate file upload against size and extension constraints.
+
+        Args:
+            filename: Name of the file to validate, including extension.
+            file_size: Size of the file in bytes to check against limits.
+
+        Returns:
+            Dictionary containing validation results with keys:
+            - "valid" (bool): True if file passes all validation checks,
+                            False otherwise.
+            - "error" (str | None): Error message describing validation
+                                  failure, or None if validation succeeds.
+        """
         try:
             # Check filename
             if not filename:
@@ -60,7 +82,30 @@ class FileValidator:
             return {"valid": False, "error": f"Validation error: {e!s}"}
 
     def validate_upload_file(self, upload_file: UploadFile) -> dict[str, Any]:
-        """Validate FastAPI UploadFile"""
+        """Validate FastAPI UploadFile against content type and size limits.
+
+        FastAPI's UploadFile wraps SpooledTemporaryFile, providing file-like
+        operations. This function determines file size using seek/tell
+        operations and preserves the original file pointer position after
+        validation.
+
+        Args:
+            upload_file: FastAPI UploadFile instance wrapping uploaded
+                       file data.
+
+        Returns:
+            Dictionary containing validation results with keys:
+            - "valid" (bool): True if file passes all validation checks,
+                            False otherwise.
+            - "error" (str | None): Error message describing validation
+                                  failure, or None if validation succeeds.
+
+        Note:
+            File pointer position is preserved during validation. The
+            function uses seek(0, 2) to determine file size, then restores
+            the original position with seek(current_pos) to avoid affecting
+            subsequent reads.
+        """
         try:
             # Check content type
             if upload_file.content_type not in self.allowed_mimetypes:
@@ -91,7 +136,11 @@ class FileValidator:
             return {"valid": False, "error": f"Validation error: {e!s}"}
 
     def _load_language_config(self) -> dict[str, Any]:
-        """Load language configuration from external JSON file"""
+        """Load language configuration from external JSON file.
+
+        Falls back to hard-coded defaults if the JSON file cannot be read,
+        ensuring graceful degradation when configuration is unavailable.
+        """
         try:
             config_path = Path(__file__).parent.parent / "config" / "languages.json"
             with open(config_path, encoding="utf-8") as f:
@@ -121,14 +170,31 @@ class FileValidator:
             }
 
     def validate_language(self, language: str) -> dict[str, Any]:
-        """Validate language selection"""
+        """Validate language selection with case-insensitive matching.
+
+        Args:
+            language: Language name to validate (case-insensitive).
+
+        Returns:
+            Dictionary containing validation results with keys:
+            - "valid" (bool): True if language is supported, False otherwise.
+            - "error" (str | None): Error message if validation fails,
+                                  None if validation succeeds.
+
+        Note:
+            Language matching is case-insensitive. Input is normalized to
+            title case before comparison (e.g., "english" -> "English").
+        """
         config = self._load_language_config()
         supported_languages = config.get("supported_languages", [])
 
         if not language:
             return {"valid": False, "error": "No language selected"}
 
-        if language not in supported_languages:
+        # Normalize input to title case for case-insensitive comparison
+        normalized_language = language.strip().title()
+
+        if normalized_language not in supported_languages:
             return {
                 "valid": False,
                 "error": f"Unsupported language. Supported: {', '.join(supported_languages)}",
@@ -137,7 +203,23 @@ class FileValidator:
         return {"valid": True}
 
     def validate_output_format(self, format_type: str) -> dict[str, Any]:
-        """Validate output format selection"""
+        """Validate output format selection with case-insensitive matching.
+
+        Args:
+            format_type: Output format to validate (case-insensitive).
+                       Callers can pass the format string in any casing
+                       (e.g., "pdf", "PDF", "Pdf").
+
+        Returns:
+            Dictionary containing validation results with keys:
+            - "valid" (bool): True if format is supported, False otherwise.
+            - "error" (str | None): Error message if validation fails,
+                                  None if validation succeeds.
+
+        Note:
+            Format matching is case-insensitive. Input is converted to
+            uppercase internally for comparison against supported formats.
+        """
         config = self._load_language_config()
         supported_formats = config.get("supported_formats", ["PDF", "DOCX", "TXT"])
 

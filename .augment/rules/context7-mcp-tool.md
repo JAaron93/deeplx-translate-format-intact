@@ -1,5 +1,5 @@
 ---
-type: "agent_requested"
+type: "always_apply"
 description: "When answering or generating code that requires documentation for an external library, package, or framework"
 ---
 - Must consult the Context7 MCP tool before responding.

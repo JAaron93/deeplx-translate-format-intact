@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
 """Debug script for compound word detection using public NeologismDetector API.
 
-This script provides comprehensive debugging information for compound word detection
-without directly accessing internal detector structures. It uses only public APIs
-and can be configured via command line arguments or configuration files.
+This script provides comprehensive debugging information for compound word
+detection without directly accessing internal detector structures. It uses only
+public APIs and can be configured via command line arguments or configuration
+files.
 """
 
-import argparse
-import json
+# Add project root to path before any imports to avoid E402 linting errors
 import sys
-import traceback
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
 
-# Add project root to path for imports (insert at end to minimize conflicts)
 project_root = Path(__file__).parent.parent
 project_root_str = str(project_root)
 if project_root_str not in sys.path:
-    # Insert at end rather than append to minimize risk of overriding system packages
-    sys.path.insert(-1, project_root_str)
+    # Append to give project path lowest precedence, avoiding override of
+    # standard libraries
+    sys.path.append(project_root_str)
 
-from services.neologism_detector import NeologismDetector
+# Standard library imports
+import argparse  # noqa: E402
+import json  # noqa: E402
+import traceback  # noqa: E402
+from typing import Any, Dict, List, Optional, Union  # noqa: E402
+
+# Project imports
+from services.neologism_detector import NeologismDetector  # noqa: E402
 
 
 def get_default_categories() -> List[str]:

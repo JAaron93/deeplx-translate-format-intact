@@ -693,7 +693,7 @@ class NeologismDetector:
         # Quality factors
         neologisms = analysis.detected_neologisms
         confidence_avg = sum(n.confidence for n in neologisms) / len(neologisms)
-        type_diversity = len(set(n.neologism_type for n in neologisms))
+        type_diversity = len({n.neologism_type for n in neologisms})
 
         quality = (confidence_avg * 0.6) + (min(1.0, type_diversity / 5.0) * 0.4)
 
@@ -1011,7 +1011,7 @@ class NeologismDetector:
 
         # Check morphological patterns
         patterns = self.morphological_analyzer.german_morphological_patterns
-        for pattern_type, pattern_list in patterns.items():
+        for _pattern_type, pattern_list in patterns.items():
             for pattern in pattern_list:
                 if re.search(pattern, term.lower()):
                     score += 0.1

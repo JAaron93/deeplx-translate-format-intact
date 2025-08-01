@@ -17,20 +17,6 @@ import time
 import psutil
 import pytest
 
-# Configure logging for tests
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
-# Configuration for test parameters
-def get_memory_limit_mb():
-    """Get memory limit for tests from environment variable or default."""
-    return int(
-        os.environ.get("TEST_MEMORY_LIMIT_MB", "1000")
-    )  # Default 1GB instead of 500MB
-
-
-# Import all philosophy-enhanced components
 from models.neologism_models import NeologismAnalysis
 from models.user_choice_models import ChoiceType
 from services.philosophy_enhanced_document_processor import (
@@ -43,6 +29,18 @@ from services.philosophy_enhanced_translation_service import (
     NeologismPreservationResult,
     PhilosophyEnhancedTranslationService,
 )
+
+# Configure logging for tests
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+# Configuration for test parameters
+def get_memory_limit_mb():
+    """Get memory limit for tests from environment variable or default."""
+    return int(
+        os.environ.get("TEST_MEMORY_LIMIT_MB", "1000")
+    )  # Default 1GB instead of 500MB
 
 
 class TestCompletePhilosophyEnhancedIntegration:
@@ -438,7 +436,7 @@ class TestCompletePhilosophyEnhancedIntegration:
         processor = PhilosophyEnhancedDocumentProcessor()
 
         # Test with invalid file path
-        with pytest.raises(Exception):
+        with pytest.raises(FileNotFoundError):
             processor.extract_content("/nonexistent/file.pdf")
 
         # Test with invalid language codes

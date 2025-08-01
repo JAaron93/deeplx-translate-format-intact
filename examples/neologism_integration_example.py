@@ -7,15 +7,9 @@ from __future__ import annotations
 
 import json
 import logging
-import sys
-from pathlib import Path
 from typing import Any, Optional
 
-# Add the project root to the path (at end to avoid overriding system packages)
-project_root = Path(__file__).parent.parent
-if str(project_root) not in sys.path:
-    sys.path.append(str(project_root))
-
+# Project imports - now work with installable package
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
 from services.neologism_detector import NeologismDetector
 from services.translation_service import TranslationService

@@ -14,7 +14,7 @@ from core.translation_handler import (
 
 
 def create_gradio_interface() -> gr.Blocks:
-    """Create the advanced Gradio web interface"""
+    """Create the advanced Gradio web interface."""
     # Load settings for language configuration
     settings = Settings()
 
@@ -32,20 +32,20 @@ def create_gradio_interface() -> gr.Blocks:
     ) as interface:
         gr.Markdown(
             """
-            # 📄 Advanced Document Translator
+            # 📄 Advanced PDF Document Translator
 
-            Professional document translation with **comprehensive formatting**
+            Professional PDF document translation with **Dolphin OCR** and **comprehensive formatting**
             **preservation**.
 
             🎯 **Features:**
-            - Advanced PDF processing with image-text overlay technique
-            - Precise text positioning preservation
-            - High-resolution rendering (300 DPI)
-            - Support for complex layouts and embedded images
-            - DOCX and TXT format support
-            - Automatic language detection
+            - **Dolphin OCR Integration**: Advanced AI-powered document understanding
+            - **PDF-to-Image Pre-processing**: High-resolution conversion for optimal OCR
+            - **Layout Preservation**: Intelligent text fitting and formatting retention
+            - **High-Resolution Processing**: 300+ DPI for maximum quality
+            - **Complex Layout Support**: Tables, figures, formulas, and multi-column layouts
+            - **Automatic Language Detection**: Smart source language identification
 
-            📊 **Supported Files:** PDF, DOCX, TXT (up to 10MB)
+            📊 **Supported Files:** PDF only (up to 10MB)
             """
         )
 
@@ -55,22 +55,36 @@ def create_gradio_interface() -> gr.Blocks:
                 gr.Markdown("## 📤 Upload Document")
 
                 file_upload = gr.File(
-                    label="Choose File (PDF, DOCX, TXT)",
-                    file_types=[".pdf", ".docx", ".txt"],
+                    label="Choose PDF File",
+                    file_types=[".pdf"],
                     file_count="single",
                     elem_classes=["upload-area"],
                 )
 
                 upload_status = gr.Textbox(
-                    label="Processing Status", interactive=False, lines=8, max_lines=10
+                    label="Upload Status",
+                    interactive=False,
+                    lines=4,
+                    max_lines=6
+                )
+
+                # Pre-processing Display
+                gr.Markdown("## 🔄 Pre-processing Steps")
+                preprocessing_status = gr.Textbox(
+                    label="PDF-to-Image Conversion",
+                    interactive=False,
+                    lines=6,
+                    placeholder="Upload a PDF to see pre-processing steps...",
+                    elem_classes=["preprocessing-panel"],
                 )
 
                 # Advanced Processing Info
-                gr.Markdown("## 🔍 Processing Details")
+                gr.Markdown("## 🔍 OCR Processing Details")
                 processing_info = gr.Textbox(
-                    label="Processing Information",
+                    label="Dolphin OCR Analysis",
                     interactive=False,
                     lines=8,
+                    placeholder="Pre-processing will show Dolphin OCR analysis...",
                     elem_classes=["info-panel"],
                 )
 
@@ -156,6 +170,7 @@ def create_gradio_interface() -> gr.Blocks:
                 document_preview,
                 upload_status,
                 detected_language,
+                preprocessing_status,
                 processing_info,
             ],
         )

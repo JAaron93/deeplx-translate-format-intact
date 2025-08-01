@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class FileHandler:
-    """Handles file operations for the application"""
+    """Handles file operations for the application."""
 
     def __init__(self) -> None:
+        """Initialize file handler with directory paths and create required directories."""
         self.upload_dir: str = "uploads"
         self.download_dir: str = "downloads"
         self.temp_dir: str = "temp"
@@ -28,7 +29,7 @@ class FileHandler:
             os.makedirs(directory, exist_ok=True)
 
     def save_uploaded_file(self, file: Any) -> str:
-        """Save uploaded file and return path"""
+        """Save uploaded file and return path."""
         try:
             # Validate file type
             original_name = getattr(file, "name", "unknown")
@@ -62,8 +63,8 @@ class FileHandler:
             raise
 
     def _is_valid_file_type(self, filename: str) -> bool:
-        """Validate file type based on extension"""
-        allowed_extensions = {".pdf", ".txt", ".docx", ".doc"}
+        """Validate file type based on extension (PDF only)."""
+        allowed_extensions = {".pdf"}
         file_ext = Path(filename).suffix.lower()
         return file_ext in allowed_extensions
 
@@ -102,7 +103,7 @@ class FileHandler:
                 logger.debug(f"Could not close upload file stream: {close_err}")
 
     def create_temp_file(self, suffix: str = "") -> str:
-        """Create temporary file"""
+        """Create temporary file."""
         try:
             fd, temp_path = tempfile.mkstemp(suffix=suffix, dir=self.temp_dir)
             os.close(fd)
@@ -112,7 +113,7 @@ class FileHandler:
             raise
 
     def cleanup_file(self, file_path: str) -> bool:
-        """Clean up file"""
+        """Clean up file."""
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -124,7 +125,7 @@ class FileHandler:
             return False
 
     def get_file_info(self, file_path: str) -> dict:
-        """Get file information"""
+        """Get file information."""
         try:
             if not os.path.exists(file_path):
                 raise FileNotFoundError(f"File not found: {file_path}")
@@ -142,7 +143,7 @@ class FileHandler:
             raise
 
     def cleanup_old_files(self, max_age_hours: int = 24) -> int:
-        """Clean up old files in the temp directory"""
+        """Clean up old files in the temp directory."""
         cleanup_count = 0
         error_count = 0
 

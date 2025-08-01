@@ -213,7 +213,7 @@ def demonstrate_lazy_loading(eager_memory_override=None):
 
     start_time = time.time()
     detectors = []
-    for i in range(10):
+    for _ in range(10):
         detector = NeologismDetector()
         detectors.append(detector)
 
