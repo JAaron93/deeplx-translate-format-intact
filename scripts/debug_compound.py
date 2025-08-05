@@ -11,7 +11,8 @@ files.
 import sys
 from pathlib import Path
 
-project_root = Path(__file__).parent.parent
+# Always work with an absolute, canonicalised path
+project_root = Path(__file__).resolve().parent.parent
 project_root_str = str(project_root)
 if project_root_str not in sys.path:
     # Append to give project path lowest precedence, avoiding override of
@@ -421,7 +422,7 @@ Available categories: {', '.join(available_categories)}
         test_words=args.words,
         config_path=args.config,
         verbose=verbose,
-        filter_category=args.category,
+        filter_category=args.category if not args.categories else None,
         categories=selected_categories,
     )
 

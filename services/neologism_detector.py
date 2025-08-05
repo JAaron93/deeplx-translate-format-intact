@@ -1011,7 +1011,7 @@ class NeologismDetector:
 
         # Check morphological patterns
         patterns = self.morphological_analyzer.german_morphological_patterns
-        for _pattern_type, pattern_list in patterns.items():
+        for pattern_list in patterns.values():
             for pattern in pattern_list:
                 if re.search(pattern, term.lower()):
                     score += 0.1

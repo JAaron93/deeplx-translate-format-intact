@@ -9,16 +9,15 @@ This script handles:
 
 import os
 import sys
-from pathlib import Path
-
-# Add the project root to the Python path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 
+def validate_environment_variables():
+    """Validate environment variables and return validation results.
 
-def check_environment_variables():
-    """Check that all required environment variables are set."""
+    Returns:
+        tuple: (missing_required, empty_required, missing_optional, empty_optional)
+               where each element is a list of variable names
+    """
     required_vars = [
         "MODAL_TOKEN_ID",
         "MODAL_TOKEN_SECRET",
@@ -29,32 +28,86 @@ def check_environment_variables():
         "HF_TOKEN",  # HuggingFace token for model downloads
     ]
 
-    missing_vars = []
-    for var in required_vars:
-        if not os.getenv(var):
-            missing_vars.append(var)
+    missing_required = []
+    empty_required = []
+    missing_optional = []
+    empty_optional = []
 
-    if missing_vars:
-        print("❌ Missing required environment variables:")
-        for var in missing_vars:
-            print(f"   - {var}")
+    # Validate required variables
+    for var in required_vars:
+        value = os.getenv(var)
+        if value is None:
+            missing_required.append(var)
+        elif not value.strip():
+            empty_required.append(var)
+
+    # Validate optional variables
+    for var in optional_vars:
+        value = os.getenv(var)
+        if value is None:
+            missing_optional.append(var)
+        elif not value.strip():
+            empty_optional.append(var)
+
+    return missing_required, empty_required, missing_optional, empty_optional
+
+
+def report_environment_validation(missing_required, empty_required, missing_optional, empty_optional):
+    """Report environment variable validation results to the user.
+
+    Args:
+        missing_required: List of missing required variables
+        empty_required: List of empty required variables
+        missing_optional: List of missing optional variables
+        empty_optional: List of empty optional variables
+
+    Returns:
+        bool: True if all required variables are valid, False otherwise
+    """
+    # Report required variable issues
+    invalid_required = missing_required + empty_required
+    if invalid_required:
+        print("❌ Invalid required environment variables:")
+        for var in missing_required:
+            print(f"   - {var} (not set)")
+        for var in empty_required:
+            print(f"   - {var} (empty value)")
         print("\nPlease set these variables in your .env file or environment.")
         return False
 
     print("✅ All required environment variables are set")
 
-    # Check optional variables
-    for var in optional_vars:
-        if os.getenv(var):
-            print(f"✅ Optional variable {var} is set")
-        else:
+    # Report optional variable status
+    all_optional = missing_optional + empty_optional
+    for var in all_optional:
+        if var in missing_optional:
             print(f"⚠️  Optional variable {var} is not set")
+        else:
+            print(f"⚠️  Optional variable {var} is set but empty")
+
+    # Report successfully set optional variables
+    optional_vars = ["HF_TOKEN"]  # Keep in sync with validate_environment_variables
+    for var in optional_vars:
+        if var not in all_optional:
+            value = os.getenv(var)
+            if value and value.strip():
+                print(f"✅ Optional variable {var} is set")
 
     return True
 
 
-def create_modal_secrets():
-    """Create Modal secrets for the application."""
+def check_environment_variables():
+    """Check that all required environment variables are set and valid.
+
+    Returns:
+        bool: True if all required variables are valid, False otherwise
+    """
+    missing_required, empty_required, missing_optional, empty_optional = validate_environment_variables()
+    return report_environment_validation(missing_required, empty_required, missing_optional, empty_optional)
+
+
+def prepare_modal_secrets():
+    """Prepare Modal secret creation commands for the application."""
     print("🔐 Creating Modal secrets...")
 
     # Create translation API secret
@@ -66,36 +119,25 @@ def create_modal_secrets():
     if os.getenv("HF_TOKEN"):
         translation_secret_data["HF_TOKEN"] = os.getenv("HF_TOKEN")
 
-    try:
-        # Create the secret using Modal CLI (this would need to be run separately)
-        print("📝 Translation API secret data prepared")
-        print("   Run this command to create the secret:")
-        secret_cmd = "modal secret create translation-api"
-        for key, value in translation_secret_data.items():
-            secret_cmd += f" {key}={value}"
-        print(f"   {secret_cmd}")
+    # Create the secret using Modal CLI (this would need to be run separately)
+    print("📝 Translation API secret data prepared")
+    print("   Run this command to create the secret:")
+    secret_cmd = "modal secret create translation-api"
+    for key in translation_secret_data.keys():
+        secret_cmd += f" {key}=<your-{key.lower().replace('_', '-')}>"
+    print(f"   {secret_cmd}")
 
-        return True
-    except Exception as e:
-        print(f"❌ Failed to create secrets: {e}")
-        return False
-
+    return True
 
 def deploy_dolphin_service():
-    """Deploy the Dolphin OCR service to Modal."""
+    """Prepare Dolphin OCR service deployment instructions (stub implementation)."""
     print("🚀 Deploying Dolphin OCR service...")
 
-    try:
-        # Import the Modal app
+    # TODO: Implement actual deployment logic
+    print("📦 Dolphin service deployment preparation")
+    print("   To deploy, run: modal deploy services/dolphin_modal_service.py")
 
-        print("📦 Dolphin service app loaded successfully")
-        print("   To deploy, run: modal deploy services/dolphin_modal_service.py")
-
-        return True
-    except Exception as e:
-        print(f"❌ Failed to deploy Dolphin service: {e}")
-        return False
-
+    return True
 
 def deploy_main_application():
     """Deploy the main translation application."""
@@ -139,10 +181,8 @@ def main():
     print("\n2. Deploy the Dolphin OCR service:")
     print("   modal deploy services/dolphin_modal_service.py")
 
-    print("\n3. Update DOLPHIN_ENDPOINT in your .env:")
-    print(
-        "   DOLPHIN_ENDPOINT=https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run"
-    )
+    endpoint_url = os.getenv("MODAL_ENDPOINT_BASE", "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run")
+    print(f"   DOLPHIN_ENDPOINT={endpoint_url}")
 
     print("\n4. Test the deployment:")
     print("   python -m scripts.test_modal_deployment")

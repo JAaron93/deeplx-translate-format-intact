@@ -22,6 +22,8 @@ from core.translation_handler import (
 from models.user_choice_models import (
     ChoiceScope,
     ChoiceType,
+)
+from models.neologism_models import (
     ConfidenceFactors,
     DetectedNeologism,
     MorphologicalAnalysis,

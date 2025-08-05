@@ -30,12 +30,17 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
+LANGUAGE_MAP: dict[str, str] = {
+    "en": "English",
+    ...
+}
+
 class LanguageDetector:
     """Detects language of document content."""
 
     def __init__(self) -> None:
-        """Initialize language detector with supported language mappings."""
-        self.language_map: dict[str, str] = {
+        """No-op constructor; all data is stored on the class."""
+        self.language_map = LANGUAGE_MAP
             "en": "English",
             "es": "Spanish",
             "fr": "French",
@@ -54,7 +59,28 @@ class LanguageDetector:
         }
 
     def detect_language(self, file_path: str) -> str:
-        """Detect language of document."""
+        """Detect the language of a document from its file path.
+
+        Extracts sample text from the document and uses language detection
+        algorithms to identify the language. Supports multiple file formats
+        including PDF, DOCX, and plain text files.
+
+        Args:
+            file_path: Path to the document file to analyze. Supported formats
+                      include .pdf, .docx, and .txt files.
+
+        Returns:
+            str: Detected language name (e.g., "German", "English") or "Unknown"
+                 if the language cannot be determined or if an error occurs.
+                 Language codes are mapped to full language names using the
+                 internal language_map dictionary.
+
+        Note:
+            This method uses the langdetect library if available, otherwise
+            falls back to simple heuristic-based detection. All exceptions
+            are caught internally and result in "Unknown" being returned
+            rather than propagating errors to the caller.
+        """
         try:
             # Extract sample text from document
             sample_text = self._extract_sample_text(file_path)
@@ -75,7 +101,25 @@ class LanguageDetector:
             return "Unknown"
 
     def _extract_sample_text(self, file_path: str, max_chars: int = 2000) -> str:
-        """Extract sample text for language detection."""
+        """Extract sample text for language detection from supported file formats.
+
+        Supports the following file types:
+        - TXT: Plain text files (direct file reading)
+        - PDF: Portable Document Format files (using PyMuPDF/fitz library)
+        - DOCX: Microsoft Word documents (using python-docx library)
+
+        For unsupported file types or when required libraries are not available,
+        returns an empty string. PDF and DOCX support depends on the availability
+        of their respective libraries (PyMuPDF and python-docx).
+
+        Args:
+            file_path: Path to the document file to extract text from
+            max_chars: Maximum number of characters to extract (default: 2000)
+
+        Returns:
+            str: Extracted text sample or empty string if file type is unsupported
+                 or if an error occurs during text extraction
+        """
         try:
             file_ext = Path(file_path).suffix.lower()
 
@@ -227,7 +271,41 @@ class LanguageDetector:
         return "Unknown"
 
     def detect_language_from_text(self, text: str) -> str:
-        """Detect language from provided text."""
+        """Detect language from provided text using a two-path approach.
+
+        This function implements a robust language detection strategy that first
+        validates the input text and then uses the best available detection method:
+
+        1. Text Validation: Checks if the input text is valid and contains at least
+           10 characters after stripping whitespace. Returns "Unknown" immediately
+           if the text is too short or empty, as reliable language detection
+           requires sufficient text content.
+
+        2. Two-Path Detection:
+           - Primary: Uses the langdetect library if available for accurate
+             statistical language detection based on character n-grams
+           - Fallback: Uses simple heuristic-based detection when langdetect
+             is not available, analyzing character patterns and common words
+
+        The function gracefully handles missing dependencies and always returns
+        a result, falling back to "Unknown" for any errors or edge cases.
+
+        Args:
+            text: Input text to analyze for language detection. Should contain
+                  at least 10 characters for reliable detection.
+
+        Returns:
+            str: Detected language name (e.g., "German", "English") or "Unknown"
+                 if the language cannot be determined, text is too short, or an
+                 error occurs. Language codes from langdetect are mapped to full
+                 language names using the internal language_map dictionary.
+
+        Note:
+            This method requires at least 10 characters of text for detection.
+            Shorter texts will immediately return "Unknown" without attempting
+            detection, as statistical language detection is unreliable on very
+            short text samples.
+        """
         try:
             if not text or len(text.strip()) < 10:
                 return "Unknown"
@@ -245,5 +323,11 @@ class LanguageDetector:
             return "Unknown"
 
     def get_supported_languages(self) -> list[str]:
-        """Get list of supported languages."""
+        """Get list of supported languages.
+
+        Returns:
+            list[str]: List of supported language names (e.g., ["English", "German",
+                      "French", ...]). These are the full language names that can be
+                      returned by the language detection methods.
+        """
         return list(self.language_map.values())

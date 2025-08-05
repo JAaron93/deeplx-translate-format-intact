@@ -1,12 +1,12 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel>=0.42.0,<1.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "deeplx-translate-format-intact"
 version = "1.0.0"
 description = "Document translation application with OCR capabilities and philosophy-enhanced neologism detection"
-readme = "README.md"
+readme = {file = "README.md", content-type = "text/markdown"}
 license = "MIT"
 authors = [
     {name = "DeepLX Translate Format Intact Team"}
@@ -21,20 +21,30 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
+# In pyproject.toml
+
+[project]
 dependencies = [
     "murmurhash>=1.0.13",
     # keep minimums at the latest **released** version that still supports 3.8
     "numpy>=1.26.4",
     "packaging>=25.0",
-    "pluggy>=1.6.0",
     "preshed>=3.0.10",
     "psutil>=5.9.8",
     "pydantic>=2.11.0",
     "pydantic_core>=2.33.0",
     "Pygments>=2.19.0",
     "PyMuPDF>=1.26.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black>=22.0.0,<26.0.0",
+    "ruff>=0.1.0,<1.0.0",
+    "pre-commit>=3.0.0",
     "pytest>=8.2.2",
     "pytest-asyncio>=1.1.0",
+    "pluggy>=1.6.0",
 ]
 
 [tool.setuptools.packages.find]

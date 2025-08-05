@@ -21,11 +21,10 @@ class FileValidator:
         Attributes:
             max_file_size: Maximum allowed file size in bytes, derived from
                          Settings.MAX_FILE_SIZE_MB converted to bytes.
-            allowed_extensions: Set of permitted file extensions (e.g.,
-                              {'.pdf', '.docx', '.txt'}) loaded from config.
+            allowed_extensions: Set of permitted file extensions, currently
+                              restricted to PDF files only.
             allowed_mimetypes: Set of permitted MIME types for file
-                             validation, including PDF, Word documents,
-                             and plain text files.
+                             validation, currently supporting only PDF files.
         """
         from config.settings import Settings
 

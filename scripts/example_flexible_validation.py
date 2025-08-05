@@ -218,8 +218,8 @@ def create_sample_config_safely(config_file: Path) -> bool:
 def example_config_file(find_and_validate_project_root):
     """Example 3: Use configuration file."""
     print("\n=== Example 3: Configuration File ===")
-    # Use the robust project root finder
-    current_project_root = find_project_root()
+    # Use the injected project root finder to get the project root
+    current_project_root = find_and_validate_project_root()
     config_file = current_project_root / "scripts" / "project_validation_config.json"
 
     if not config_file.exists():
