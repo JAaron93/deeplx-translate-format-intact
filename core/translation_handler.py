@@ -24,6 +24,10 @@ from services.translation_service import TranslationService
 from services.user_choice_manager import UserChoiceManager
 from utils.file_handler import FileHandler
 from utils.language_utils import extract_text_sample_for_language_detection
+
+# PDF preprocessing constants
+PDF_PREPROCESSING_DPI = 300  # Standard high-resolution DPI for PDF-to-image conversion
+PDF_ESTIMATED_MB_PER_PAGE = 2.5  # Rough estimate of MB per page for image conversion
 from utils.validators import FileValidator
 
 # Configure logging
@@ -121,14 +125,10 @@ async def process_file_upload(file) -> Tuple[str, str, str, str, str]:
         except ValueError as e:
             return "", f"❌ {e!s}", "", "", ""
 
-        # Validate file - only PDFs allowed
+        # Validate file (includes PDF extension and size validation)
         validation_result = file_validator.validate_file(file_name, file_size)
         if not validation_result["valid"]:
             return "", f"❌ {validation_result['error']}", "", "", ""
-
-        # Check if file is PDF
-        if not file_name.lower().endswith(".pdf"):
-            return "", "❌ Only PDF files are supported", "", "", ""
 
         state.current_file = file_path
 
@@ -551,17 +551,37 @@ async def process_advanced_translation_job(
         job["error"] = str(e)
 
 
-async def _show_pdf_preprocessing_steps(file_path: str, file_size: int) -> str:
-    """Show detailed PDF-to-image preprocessing steps."""
+async def _show_pdf_preprocessing_steps(
+    file_path: str,
+    file_size: int,
+    dpi: int = PDF_PREPROCESSING_DPI,
+    mb_per_page: float = PDF_ESTIMATED_MB_PER_PAGE
+) -> str:
+    """Show detailed PDF-to-image preprocessing steps.
+
+    Args:
+        file_path: Path to the PDF file to analyze
+        file_size: Size of the PDF file in bytes
+        dpi: Target DPI for PDF-to-image conversion (default: 300)
+        mb_per_page: Estimated MB per page for image conversion (default: 2.5)
+
+    Returns:
+        str: Formatted preprocessing steps information
+
+    Raises:
+        fitz.FileNotFoundError: If the PDF file cannot be found
+        fitz.FileDataError: If the PDF file is corrupted or invalid
+    """
     try:
         preprocessing_steps = []
 
         # Step 1: PDF Analysis
         preprocessing_steps.append("🔍 Step 1: PDF Analysis")
-        doc = fitz.open(file_path)
-        page_count = len(doc)
-        doc_info = doc.metadata
-        doc.close()
+
+        # Use context manager for proper resource management
+        with fitz.open(file_path) as doc:
+            page_count = len(doc)
+            doc_info = doc.metadata
 
         preprocessing_steps.append(f"   📄 Pages detected: {page_count}")
         preprocessing_steps.append(f"   💾 File size: {file_size / (1024*1024):.2f} MB")
@@ -570,8 +590,7 @@ async def _show_pdf_preprocessing_steps(file_path: str, file_size: int) -> str:
 
         # Step 2: PDF-to-Image Conversion Planning
         preprocessing_steps.append("\n🖼️ Step 2: PDF-to-Image Conversion")
-        dpi = 300  # Standard high-resolution
-        estimated_image_size = page_count * 2.5  # Rough estimate MB per page
+        estimated_image_size = page_count * mb_per_page
         preprocessing_steps.append(f"   🎯 Target resolution: {dpi} DPI")
         preprocessing_steps.append(
             f"   📊 Estimated image data: ~{estimated_image_size:.1f} MB"
@@ -596,6 +615,17 @@ async def _show_pdf_preprocessing_steps(file_path: str, file_size: int) -> str:
 
         return "\n".join(preprocessing_steps)
 
+    except fitz.FileNotFoundError as e:
+        error_msg = f"PDF file not found: {file_path}"
+        logger.error(f"Preprocessing error - {error_msg}: {e}")
+        return f"❌ Preprocessing analysis failed: {error_msg}"
+
+    except fitz.FileDataError as e:
+        error_msg = f"PDF file is corrupted or invalid: {file_path}"
+        logger.error(f"Preprocessing error - {error_msg}: {e}")
+        return f"❌ Preprocessing analysis failed: {error_msg}"
+
     except Exception as e:
-        logger.error(f"Preprocessing display error: {e}")
-        return f"❌ Preprocessing analysis failed: {e!s}"
+        error_msg = "Unexpected error during PDF analysis"
+        logger.error(f"Preprocessing error - {error_msg}: {e}")
+        return f"❌ Preprocessing analysis failed: {error_msg}"

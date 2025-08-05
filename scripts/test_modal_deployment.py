@@ -8,12 +8,49 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from services.dolphin_client import get_layout
+
+
+def find_test_pdf() -> Optional[Path]:
+    """Find a test PDF file by checking multiple predefined paths.
+
+    Checks common locations for test PDF files and returns the first
+    existing path found, or None if no test PDF is available.
+
+    Returns:
+        Optional[Path]: Path to the first existing test PDF file, or None
+                       if no test PDF is found in any of the predefined locations.
+    """
+    test_pdf_paths = [
+        "tests/fixtures/sample.pdf",
+        "docs/sample.pdf",
+        "sample.pdf",
+    ]
+
+    for path in test_pdf_paths:
+        if Path(path).exists():
+            return Path(path)
+
+    return None
+
+
+def print_test_pdf_locations():
+    """Print the expected test PDF locations for user guidance."""
+    test_pdf_paths = [
+        "tests/fixtures/sample.pdf",
+        "docs/sample.pdf",
+        "sample.pdf",
+    ]
+
+    print("   Expected locations:")
+    for path in test_pdf_paths:
+        print(f"   - {path}")
 
 
 async def test_modal_endpoint():
@@ -28,24 +65,11 @@ async def test_modal_endpoint():
 
     print(f"📡 Testing endpoint: {endpoint}")
 
-    # Look for a test PDF file
-    test_pdf_paths = [
-        "tests/fixtures/sample.pdf",
-        "docs/sample.pdf",
-        "sample.pdf",
-    ]
-
-    test_pdf = None
-    for path in test_pdf_paths:
-        if Path(path).exists():
-            test_pdf = Path(path)
-            break
-
+    # Look for a test PDF file using the reusable function
+    test_pdf = find_test_pdf()
     if not test_pdf:
         print("❌ No test PDF found. Please create a test PDF file.")
-        print("   Expected locations:")
-        for path in test_pdf_paths:
-            print(f"   - {path}")
+        print_test_pdf_locations()
         return False
 
     print(f"📄 Using test PDF: {test_pdf}")
@@ -53,13 +77,23 @@ async def test_modal_endpoint():
     try:
         # Test the Dolphin client
         result = await get_layout(test_pdf)
+        
+        if not isinstance(result, dict):
+            raise ValueError(f"Expected dict result, got {type(result)}")
 
         print("✅ Modal endpoint test successful!")
         print(f"📊 Processed {result.get('total_pages', 0)} pages")
 
         # Print summary of results
         if "pages" in result:
-            for i, page in enumerate(result["pages"]):
+            pages = result["pages"]
+            if not isinstance(pages, list):
+                print(f"⚠️  Unexpected pages format: {type(pages)}")
+                return True
+            
+            for i, page in enumerate(pages):
+                if not isinstance(page, dict):
+                    continue
                 text_blocks = page.get("text_blocks", [])
                 print(f"   Page {i+1}: {len(text_blocks)} text blocks")
 
@@ -79,10 +113,11 @@ async def test_local_fallback():
     os.environ["DOLPHIN_ENDPOINT"] = "http://localhost:8501/layout"
 
     try:
-        # Look for a test PDF file
-        test_pdf = Path("tests/fixtures/sample.pdf")
-        if not test_pdf.exists():
+        # Look for a test PDF file using the reusable function
+        test_pdf = find_test_pdf()
+        if not test_pdf:
             print("⚠️  No test PDF found for local testing")
+            print_test_pdf_locations()
             return True  # Not a failure, just skip
 
         result = await get_layout(test_pdf)
@@ -158,13 +193,21 @@ async def main():
     modal_success = await test_modal_endpoint()
 
     # Test local fallback
-    await test_local_fallback()
+    local_fallback_success = await test_local_fallback()
 
     print("\n" + "=" * 40)
-    if modal_success:
-        print("✅ All tests passed! Modal deployment is working.")
+    if modal_success and local_fallback_success:
+        print("✅ All tests passed! Modal deployment and local fallback are working.")
+    elif modal_success and not local_fallback_success:
+        print("⚠️  Modal deployment is working, but local fallback failed.")
+        print("   This may not be critical if local service is not required.")
+    elif not modal_success and local_fallback_success:
+        print("❌ Modal deployment failed, but local fallback is working.")
+        print("   Check the Modal deployment configuration.")
+        sys.exit(1)
     else:
-        print("❌ Some tests failed. Check the deployment.")
+        print("❌ Both Modal deployment and local fallback failed.")
+        print("   Check both Modal deployment and local service configuration.")
         sys.exit(1)
 
 

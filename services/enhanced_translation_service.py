@@ -29,15 +29,22 @@ class EnhancedTranslationService(TranslationService):
 
         Args:
             terminology_path: Optional path to JSON file containing terminology
-                            mappings for translation preprocessing. If provided,
-                            terms in the file will be preserved during
-                            translation using HTML span tags.
+                    mappings for translation preprocessing. If provided, terms
+                    in the file will be preserved during translation using HTML
+                    span tags with translate="no" attribute.
 
-        Side Effects:
+        Notes:
             - Initializes parent TranslationService with terminology mapping
             - Sets up parallel_config from ParallelTranslationConfig.from_config()
             - Initializes performance_stats dictionary with tracking metrics
             - Sets _parallel_service to None for lazy initialization
+
+        Raises:
+            ValueError: If LINGO_API_KEY environment variable is not set or if
+                    translation provider initialization fails.
+            FileNotFoundError: If terminology_path is provided but file does not
+                    exist or is not readable.
+            json.JSONDecodeError: If terminology file contains invalid JSON.
         """
         super().__init__(terminology_path)
 

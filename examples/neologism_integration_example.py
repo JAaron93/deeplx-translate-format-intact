@@ -7,7 +7,12 @@ from __future__ import annotations
 
 import json
 import logging
+import tempfile
+from pathlib import Path
 from typing import Any, Optional
+
+# Determine repository root two levels up from this example file
+project_root = Path(__file__).resolve().parent.parent
 
 # Project imports - now work with installable package
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
@@ -379,12 +384,30 @@ def main():
     print("\n8. Exporting Results:")
     print("=" * 50)
 
-    # Export results to JSON
-    output_file = project_root / "examples" / "translation_results.json"
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+    # Choose a user-writable output directory
+    # Try current working directory first, fall back to temp directory
+    try:
+        output_dir = Path.cwd()
+        # Test if we can write to current directory
+        test_file = output_dir / ".write_test"
+        test_file.touch()
+        test_file.unlink()
+        print(f"Using current working directory: {output_dir}")
+    except (PermissionError, OSError):
+        # Fall back to temporary directory if current directory is not writable
+        output_dir = Path(tempfile.gettempdir())
+        print(f"Current directory not writable, using temp directory: {output_dir}")
 
-    print(f"Results exported to: {output_file}")
+    # Export results to JSON
+    output_file = output_dir / "translation_results.json"
+
+    try:
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+        print(f"✅ Results successfully exported to: {output_file}")
+    except (PermissionError, OSError) as e:
+        print(f"❌ Failed to write results file: {e}")
+        print("Results could not be saved to disk.")
 
     print("\n=== Demo Complete ===")
 

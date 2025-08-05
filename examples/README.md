@@ -17,6 +17,14 @@ This directory contains examples demonstrating the use of the Neologism Detectio
      pip install -e .
      ```
 
+   - **Editable installation with development tools:**
+     ```bash
+     pip install -e ".[dev]"
+     ```
+     This installs pre-configured test tools and linters (Black, Ruff, pre-commit, pytest)
+     alongside the main package, avoiding the need for separate requirements-dev.txt
+     installation and reducing version skew between dependencies.
+
    - **Direct dependency installation:**
      ```bash
      pip install -r requirements.txt

@@ -14,7 +14,7 @@ from core.translation_handler import (
 
 
 def create_gradio_interface() -> gr.Blocks:
-    """Create the advanced Gradio web interface."""
+    """Create the advanced Gradio web interface for PDF document translation with OCR."""
     # Load settings for language configuration
     settings = Settings()
 
@@ -32,21 +32,9 @@ def create_gradio_interface() -> gr.Blocks:
     ) as interface:
         gr.Markdown(
             """
-            # 📄 Advanced PDF Document Translator
-
-            Professional PDF document translation with **Dolphin OCR** and **comprehensive formatting**
-            **preservation**.
-
-            🎯 **Features:**
-            - **Dolphin OCR Integration**: Advanced AI-powered document understanding
-            - **PDF-to-Image Pre-processing**: High-resolution conversion for optimal OCR
-            - **Layout Preservation**: Intelligent text fitting and formatting retention
-            - **High-Resolution Processing**: 300+ DPI for maximum quality
-            - **Complex Layout Support**: Tables, figures, formulas, and multi-column layouts
-            - **Automatic Language Detection**: Smart source language identification
-
-            📊 **Supported Files:** PDF only (up to 10MB)
-            """
+with gr.Blocks(
+    title="Advanced PDF Document Translator", theme=gr.themes.Soft(), css=css_content
+) as interface:
         )
 
         with gr.Row():

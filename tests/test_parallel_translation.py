@@ -327,8 +327,6 @@ async def test_basic_functionality():
 if __name__ == "__main__":
     # Run basic tests
     asyncio.run(test_basic_functionality())
-    asyncio.run(test_rate_limiter())
-    print("Basic tests passed!")
 
 
 async def test_rate_limiter():

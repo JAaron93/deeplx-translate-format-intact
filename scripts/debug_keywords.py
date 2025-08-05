@@ -14,7 +14,39 @@ from services.neologism_detector import NeologismDetector  # noqa: E402
 
 
 def debug_keywords():
-    """Debug and verify philosophical keyword detection functionality."""
+    """Debug and verify philosophical keyword detection functionality.
+
+    This function performs a comprehensive test of the NeologismDetector's
+    philosophical keyword extraction capabilities by following this workflow:
+
+    1. Instantiates a NeologismDetector instance
+    2. Verifies that required attributes exist:
+       - philosophical_context_analyzer
+       - debug_extract_philosophical_keywords method
+    3. Tests keyword extraction on a hard-coded German sentence:
+       "Das Bewusstsein und die Wirklichkeit sind zentrale Begriffe der Philosophie."
+       (Consciousness and reality are central concepts of philosophy.)
+    4. Prints intermediate debugging results including:
+       - The test context sentence
+       - Context words after tokenization
+       - Available philosophical indicators (first 20)
+       - Presence checks for specific German philosophical terms
+       - Final extracted keywords from the debug method
+    5. Handles exceptions with detailed error reporting and traceback printing
+
+    This script is intended for development and debugging purposes to verify
+    that the philosophical keyword detection system is working correctly with
+    German philosophical texts.
+
+    Returns:
+        None: This function performs debugging operations and prints results
+              but does not return any value.
+
+    Raises:
+        RuntimeError: If NeologismDetector is missing required attributes.
+        Exception: Any other exceptions are caught, logged, and allow execution
+                  to continue.
+    """
     try:
         detector = NeologismDetector()
 

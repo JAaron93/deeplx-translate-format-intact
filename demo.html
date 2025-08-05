@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Eval Agent Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .feature {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #007acc;
+            background-color: #f9f9f9;
+        }
+        button {
+            background-color: #007acc;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #005a9e;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4fd;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 operative.sh Web Eval Agent Demo</h1>
+        
+        <div class="feature">
+            <h2>🌐 Browser Automation</h2>
+            <p>The web-eval-agent can navigate websites, interact with elements, and perform automated testing.</p>
+        </div>
+        
+        <div class="feature">
+            <h2>📊 UX Evaluation</h2>
+            <p>Evaluate user experience by running through flows and identifying issues.</p>
+        </div>
+        
+        <div class="feature">
+            <h2>📸 Screenshot Capture</h2>
+            <p>Capture screenshots at each step of the evaluation process.</p>
+        </div>
+        
+        <div class="feature">
+            <h2>📝 Detailed Reports</h2>
+            <p>Generate comprehensive reports with console logs and network traffic.</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <button onclick="runDemo()">Run Web Evaluation Demo</button>
+        </div>
+        
+        <div id="result" class="result">
+            <h3>Evaluation Results:</h3>
+            <p id="result-text">Running evaluation...</p>
+        </div>
+    </div>
+
+    <script>
+        function runDemo() {
+            const resultDiv = document.getElementById('result');
+            const resultText = document.getElementById('result-text');
+            
+            resultDiv.style.display = 'block';
+            resultText.innerHTML = 'Initializing web evaluation agent...<br><br>';
+            
+            // Simulate evaluation process
+            setTimeout(() => {
+                resultText.innerHTML += '🔍 Navigating to test page...<br>';
+            }, 1000);
+            
+            setTimeout(() => {
+                resultText.innerHTML += '🖱️ Interacting with UI elements...<br>';
+            }, 2000);
+            
+            setTimeout(() => {
+                resultText.innerHTML += '📸 Capturing screenshots...<br>';
+            }, 3000);
+            
+            setTimeout(() => {
+                resultText.innerHTML += '📋 Analyzing user experience...<br>';
+            }, 4000);
+            
+            setTimeout(() => {
+                resultText.innerHTML += '✅ Evaluation complete!<br><br>';
+                resultText.innerHTML += '<strong>Summary:</strong><br>';
+                resultText.innerHTML += '• Navigation successful<br>';
+                resultText.innerHTML += '• UI elements responsive<br>';
+                resultText.innerHTML += '• No console errors detected<br>';
+                resultText.innerHTML += '• Performance: Excellent<br>';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

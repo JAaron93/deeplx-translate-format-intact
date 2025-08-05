@@ -13,7 +13,61 @@ logger = logging.getLogger(__name__)
 
 
 class Config:
-    """Configuration settings for the Dolphin OCR Translate application."""
+    """Central configuration class for Dolphin OCR Translate application.
+
+    This class loads configuration from environment variables and provides
+    validated constants for the entire application. All settings are loaded
+    as class attributes and can be accessed directly.
+
+    Environment Variables Read:
+        Translation API:
+            LINGO_API_KEY: Required API key for Lingo.dev translation service
+
+        File Paths:
+            INPUT_DIR: Input directory path (default: "input")
+            OUTPUT_DIR: Output directory path (default: "output")
+            TEMP_DIR: Temporary files directory (default: "temp")
+            IMAGE_CACHE_DIR: Image cache directory (default: "temp/images")
+
+        Translation Settings:
+            SOURCE_LANGUAGE: Source language code (default: "DE")
+            TARGET_LANGUAGE: Target language code (default: "EN")
+
+        PDF Processing:
+            PDF_DPI: PDF rendering DPI, 72-600 (default: 300)
+            MEMORY_THRESHOLD_MB: Memory threshold in MB, 100-10000 (default: 500)
+            TRANSLATION_DELAY: Delay between requests in seconds (default: 0.1)
+            PRESERVE_IMAGES: Whether to preserve images, true/false (default: true)
+
+        Parallel Processing:
+            MAX_CONCURRENT_REQUESTS: Max concurrent requests, min 1 (default: 10)
+            MAX_REQUESTS_PER_SECOND: Rate limit, min 0.1 (default: 5.0)
+            TRANSLATION_BATCH_SIZE: Batch size, min 1 (default: 50)
+            TRANSLATION_MAX_RETRIES: Max retries, min 0 (default: 3)
+            TRANSLATION_REQUEST_TIMEOUT: Timeout in seconds (default: 30.0)
+            PARALLEL_PROCESSING_THRESHOLD: Min items for parallel processing (default: 5)
+
+    Usage:
+        # Access configuration constants directly
+        api_key = Config.LINGO_API_KEY
+        dpi = Config.PDF_DPI
+
+        # Validate configuration before use
+        if not Config.validate_config():
+            raise RuntimeError("Invalid configuration")
+
+        # Check available providers
+        providers = Config.get_available_providers()
+
+    Methods:
+        validate_config(): Validates all configuration settings and creates directories
+        get_available_providers(): Returns list of available translation providers
+
+    Note:
+        Configuration is loaded once when the module is imported. Environment
+        variables should be set before importing this module. Invalid values
+        are replaced with safe defaults and logged as errors.
+    """
 
     # Translation API settings - Only Lingo.dev
     LINGO_API_KEY = os.getenv("LINGO_API_KEY")
