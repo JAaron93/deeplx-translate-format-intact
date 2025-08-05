@@ -40,18 +40,35 @@ def find_test_pdf() -> Optional[Path]:
     return None
 
 
+# Add at the top of the module, alongside your imports
+TEST_PDF_PATHS = [
+    "tests/fixtures/sample.pdf",
+    "docs/sample.pdf",
+    "sample.pdf",
+]
+
+def find_test_pdf() -> Optional[Path]:
+    """Find a test PDF file by checking multiple predefined paths.
+
+    Checks common locations for test PDF files and returns the first
+    existing path found, or None if no test PDF is available.
+
+    Returns:
+        Optional[Path]: Path to the first existing test PDF file, or None
+                        if no test PDF is found in any of the predefined locations.
+    """
+    for path in TEST_PDF_PATHS:
+        if Path(path).exists():
+            return Path(path)
+
+    return None
+
+
 def print_test_pdf_locations():
     """Print the expected test PDF locations for user guidance."""
-    test_pdf_paths = [
-        "tests/fixtures/sample.pdf",
-        "docs/sample.pdf",
-        "sample.pdf",
-    ]
-
     print("   Expected locations:")
-    for path in test_pdf_paths:
+    for path in TEST_PDF_PATHS:
         print(f"   - {path}")
-
 
 async def test_modal_endpoint():
     """Test the Modal Dolphin OCR endpoint."""
@@ -77,7 +94,7 @@ async def test_modal_endpoint():
     try:
         # Test the Dolphin client
         result = await get_layout(test_pdf)
-        
+
         if not isinstance(result, dict):
             raise ValueError(f"Expected dict result, got {type(result)}")
 
@@ -90,7 +107,7 @@ async def test_modal_endpoint():
             if not isinstance(pages, list):
                 print(f"⚠️  Unexpected pages format: {type(pages)}")
                 return True
-            
+
             for i, page in enumerate(pages):
                 if not isinstance(page, dict):
                     continue

@@ -28,14 +28,10 @@ def create_gradio_interface() -> gr.Blocks:
         print(f"Warning: CSS file not found at {css_path}")
 
     with gr.Blocks(
-        title="Advanced Document Translator", theme=gr.themes.Soft(), css=css_content
+        title="Advanced PDF Document Translator",
+        theme=gr.themes.Soft(),
+        css=css_content,
     ) as interface:
-        gr.Markdown(
-            """
-with gr.Blocks(
-    title="Advanced PDF Document Translator", theme=gr.themes.Soft(), css=css_content
-) as interface:
-        )
 
         with gr.Row():
             with gr.Column(scale=1):

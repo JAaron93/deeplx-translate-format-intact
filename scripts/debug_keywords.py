@@ -43,9 +43,12 @@ def debug_keywords():
               but does not return any value.
 
     Raises:
-        RuntimeError: If NeologismDetector is missing required attributes.
-        Exception: Any other exceptions are caught, logged, and allow execution
-                  to continue.
+        None while the surrounding try/except block is in place.
+
+    Note:
+        All exceptions are presently caught and logged internally. If the
+        error-handling strategy changes (for example, by re-raising after
+        logging), revisit this section to document the new outward behaviour.
     """
     try:
         detector = NeologismDetector()

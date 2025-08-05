@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Eval Agent Demo</title>
+    <link rel="stylesheet" href="demo.css">
+    <!--
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -40,6 +42,11 @@
         button:hover {
             background-color: #005a9e;
         }
+        /* Accessible focus style */
+        button:focus {
+            outline: 3px solid #ffbf47; /* High-contrast outline */
+            outline-offset: 2px;
+        }
         .result {
             margin-top: 20px;
             padding: 15px;
@@ -48,73 +55,105 @@
             display: none;
         }
     </style>
+    -->
 </head>
 <body>
     <div class="container">
         <h1>🚀 operative.sh Web Eval Agent Demo</h1>
-        
+
         <div class="feature">
             <h2>🌐 Browser Automation</h2>
             <p>The web-eval-agent can navigate websites, interact with elements, and perform automated testing.</p>
         </div>
-        
+
         <div class="feature">
             <h2>📊 UX Evaluation</h2>
             <p>Evaluate user experience by running through flows and identifying issues.</p>
         </div>
-        
+
         <div class="feature">
             <h2>📸 Screenshot Capture</h2>
             <p>Capture screenshots at each step of the evaluation process.</p>
         </div>
-        
+
         <div class="feature">
             <h2>📝 Detailed Reports</h2>
             <p>Generate comprehensive reports with console logs and network traffic.</p>
         </div>
-        
+
         <div style="text-align: center; margin: 30px 0;">
-            <button onclick="runDemo()">Run Web Evaluation Demo</button>
+            <button id="run-demo-btn" onclick="runDemo()">Run Web Evaluation Demo</button>
         </div>
-        
+
         <div id="result" class="result">
             <h3>Evaluation Results:</h3>
-            <p id="result-text">Running evaluation...</p>
+            <div id="result-text"></div>
         </div>
     </div>
 
     <script>
         function runDemo() {
+            const runButton = document.getElementById('run-demo-btn');
+            if (runButton.disabled) {
+                // Prevent concurrent runs
+                return;
+            }
+            runButton.disabled = true;
+
             const resultDiv = document.getElementById('result');
             const resultText = document.getElementById('result-text');
-            
+
             resultDiv.style.display = 'block';
-            resultText.innerHTML = 'Initializing web evaluation agent...<br><br>';
-            
+            resultText.textContent = '';
+
+            // Helper to safely append lines without re-parsing HTML
+            const appendLine = (text, bold = false) => {
+                const p = document.createElement('p');
+                if (bold) {
+                    const strong = document.createElement('strong');
+                    strong.textContent = text;
+                    p.appendChild(strong);
+                } else {
+                    p.textContent = text;
+                }
+                resultText.appendChild(p);
+            };
+
+            appendLine('Initializing web evaluation agent...');
+
             // Simulate evaluation process
             setTimeout(() => {
-                resultText.innerHTML += '🔍 Navigating to test page...<br>';
+                appendLine('🔍 Navigating to test page...');
             }, 1000);
-            
+
             setTimeout(() => {
-                resultText.innerHTML += '🖱️ Interacting with UI elements...<br>';
+                appendLine('🖱️ Interacting with UI elements...');
             }, 2000);
-            
+
             setTimeout(() => {
-                resultText.innerHTML += '📸 Capturing screenshots...<br>';
+                appendLine('📸 Capturing screenshots...');
             }, 3000);
-            
+
             setTimeout(() => {
-                resultText.innerHTML += '📋 Analyzing user experience...<br>';
+                appendLine('📋 Analyzing user experience...');
             }, 4000);
-            
+
             setTimeout(() => {
-                resultText.innerHTML += '✅ Evaluation complete!<br><br>';
-                resultText.innerHTML += '<strong>Summary:</strong><br>';
-                resultText.innerHTML += '• Navigation successful<br>';
-                resultText.innerHTML += '• UI elements responsive<br>';
-                resultText.innerHTML += '• No console errors detected<br>';
-                resultText.innerHTML += '• Performance: Excellent<br>';
+                appendLine('✅ Evaluation complete!');
+
+                // Summary section
+                appendLine('Summary:', true);
+                const ul = document.createElement('ul');
+                ['Navigation successful', 'UI elements responsive', 'No console errors detected', 'Performance: Excellent']
+                    .forEach(item => {
+                        const li = document.createElement('li');
+                        li.textContent = item;
+                        ul.appendChild(li);
+                    });
+                resultText.appendChild(ul);
+
+                // Re-enable the run button now that the demo is complete
+                runButton.disabled = false;
             }, 5000);
         }
     </script>

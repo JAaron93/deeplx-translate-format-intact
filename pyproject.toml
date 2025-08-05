@@ -21,12 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-# In pyproject.toml
-
-[project]
 dependencies = [
     "murmurhash>=1.0.13",
-    # keep minimums at the latest **released** version that still supports 3.8
     "numpy>=1.26.4",
     "packaging>=25.0",
     "preshed>=3.0.10",
@@ -37,7 +33,7 @@ dependencies = [
     "PyMuPDF>=1.26.0",
 ]
 
-[project.optional-dependencies]
+# append the test/lint extras to the existing dev list above
 dev = [
     "black>=22.0.0,<26.0.0",
     "ruff>=0.1.0,<1.0.0",

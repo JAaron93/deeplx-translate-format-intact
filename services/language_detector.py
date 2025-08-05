@@ -32,7 +32,91 @@ logger = logging.getLogger(__name__)
 
 LANGUAGE_MAP: dict[str, str] = {
     "en": "English",
-    ...
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "zh": "Chinese",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "ar": "Arabic",
+    "hi": "Hindi",
+    "nl": "Dutch",
+    "sv": "Swedish",
+    "no": "Norwegian",
+}
+
+LANGUAGE_PATTERNS: dict[str, dict[str, object]] = {
+    "German": {
+        "words": [
+            "der",
+            "die",
+            "das",
+            "und",
+            "ist",
+            "ein",
+            "eine",
+            "mit",
+            "von",
+            "zu",
+        ],
+        "chars": ["ä", "ö", "ü", "ß"],
+        "word_weight": 1.0,
+        "char_weight": 2.0,
+    },
+    "English": {
+        "words": [
+            "the",
+            "and",
+            "is",
+            "a",
+            "an",
+            "with",
+            "of",
+            "to",
+            "in",
+            "for",
+        ],
+        "chars": [],
+        "word_weight": 1.0,
+        "char_weight": 0.0,
+    },
+    "Spanish": {
+        "words": [
+            "el",
+            "la",
+            "y",
+            "es",
+            "un",
+            "una",
+            "con",
+            "de",
+            "en",
+            "para",
+        ],
+        "chars": ["ñ", "á", "é", "í", "ó", "ú"],
+        "word_weight": 1.0,
+        "char_weight": 2.0,
+    },
+    "French": {
+        "words": [
+            "le",
+            "la",
+            "et",
+            "est",
+            "un",
+            "une",
+            "avec",
+            "de",
+            "en",
+            "pour",
+        ],
+        "chars": ["à", "é", "è", "ê", "ç", "ô"],
+        "word_weight": 1.0,
+        "char_weight": 2.0,
+    },
 }
 
 class LanguageDetector:
@@ -41,22 +125,7 @@ class LanguageDetector:
     def __init__(self) -> None:
         """No-op constructor; all data is stored on the class."""
         self.language_map = LANGUAGE_MAP
-            "en": "English",
-            "es": "Spanish",
-            "fr": "French",
-            "de": "German",
-            "it": "Italian",
-            "pt": "Portuguese",
-            "ru": "Russian",
-            "zh": "Chinese",
-            "ja": "Japanese",
-            "ko": "Korean",
-            "ar": "Arabic",
-            "hi": "Hindi",
-            "nl": "Dutch",
-            "sv": "Swedish",
-            "no": "Norwegian",
-        }
+
 
     def detect_language(self, file_path: str) -> str:
         """Detect the language of a document from its file path.
@@ -175,77 +244,8 @@ class LanguageDetector:
         if word_count == 0:
             return "Unknown"
 
-        # Common words and characters for each language
-        language_patterns = {
-            "German": {
-                "words": [
-                    "der",
-                    "die",
-                    "das",
-                    "und",
-                    "ist",
-                    "ein",
-                    "eine",
-                    "mit",
-                    "von",
-                    "zu",
-                ],
-                "chars": ["ä", "ö", "ü", "ß"],
-                "word_weight": 1.0,
-                "char_weight": 2.0,
-            },
-            "English": {
-                "words": [
-                    "the",
-                    "and",
-                    "is",
-                    "a",
-                    "an",
-                    "with",
-                    "of",
-                    "to",
-                    "in",
-                    "for",
-                ],
-                "chars": [],
-                "word_weight": 1.0,
-                "char_weight": 0.0,
-            },
-            "Spanish": {
-                "words": [
-                    "el",
-                    "la",
-                    "y",
-                    "es",
-                    "un",
-                    "una",
-                    "con",
-                    "de",
-                    "en",
-                    "para",
-                ],
-                "chars": ["ñ", "á", "é", "í", "ó", "ú"],
-                "word_weight": 1.0,
-                "char_weight": 2.0,
-            },
-            "French": {
-                "words": [
-                    "le",
-                    "la",
-                    "et",
-                    "est",
-                    "un",
-                    "une",
-                    "avec",
-                    "de",
-                    "en",
-                    "pour",
-                ],
-                "chars": ["à", "é", "è", "ê", "ç", "ô"],
-                "word_weight": 1.0,
-                "char_weight": 2.0,
-            },
-        }
+        # Use precomputed language patterns defined at module scope
+        language_patterns = LANGUAGE_PATTERNS
 
         # Calculate normalized scores
         scores = {}

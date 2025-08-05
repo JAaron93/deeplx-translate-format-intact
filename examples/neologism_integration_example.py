@@ -11,8 +11,15 @@ import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
-# Determine repository root two levels up from this example file
-project_root = Path(__file__).resolve().parent.parent
+# Determine repository root by searching for a marker file
+def find_project_root() -> Path:
+    current = Path(__file__).resolve()
+    for parent in [current] + list(current.parents):
+        if (parent / "pyproject.toml").exists() or (parent / "setup.py").exists():
+            return parent
+    return current.parent.parent  # fallback to current behavior
+
+project_root = find_project_root()
 
 # Project imports - now work with installable package
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
@@ -390,8 +397,13 @@ def main():
         output_dir = Path.cwd()
         # Test if we can write to current directory
         test_file = output_dir / ".write_test"
+        try:
         test_file.touch()
         test_file.unlink()
+    except Exception:
+        # Clean up test file if it was created but deletion failed
+        test_file.unlink(missing_ok=True)
+        raise
         print(f"Using current working directory: {output_dir}")
     except (PermissionError, OSError):
         # Fall back to temporary directory if current directory is not writable
