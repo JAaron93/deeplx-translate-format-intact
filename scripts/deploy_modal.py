@@ -86,8 +86,9 @@ def report_environment_validation(missing_required, empty_required, missing_opti
             print(f"⚠️  Optional variable {var} is set but empty")
 
     # Report successfully set optional variables
-    optional_vars = ["HF_TOKEN"]  # Keep in sync with validate_environment_variables
-    for var in optional_vars:
+    # Get the list from validate_environment_variables to avoid duplication
+    all_optional_vars = ["HF_TOKEN"]  # This should be extracted to a module constant
+    for var in all_optional_vars:
         if var not in all_optional:
             value = os.getenv(var)
             if value and value.strip():

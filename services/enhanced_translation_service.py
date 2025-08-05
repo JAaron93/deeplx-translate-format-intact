@@ -8,6 +8,7 @@ with significant performance improvements for large documents.
 
 import logging
 import time
+import json  # For docstring: JSONDecodeError
 from typing import Any, Callable, Dict, List, Optional
 
 from services.parallel_translation_service import (
@@ -28,10 +29,10 @@ class EnhancedTranslationService(TranslationService):
         """Initialize enhanced translation service with parallel processing.
 
         Args:
-            terminology_path: Optional path to JSON file containing terminology
-                    mappings for translation preprocessing. If provided, terms
-                    in the file will be preserved during translation using HTML
-                    span tags with translate="no" attribute.
+            terminology_path: Optional path to a JSON file containing
+                terminology mappings for translation preprocessing. If
+                provided, terms in the file will be preserved during
+                translation using HTML <span translate="no"> tags.
 
         Notes:
             - Initializes parent TranslationService with terminology mapping
@@ -44,7 +45,7 @@ class EnhancedTranslationService(TranslationService):
                     translation provider initialization fails.
             FileNotFoundError: If terminology_path is provided but file does not
                     exist or is not readable.
-            json.JSONDecodeError: If terminology file contains invalid JSON.
+            json.JSONDecodeError: If the terminology file contains invalid JSON.
         """
         super().__init__(terminology_path)
 

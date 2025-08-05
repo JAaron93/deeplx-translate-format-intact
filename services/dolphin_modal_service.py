@@ -68,12 +68,13 @@ model_volume = modal.Volume.from_name("dolphin-ocr-models", create_if_missing=Tr
     container_idle_timeout=300,  # 5 minutes
 )
 def download_model():
-    """Download and cache the Dolphin OCR model."""
+    # Create an instance of the class and call the method
+    processor = DolphinOCRProcessor()
+    return processor.process_pdf(pdf_bytes)Download and cache the Dolphin OCR model."""
     from huggingface_hub import snapshot_download
 
     print("Downloading Dolphin OCR model...")
 
-    # Download the model to the persistent volume
     # Download the model to the persistent volume
     try:
         model_path = snapshot_download(
@@ -110,10 +111,11 @@ class DolphinOCRProcessor:
 
         # Load the model and processor once during initialization
         # Use the path returned by snapshot_download or a consistent location
-        model_path = MODEL_CACHE_PATH  # Adjust based on actual download location
-        self.processor = AutoProcessor.from_pretrained(model_path)
+        # Use the actual model ID for loading
+        self.processor = AutoProcessor.from_pretrained(DOLPHIN_MODEL_ID, cache_dir=MODEL_CACHE_PATH)
         self.model = AutoModelForVision2Seq.from_pretrained(
-            model_path,
+            DOLPHIN_MODEL_ID,
+            cache_dir=MODEL_CACHE_PATH,
             torch_dtype=torch.float16,
             device_map="auto",
         )
@@ -174,7 +176,7 @@ class DolphinOCRProcessor:
                 "page_number": page_num + 1,
                 "width": image.width,
                 "height": image.height,
-                "text_blocks": parse_dolphin_output(generated_text),
+                "text_blocks": [{"text": generated_text, "bbox": None, "confidence": 1.0, "block_type": "raw"}],  # TODO: Implement proper parsing
                 "raw_output": generated_text,
             }
 
@@ -244,11 +246,16 @@ def parse_dolphin_output(raw_output: str) -> List[Dict[str, Any]]:
                 "bbox": [x1, y1, x2, y2],  # Bounding box coordinates
                 "confidence": float,   # OCR confidence score (0.0-1.0)
                 "block_type": str,     # Element type (text, title, table, etc.)
-            }
-        ]
-    """
-    raise NotImplementedError(
-        "parse_dolphin_output() is not yet implemented. "
+    # Temporary implementation - returns raw output as a single text block
+    # TODO: Implement proper parsing once Dolphin output format is known
+    import logging
+    logging.warning("Using temporary parse_dolphin_output implementation")
+    return [{
+        "text": raw_output,
+        "bbox": [0, 0, 0, 0],  # Placeholder coordinates
+        "confidence": 1.0,
+        "block_type": "raw_text"
+    }]
         "This function requires knowledge of the actual Dolphin OCR output format. "
         f"Raw output received: {raw_output[:100]}{'...' if len(raw_output) > 100 else ''}"
     )
@@ -275,7 +282,8 @@ def dolphin_ocr_endpoint(
 
     try:
         # Process the PDF using cached processor for better performance
-        result = dolphin_processor.process_pdf.remote(pdf_file)
+        # Properly invoke the Modal function
+        result = process_pdf_with_dolphin.remote(pdf_file)
         return result
     except ValueError as e:
         return {
