@@ -63,7 +63,7 @@ def create_large_text_batch() -> List[str]:
     large_batch = []
     for i in range(50):  # Create 500 texts total
         for j, text in enumerate(base_texts):
-            modified_text = f"{text} (Variante {i+1}.{j+1})"
+            modified_text = f"{text} (Variante {i + 1}.{j + 1})"
             large_batch.append(modified_text)
 
     return large_batch

@@ -1,10 +1,14 @@
-"""Gradio interface for document translation."""
+# Application title used across UI and docs
+APP_TITLE = "Advanced PDF Document Translator"
 
+# Ensure the module docstring reflects the single source of truth title
+__doc__ = f"Gradio interface for {APP_TITLE}."
+import json
+import logging
 from pathlib import Path
 
 import gradio as gr
 
-from config.settings import Settings
 from core.translation_handler import (
     download_translated_file,
     get_translation_status,
@@ -15,8 +19,66 @@ from core.translation_handler import (
 
 def create_gradio_interface() -> gr.Blocks:
     """Create the advanced Gradio web interface for PDF document translation with OCR."""
-    # Load settings for language configuration
-    settings = Settings()
+    # Load supported languages from config/languages.json (fallback to defaults)
+    languages_path = Path(__file__).parent.parent / "config" / "languages.json"
+    try:
+        data = json.loads(languages_path.read_text())
+        supported_languages = data.get(
+            "supported_languages",
+            [
+                "English",
+                "Spanish",
+                "French",
+                "German",
+                "Italian",
+                "Portuguese",
+                "Russian",
+                "Chinese",
+                "Japanese",
+                "Korean",
+                "Arabic",
+                "Hindi",
+                "Dutch",
+                "Swedish",
+                "Norwegian",
+            ],
+        )
+    except FileNotFoundError:
+        supported_languages = [
+            "English",
+            "Spanish",
+            "French",
+            "German",
+            "Italian",
+            "Portuguese",
+            "Russian",
+            "Chinese",
+            "Japanese",
+            "Korean",
+            "Arabic",
+            "Hindi",
+            "Dutch",
+            "Swedish",
+            "Norwegian",
+        ]
+    except json.JSONDecodeError:
+        supported_languages = [
+            "English",
+            "Spanish",
+            "French",
+            "German",
+            "Italian",
+            "Portuguese",
+            "Russian",
+            "Chinese",
+            "Japanese",
+            "Korean",
+            "Arabic",
+            "Hindi",
+            "Dutch",
+            "Swedish",
+            "Norwegian",
+        ]
 
     # Load CSS from external file
     css_path = Path(__file__).parent.parent / "static" / "styles.css"
@@ -25,14 +87,13 @@ def create_gradio_interface() -> gr.Blocks:
     except FileNotFoundError:
         # Fallback if CSS file not found
         css_content = ""
-        print(f"Warning: CSS file not found at {css_path}")
+        logging.warning("CSS file not found at %s", css_path)
 
     with gr.Blocks(
-        title="Advanced PDF Document Translator",
+        title=APP_TITLE,
         theme=gr.themes.Soft(),
         css=css_content,
     ) as interface:
-
         with gr.Row():
             with gr.Column(scale=1):
                 # File Upload Section
@@ -93,7 +154,7 @@ def create_gradio_interface() -> gr.Blocks:
                     with gr.Column():
                         target_language = gr.Dropdown(
                             label="Target Language",
-                            choices=settings.SUPPORTED_LANGUAGES,
+                            choices=supported_languages,
                             value="English",
                         )
 

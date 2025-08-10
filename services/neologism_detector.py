@@ -14,10 +14,11 @@ from typing import Any, Optional
 
 # Import spaCy for German linguistic analysis
 try:
-    import spacy
+    import spacy  # type: ignore
 
     SPACY_AVAILABLE = True
 except ImportError:
+    spacy = None  # type: ignore
     SPACY_AVAILABLE = False
 
 # Import our data models
@@ -86,8 +87,7 @@ class NeologismDetector:
         self.total_analyses = 0
 
         logger.info(
-            f"NeologismDetector initialized with lazy loading for model: "
-            f"{spacy_model}"
+            f"NeologismDetector initialized with lazy loading for model: {spacy_model}"
         )
 
     @property
@@ -173,13 +173,13 @@ class NeologismDetector:
                 return nlp
             except OSError:
                 logger.warning(
-                    "No German spaCy model available, using linguistic " "fallback"
+                    "No German spaCy model available, using linguistic fallback"
                 )
                 return None
 
     def _load_terminology(self) -> dict[str, str]:
         """Load terminology mapping from JSON file."""
-        terminology = {}
+        terminology: dict[str, str] = {}
 
         if self.terminology_path and Path(self.terminology_path).exists():
             try:
@@ -188,19 +188,21 @@ class NeologismDetector:
                 logger.info(f"Loaded {len(terminology)} terminology entries")
             except Exception as e:
                 logger.error(f"Error loading terminology: {e}")
-
-        # Add default Klages terminology if available
-        try:
-            klages_path = (
-                Path(__file__).parent.parent / "config" / "klages_terminology.json"
-            )
-            if klages_path.exists():
-                with open(klages_path, encoding="utf-8") as f:
-                    klages_terms = json.load(f)
-                    terminology.update(klages_terms)
-                logger.info(f"Added {len(klages_terms)} Klages terminology entries")
-        except Exception as e:
-            logger.warning(f"Could not load Klages terminology: {e}")
+                return {}
+        elif not self.terminology_path:
+            # Only load default terminology when no explicit path was provided
+            try:
+                klages_path = (
+                    Path(__file__).parent.parent / "config" / "klages_terminology.json"
+                )
+                if klages_path.exists():
+                    with open(klages_path, encoding="utf-8") as f:
+                        terminology = json.load(f)
+                    logger.info(
+                        f"Loaded default Klages terminology: {len(terminology)} entries"
+                    )
+            except Exception as e:
+                logger.warning(f"Could not load Klages terminology: {e}")
 
         return terminology
 
@@ -391,7 +393,7 @@ class NeologismDetector:
             analysis.analyzed_chunks = len(chunks)
 
             for chunk_idx, chunk in enumerate(chunks):
-                chunk_neologisms = self._analyze_chunk(chunk, chunk_idx)
+                chunk_neologisms = self._analyze_chunk(chunk)
 
                 for neologism in chunk_neologisms:
                     neologism.source_text_id = text_id
@@ -450,11 +452,22 @@ class NeologismDetector:
             doc = self.nlp(text)
             return [sent.text for sent in doc.sents]
         else:
-            # Fallback sentence splitting
-            sentences = re.split(r"[.!?]+", text)
-            return [s.strip() for s in sentences if s.strip()]
+            # Fallback sentence splitting that preserves punctuation
+            parts = re.split(r"([.!?]+\s*)", text)
+            sentences: list[str] = []
+            current = ""
+            for part in parts:
+                if re.match(r"[.!?]+\s*", part):
+                    current += part
+                    sentences.append(current.strip())
+                    current = ""
+                else:
+                    current += part
+            if current.strip():
+                sentences.append(current.strip())
+            return sentences
 
-    def _analyze_chunk(self, chunk: str, chunk_idx: int) -> list[DetectedNeologism]:
+    def _analyze_chunk(self, chunk: str) -> list[DetectedNeologism]:
         """Analyze a text chunk for neologisms."""
         neologisms = []
 

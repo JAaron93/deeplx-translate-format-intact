@@ -68,9 +68,7 @@ model_volume = modal.Volume.from_name("dolphin-ocr-models", create_if_missing=Tr
     container_idle_timeout=300,  # 5 minutes
 )
 def download_model():
-    # Create an instance of the class and call the method
-    processor = DolphinOCRProcessor()
-    return processor.process_pdf(pdf_bytes)Download and cache the Dolphin OCR model."""
+    """Download and cache the Dolphin OCR model."""
     from huggingface_hub import snapshot_download
 
     print("Downloading Dolphin OCR model...")
@@ -112,14 +110,15 @@ class DolphinOCRProcessor:
         # Load the model and processor once during initialization
         # Use the path returned by snapshot_download or a consistent location
         # Use the actual model ID for loading
-        self.processor = AutoProcessor.from_pretrained(DOLPHIN_MODEL_ID, cache_dir=MODEL_CACHE_PATH)
+        self.processor = AutoProcessor.from_pretrained(
+            DOLPHIN_MODEL_ID, cache_dir=MODEL_CACHE_PATH
+        )
         self.model = AutoModelForVision2Seq.from_pretrained(
             DOLPHIN_MODEL_ID,
             cache_dir=MODEL_CACHE_PATH,
             torch_dtype=torch.float16,
             device_map="auto",
         )
-
         print("✅ Dolphin OCR model and processor loaded successfully!")
         print(f"Model device: {self.model.device}")
 
@@ -148,7 +147,7 @@ class DolphinOCRProcessor:
             )
         except Exception as e:
             print(f"Failed to convert PDF: {e}")
-            raise ValueError(f"PDF conversion failed: {str(e)}")
+            raise ValueError(f"PDF conversion failed: {e!s}")
 
         print(f"Processing {len(images)} pages...")
 
@@ -158,7 +157,9 @@ class DolphinOCRProcessor:
             print(f"Processing page {page_num + 1}/{len(images)}")
 
             # Process the image with Dolphin using cached model and processor
-            inputs = self.processor(images=image, return_tensors="pt").to(self.model.device)
+            inputs = self.processor(images=image, return_tensors="pt").to(
+                self.model.device
+            )
 
             with torch.no_grad():
                 outputs = self.model.generate(
@@ -169,14 +170,18 @@ class DolphinOCRProcessor:
                 )
 
             # Decode the output
-            generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
+            generated_text = self.processor.batch_decode(
+                outputs, skip_special_tokens=True
+            )[0]
 
-            # Parse the Dolphin output (this will need to be adapted based on actual format)
+            # Parse the Dolphin output into structured blocks with bbox/confidence
+            blocks = parse_dolphin_output(generated_text, image.width, image.height)
+
             page_result = {
                 "page_number": page_num + 1,
                 "width": image.width,
                 "height": image.height,
-                "text_blocks": [{"text": generated_text, "bbox": None, "confidence": 1.0, "block_type": "raw"}],  # TODO: Implement proper parsing
+                "text_blocks": blocks,
                 "raw_output": generated_text,
             }
 
@@ -219,46 +224,130 @@ def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
     return dolphin_processor.process_pdf.remote(pdf_bytes)
 
 
-def parse_dolphin_output(raw_output: str) -> List[Dict[str, Any]]:
+def parse_dolphin_output(
+    raw_output: str, page_width: int, page_height: int
+) -> List[Dict[str, Any]]:
     """Parse Dolphin OCR output into structured text blocks.
 
-    This function needs to be implemented based on the actual output format
-    of the Dolphin model. The expected format should include structured text
-    blocks with bounding boxes, confidence scores, and element types.
+    The parser is defensive and supports multiple shapes:
+    - Direct JSON list of blocks or dict with a "blocks" key
+    - JSON embedded within text (first JSON payload is extracted)
+    - Line-based records containing bbox/conf/text fields
+    - Fallback: non-empty lines as blocks spanning the full page
 
-    Args:
-        raw_output: Raw text output from Dolphin OCR model
+    Returns a list of dicts with keys: text, bbox [x1,y1,x2,y2], confidence, block_type.
+    """
+    import json as _json
+    import logging as _logging
+    import re as _re
 
-    Returns:
-        List of structured text blocks with layout information
+    def _clip_bbox(b: List[float]) -> List[float]:
+        x1, y1, x2, y2 = b
+        x1 = max(0.0, min(float(x1), float(page_width)))
+        y1 = max(0.0, min(float(y1), float(page_height)))
+        x2 = max(0.0, min(float(x2), float(page_width)))
+        y2 = max(0.0, min(float(y2), float(page_height)))
+        return [x1, y1, x2, y2]
 
-    Raises:
-        NotImplementedError: This function is not yet implemented and requires
-            knowledge of the actual Dolphin OCR output format.
+    def _norm_block(obj: Dict[str, Any]) -> Dict[str, Any]:
+        text = str(obj.get("text", "")).strip()
+        bbox = obj.get("bbox") or obj.get("box") or obj.get("bounds")
+        if isinstance(bbox, dict):
+            # Support {x1:.., y1:.., x2:.., y2:..}
+            bbox = [
+                bbox.get("x1", 0),
+                bbox.get("y1", 0),
+                bbox.get("x2", page_width),
+                bbox.get("y2", page_height),
+            ]
+        if not (isinstance(bbox, (list, tuple)) and len(bbox) == 4):
+            # Default to full page span if missing
+            bbox = [0, 0, page_width, page_height]
+        conf = obj.get("confidence") or obj.get("conf") or obj.get("score")
+        try:
+            confidence = float(conf) if conf is not None else 1.0
+        except Exception:
+            confidence = 1.0
+        block_type = obj.get("block_type") or obj.get("type") or "text"
+        return {
+            "text": text,
+            "bbox": _clip_bbox([*bbox]),
+            "confidence": confidence,
+            "block_type": str(block_type),
+        }
 
-    Note:
-        Once the Dolphin model output format is known, this function should
-        parse the raw_output into a list of dictionaries with the following
-        structure:
-        [
-            {
-                "text": str,           # Extracted text content
-                "bbox": [x1, y1, x2, y2],  # Bounding box coordinates
-                "confidence": float,   # OCR confidence score (0.0-1.0)
-                "block_type": str,     # Element type (text, title, table, etc.)
-    # Temporary implementation - returns raw output as a single text block
-    # TODO: Implement proper parsing once Dolphin output format is known
-    import logging
-    logging.warning("Using temporary parse_dolphin_output implementation")
-    return [{
-        "text": raw_output,
-        "bbox": [0, 0, 0, 0],  # Placeholder coordinates
-        "confidence": 1.0,
-        "block_type": "raw_text"
-    }]
-        "This function requires knowledge of the actual Dolphin OCR output format. "
-        f"Raw output received: {raw_output[:100]}{'...' if len(raw_output) > 100 else ''}"
+    # 1) Try direct JSON parse first
+    try:
+        parsed = _json.loads(raw_output)
+        if (
+            isinstance(parsed, dict)
+            and "blocks" in parsed
+            and isinstance(parsed["blocks"], list)
+        ):
+            return [_norm_block(b) for b in parsed["blocks"] if isinstance(b, dict)]
+        if isinstance(parsed, list):
+            return [_norm_block(b) for b in parsed if isinstance(b, dict)]
+    except Exception:
+        pass
+
+    # 2) Try to extract JSON payload embedded in text
+    try:
+        m = _re.search(r"(\{.*?\}|\[.*?\])", raw_output, flags=_re.DOTALL)
+        if m:
+            payload = m.group(1)
+            parsed = _json.loads(payload)
+            if (
+                isinstance(parsed, dict)
+                and "blocks" in parsed
+                and isinstance(parsed["blocks"], list)
+            ):
+                return [_norm_block(b) for b in parsed["blocks"] if isinstance(b, dict)]
+            if isinstance(parsed, list):
+                return [_norm_block(b) for b in parsed if isinstance(b, dict)]
+    except Exception:
+        pass
+
+    # 3) Parse line-based format: bbox=[x1,y1,x2,y2] conf=0.95 text="..." type=...
+    blocks: List[Dict[str, Any]] = []
+    line_pattern = _re.compile(
+        r"bbox\s*[:=]\s*[\[\(]?\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*[\]\)]?"  # bbox
+        r".*?(?:conf(?:idence)?|score)\s*[:=]\s*([0-9.]+)"  # confidence
+        r".*?text\s*[:=]\s*\"?(.*?)\"?(?:\s|$)",  # text
+        flags=_re.IGNORECASE,
     )
+    for line in raw_output.splitlines():
+        m = line_pattern.search(line)
+        if not m:
+            continue
+        x1, y1, x2, y2, conf, text = m.groups()
+        try:
+            bbox = _clip_bbox([float(x1), float(y1), float(x2), float(y2)])
+            confidence = float(conf)
+        except Exception:
+            bbox = [0, 0, page_width, page_height]
+            confidence = 1.0
+        blocks.append(
+            {
+                "text": text.strip(),
+                "bbox": bbox,
+                "confidence": confidence,
+                "block_type": "text",
+            }
+        )
+
+    if blocks:
+        return blocks
+
+    # 4) Fallbacks: split on blank lines for paragraphs, use full-page bbox
+    _logging.warning("Falling back to simple Dolphin output parsing")
+    paras = [p.strip() for p in raw_output.splitlines() if p.strip()]
+    if not paras:
+        return []
+    full_bbox = [0, 0, page_width, page_height]
+    return [
+        {"text": p, "bbox": full_bbox, "confidence": 1.0, "block_type": "text"}
+        for p in paras
+    ]
 
 
 @app.function(
@@ -287,7 +376,7 @@ def dolphin_ocr_endpoint(
         return result
     except ValueError as e:
         return {
-            "error": f"Invalid input: {str(e)}",
+            "error": f"Invalid input: {e!s}",
             "status": "failed",
         }
     except Exception as e:
@@ -296,8 +385,6 @@ def dolphin_ocr_endpoint(
             "error": "Internal server error during OCR processing",
             "status": "failed",
         }
-
-
 
 
 @app.function()

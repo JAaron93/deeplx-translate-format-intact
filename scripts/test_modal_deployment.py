@@ -14,38 +14,19 @@ from typing import Optional
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+# ---------------------------------------------------------------------------
+# Test-data paths searched by the helper functions
+# ---------------------------------------------------------------------------
+from typing import List  # existing Optional import is already present
+
 from services.dolphin_client import get_layout
 
-
-def find_test_pdf() -> Optional[Path]:
-    """Find a test PDF file by checking multiple predefined paths.
-
-    Checks common locations for test PDF files and returns the first
-    existing path found, or None if no test PDF is available.
-
-    Returns:
-        Optional[Path]: Path to the first existing test PDF file, or None
-                       if no test PDF is found in any of the predefined locations.
-    """
-    test_pdf_paths = [
-        "tests/fixtures/sample.pdf",
-        "docs/sample.pdf",
-        "sample.pdf",
-    ]
-
-    for path in test_pdf_paths:
-        if Path(path).exists():
-            return Path(path)
-
-    return None
-
-
-# Add at the top of the module, alongside your imports
-TEST_PDF_PATHS = [
+TEST_PDF_PATHS: List[str] = [
     "tests/fixtures/sample.pdf",
     "docs/sample.pdf",
     "sample.pdf",
 ]
+
 
 def find_test_pdf() -> Optional[Path]:
     """Find a test PDF file by checking multiple predefined paths.
@@ -57,11 +38,8 @@ def find_test_pdf() -> Optional[Path]:
         Optional[Path]: Path to the first existing test PDF file, or None
                         if no test PDF is found in any of the predefined locations.
     """
-    for path in TEST_PDF_PATHS:
-        if Path(path).exists():
-            return Path(path)
-
-    return None
+    candidates = (Path(p) for p in TEST_PDF_PATHS)
+    return next((p for p in candidates if p.exists()), None)
 
 
 def print_test_pdf_locations():
@@ -70,7 +48,8 @@ def print_test_pdf_locations():
     for path in TEST_PDF_PATHS:
         print(f"   - {path}")
 
-async def test_modal_endpoint():
+
+async def run_test_modal_endpoint():
     """Test the Modal Dolphin OCR endpoint."""
     print("🧪 Testing Modal Dolphin OCR endpoint...")
 
@@ -112,7 +91,7 @@ async def test_modal_endpoint():
                 if not isinstance(page, dict):
                     continue
                 text_blocks = page.get("text_blocks", [])
-                print(f"   Page {i+1}: {len(text_blocks)} text blocks")
+                print(f"   Page {i + 1}: {len(text_blocks)} text blocks")
 
         return True
 
@@ -121,7 +100,7 @@ async def test_modal_endpoint():
         return False
 
 
-async def test_local_fallback():
+async def run_test_local_fallback():
     """Test fallback to local endpoint if available."""
     print("\n🧪 Testing local fallback endpoint...")
 
@@ -207,10 +186,10 @@ async def main():
         sys.exit(1)
 
     # Test Modal endpoint
-    modal_success = await test_modal_endpoint()
+    modal_success = await run_test_modal_endpoint()
 
     # Test local fallback
-    local_fallback_success = await test_local_fallback()
+    local_fallback_success = await run_test_local_fallback()
 
     print("\n" + "=" * 40)
     if modal_success and local_fallback_success:

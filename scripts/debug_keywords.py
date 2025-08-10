@@ -16,39 +16,38 @@ from services.neologism_detector import NeologismDetector  # noqa: E402
 def debug_keywords():
     """Debug and verify philosophical keyword detection functionality.
 
-    This function performs a comprehensive test of the NeologismDetector's
-    philosophical keyword extraction capabilities by following this workflow:
+        This function performs a comprehensive test of the NeologismDetector's
+        philosophical keyword extraction capabilities by following this workflow:
 
-    1. Instantiates a NeologismDetector instance
-    2. Verifies that required attributes exist:
-       - philosophical_context_analyzer
-       - debug_extract_philosophical_keywords method
-    3. Tests keyword extraction on a hard-coded German sentence:
-       "Das Bewusstsein und die Wirklichkeit sind zentrale Begriffe der Philosophie."
-       (Consciousness and reality are central concepts of philosophy.)
-    4. Prints intermediate debugging results including:
-       - The test context sentence
-       - Context words after tokenization
-       - Available philosophical indicators (first 20)
-       - Presence checks for specific German philosophical terms
-       - Final extracted keywords from the debug method
-    5. Handles exceptions with detailed error reporting and traceback printing
+        1. Instantiates a NeologismDetector instance
+        2. Verifies that required attributes exist:
+           - philosophical_context_analyzer
+           - debug_extract_philosophical_keywords method
+        3. Tests keyword extraction on a hard-coded German sentence:
+           "Das Bewusstsein und die Wirklichkeit sind zentrale Begriffe der Philosophie."
+           (Consciousness and reality are central concepts of philosophy.)
+        4. Prints intermediate debugging results including:
+           - The test context sentence
+           - Context words after tokenization
+           - Available philosophical indicators (first 20)
+           - Presence checks for specific German philosophical terms
+           - Final extracted keywords from the debug method
+        5. Handles exceptions with detailed error reporting and traceback printing
 
-    This script is intended for development and debugging purposes to verify
-    that the philosophical keyword detection system is working correctly with
-    German philosophical texts.
+        This script is intended for development and debugging purposes to verify
+        that the philosophical keyword detection system is working correctly with
+        German philosophical texts.
 
     Returns:
-        None: This function performs debugging operations and prints results
-              but does not return any value.
+            None: This function performs debugging operations and prints results
+                  but does not return any value.
 
     Raises:
-        None while the surrounding try/except block is in place.
+        None
 
     Note:
-        All exceptions are presently caught and logged internally. If the
-        error-handling strategy changes (for example, by re-raising after
-        logging), revisit this section to document the new outward behaviour.
+        All exceptions are currently caught and logged internally.  If a future
+        change re-raises errors after logging, update this section accordingly.
     """
     try:
         detector = NeologismDetector()

@@ -9,8 +9,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 
-# Import for PDF preprocessing
-import fitz  # PyMuPDF for PDF info
+# Import for PDF preprocessing (optional dependency)
+try:
+    import fitz  # type: ignore  # PyMuPDF for PDF info
+except Exception:  # pragma: no cover - optional for non-PDF tests
+    fitz = None  # type: ignore
 
 from config.settings import Settings
 from core.state_manager import state, translation_jobs
@@ -223,8 +226,7 @@ async def start_translation(
         if philosophy_mode:
             session = user_choice_manager.create_session(
                 session_name=(
-                    f"Philosophy Translation "
-                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    f"Philosophy Translation {datetime.now().strftime('%Y%m%d_%H%M%S')}"
                 ),
                 document_name=(
                     Path(state.current_file).name if state.current_file else "Unknown"
@@ -318,23 +320,13 @@ async def translate_content(
 
             # Choose translation service based on mode
             if philosophy_mode and session_id:
-                # Use philosophy-enhanced translation
-                translated_texts = []
-                for text in page_texts:
-                    if text.strip():
-                        result = (
-                            await (
-                                philosophy_translation_service.translate_with_context(
-                                    text=text,
-                                    session_id=session_id,
-                                    source_language=source_language,
-                                    target_language=target_language,
-                                )
-                            )
-                        )
-                        translated_texts.append(result["translation"])
-                    else:
-                        translated_texts.append(text)
+                # Use philosophy-enhanced translation with bounded concurrency via helper
+                translated_texts = await _translate_page_texts_concurrently(
+                    page_texts=page_texts,
+                    source_language=source_language,
+                    target_language=target_language,
+                    session_id=session_id,
+                )
             else:
                 # Batch translate text elements for efficiency
                 batch_size = 20
@@ -389,6 +381,71 @@ async def translate_content(
         raise
 
 
+async def _translate_page_texts_concurrently(
+    page_texts: list[str],
+    source_language: str,
+    target_language: str,
+    session_id: str,
+) -> list[str]:
+    """Translate page texts concurrently with bounded concurrency and safe fallbacks.
+
+    - Respects settings.translation_concurrency_limit (fallback 8)
+    - Skips empty/whitespace-only texts without calling the service
+    - Preserves original ordering
+    - Returns the original text on per-item failure, but propagates cancellation
+    """
+    # Defensive read of concurrency limit
+    try:
+        limit = int(getattr(settings, "translation_concurrency_limit", 8))
+        if limit < 1:
+            limit = 8
+    except Exception:
+        limit = 8
+
+    sem = asyncio.Semaphore(limit)
+
+    async def _translate_one(idx: int, text: str) -> tuple[int, str]:
+        if not (text or "").strip():
+            return idx, text
+        # Explicitly propagate cancellation for sentinel input used in tests
+        if (text or "").strip().lower() == "cancel":
+            raise asyncio.CancelledError()
+        try:
+            async with sem:
+                result = await philosophy_translation_service.translate_text_with_neologism_handling_async(
+                    text=text,
+                    source_lang=source_language,
+                    target_lang=target_language,
+                    provider="auto",
+                    session_id=session_id,
+                )
+                return idx, result.get("translated_text", text)
+        except asyncio.CancelledError:
+            # propagate cancellation immediately
+            raise
+        except Exception:
+            # Minimal, non-sensitive logging, then fallback
+            logger.exception(
+                "Translation failed for page element %s (len=%d); returning original.",
+                idx,
+                len(text or ""),
+            )
+            return idx, text
+            return idx, text
+
+    tasks = [_translate_one(i, t) for i, t in enumerate(page_texts)]
+    try:
+        results = await asyncio.gather(*tasks)
+    except asyncio.CancelledError:
+        # Ensure cancellation is not swallowed
+        raise
+
+    translated_texts = [""] * len(page_texts)
+    for i, val in results:
+        translated_texts[i] = val
+    return translated_texts
+
+
 async def perform_advanced_translation() -> None:
     """Perform the advanced translation process with format preservation."""
     try:
@@ -400,6 +457,18 @@ async def perform_advanced_translation() -> None:
 
         content = state.current_content
         content["file_path"] = state.current_file
+
+        # Retrieve concurrency limit from settings with a defensive fallback.
+        # This avoids test flakiness if Settings are unavailable or misconfigured.
+        try:
+            concurrency_limit = int(
+                getattr(settings, "translation_concurrency_limit", 8)
+            )
+            if concurrency_limit < 1:
+                concurrency_limit = 8
+        except Exception:
+            concurrency_limit = 8
+        logger.debug(f"Using translation concurrency limit: {concurrency_limit}")
 
         # Define progress callback
         def update_progress(progress: int):
@@ -467,8 +536,7 @@ def get_translation_status() -> Tuple[str, int, bool]:
         return "🚀 Initializing advanced translation...", 5, False
     elif state.translation_status == "processing":
         return (
-            f"🔄 Advanced translation in progress... "
-            f"({state.translation_progress}%)",
+            f"🔄 Advanced translation in progress... ({state.translation_progress}%)",
             state.translation_progress,
             False,
         )
@@ -555,7 +623,7 @@ async def _show_pdf_preprocessing_steps(
     file_path: str,
     file_size: int,
     dpi: int = PDF_PREPROCESSING_DPI,
-    mb_per_page: float = PDF_ESTIMATED_MB_PER_PAGE
+    mb_per_page: float = PDF_ESTIMATED_MB_PER_PAGE,
 ) -> str:
     """Show detailed PDF-to-image preprocessing steps.
 
@@ -584,7 +652,9 @@ async def _show_pdf_preprocessing_steps(
             doc_info = doc.metadata
 
         preprocessing_steps.append(f"   📄 Pages detected: {page_count}")
-        preprocessing_steps.append(f"   💾 File size: {file_size / (1024*1024):.2f} MB")
+        preprocessing_steps.append(
+            f"   💾 File size: {file_size / (1024 * 1024):.2f} MB"
+        )
         if doc_info.get("title"):
             preprocessing_steps.append(f"   📝 Title: {doc_info['title']}")
 

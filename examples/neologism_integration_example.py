@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Optional
 
+
 # Determine repository root by searching for a marker file
 def find_project_root() -> Path:
     current = Path(__file__).resolve()
@@ -18,6 +19,7 @@ def find_project_root() -> Path:
         if (parent / "pyproject.toml").exists() or (parent / "setup.py").exists():
             return parent
     return current.parent.parent  # fallback to current behavior
+
 
 project_root = find_project_root()
 
@@ -398,12 +400,12 @@ def main():
         # Test if we can write to current directory
         test_file = output_dir / ".write_test"
         try:
-        test_file.touch()
-        test_file.unlink()
-    except Exception:
-        # Clean up test file if it was created but deletion failed
-        test_file.unlink(missing_ok=True)
-        raise
+            test_file.touch()
+            test_file.unlink()
+        except OSError:
+            # Clean up test file if it was created but deletion failed
+            test_file.unlink(missing_ok=True)
+            raise
         print(f"Using current working directory: {output_dir}")
     except (PermissionError, OSError):
         # Fall back to temporary directory if current directory is not writable

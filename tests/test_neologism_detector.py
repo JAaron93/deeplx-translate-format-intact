@@ -280,7 +280,7 @@ class TestNeologismDetector:
 
     def test_context_window_extraction(self, detector):
         """Test context window extraction."""
-        text = "Dies ist ein Test. Das Bewusstsein ist wichtig. " "Ende des Tests."
+        text = "Dies ist ein Test. Das Bewusstsein ist wichtig. Ende des Tests."
         start_pos = text.find("Bewusstsein")
         end_pos = start_pos + len("Bewusstsein")
 

@@ -12,6 +12,13 @@ from typing import Any, Callable, Optional
 
 import requests
 
+try:
+    # Prefer relative import when part of a package
+    from .mcp_lingo_client import McpLingoClient, McpLingoConfig  # type: ignore
+except (ModuleNotFoundError, ImportError):  # pragma: no cover - fallback
+    # Fallback absolute import when running as a flat module
+    from services.mcp_lingo_client import McpLingoClient, McpLingoConfig  # type: ignore
+
 # Translation service configuration
 TRANSLATION_DELAY = float(
     os.getenv("TRANSLATION_DELAY", "0.1")
@@ -44,8 +51,15 @@ class BaseTranslator(ABC):
 class LingoTranslator(BaseTranslator):
     """Lingo.dev translation implementation."""
 
-    def __init__(self, api_key: str):
-        """Initialize Lingo translator with API key and session configuration."""
+    def __init__(self, api_key: Optional[str] = None):
+        """Initialize Lingo translator with API key and session configuration.
+
+        If api_key is not provided, read from the LINGO_API_KEY environment variable.
+        Passing an empty string explicitly is treated as invalid.
+        """
+        if api_key == "":
+            raise ValueError("LINGO_API_KEY is required")
+        api_key = api_key if api_key is not None else os.getenv("LINGO_API_KEY")
         if not api_key:
             raise ValueError("LINGO_API_KEY is required")
 
@@ -118,6 +132,50 @@ class LingoTranslator(BaseTranslator):
         return results
 
 
+class MCPLingoTranslator(BaseTranslator):
+    """Lingo.dev translation via MCP server (stdio)."""
+
+    def __init__(self, config: McpLingoConfig):
+        """Initialize MCP Lingo translator with an explicit configuration.
+
+        This avoids mutating private attributes after construction and ensures
+        the client is configured in a single place.
+        """
+        if not config or not getattr(config, "api_key", None):
+            raise ValueError("Valid McpLingoConfig with api_key is required for MCP")
+        self._client = McpLingoClient(config)
+        self._started = False
+        self._lock = asyncio.Lock()
+
+    async def _ensure_started(self) -> None:
+        if self._started:
+            return
+        async with self._lock:
+            if not self._started:
+                await self._client.start()
+                self._started = True
+
+    async def translate_text(
+        self, text: str, source_lang: str, target_lang: str
+    ) -> str:
+        await self._ensure_started()
+        try:
+            return await self._client.translate_text(text, source_lang, target_lang)
+        except Exception as e:
+            logger.error(f"MCP Lingo translate_text error: {e}")
+            return text
+
+    async def translate_batch(
+        self, texts: list[str], source_lang: str, target_lang: str
+    ) -> list[str]:
+        await self._ensure_started()
+        try:
+            return await self._client.translate_batch(texts, source_lang, target_lang)
+        except Exception as e:
+            logger.error(f"MCP Lingo translate_batch error: {e}")
+            return texts
+
+
 class TranslationService:
     """Main translation service with Lingo.dev provider."""
 
@@ -130,12 +188,47 @@ class TranslationService:
         self._initialize_providers()
 
     def _initialize_providers(self) -> None:
-        """Initialize Lingo.dev translation provider."""
+        """Initialize Lingo.dev translation provider (REST or MCP)."""
         try:
             lingo_key = os.getenv("LINGO_API_KEY")
+            use_mcp = os.getenv("LINGO_USE_MCP", "false").lower() == "true"
+            # Startup diagnostics to make provider selection explicit in logs
+            logger.info(
+                "Translation provider config: LINGO_USE_MCP=%s, LINGO_API_KEY_present=%s",
+                use_mcp,
+                bool(lingo_key),
+            )
             if lingo_key:
-                self.providers["lingo"] = LingoTranslator(lingo_key)
-                logger.info("Lingo translator initialized")
+                if use_mcp:
+                    # Read MCP config from environment at runtime
+                    tool_name = os.getenv("LINGO_MCP_TOOL_NAME") or None
+                    try:
+                        startup_timeout = float(
+                            os.getenv("LINGO_MCP_STARTUP_TIMEOUT", "20")
+                        )
+                    except ValueError:
+                        startup_timeout = 20.0
+                    try:
+                        call_timeout = float(os.getenv("LINGO_MCP_CALL_TIMEOUT", "60"))
+                    except ValueError:
+                        call_timeout = 60.0
+
+                    cfg = McpLingoConfig(
+                        api_key=lingo_key,
+                        tool_name=tool_name,
+                        startup_timeout_s=startup_timeout,
+                        call_timeout_s=call_timeout,
+                    )
+                    # Pass through PATH and env
+                    cfg.env = os.environ.copy()
+                    # Construct translator with config to avoid mutating private client attributes
+                    self.providers["lingo"] = MCPLingoTranslator(cfg)
+                    logger.info(
+                        "Using Lingo.dev via MCP server (stdio): provider=lingo"
+                    )
+                else:
+                    self.providers["lingo"] = LingoTranslator(lingo_key)
+                    logger.info("Using Lingo.dev REST API: provider=lingo")
             else:
                 raise ValueError("LINGO_API_KEY not found in environment variables")
         except Exception as e:

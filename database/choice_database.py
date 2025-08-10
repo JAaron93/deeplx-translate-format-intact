@@ -27,7 +27,7 @@ class ChoiceDatabase:
 
     def __init__(
         self,
-        db_path: str = "user_choices.db",
+        db_path: str = "database/user_choices.db",
         learning_rate_alpha: float = 0.1,
         ensure_ascii: bool = False,
         batch_size: int = 1000,
@@ -359,6 +359,8 @@ class ChoiceDatabase:
 
     def save_user_choice(self, choice: UserChoice) -> bool:
         """Save a user choice to the database."""
+        if choice is None:
+            raise TypeError("choice must be a UserChoice, got None")
         try:
             with self._get_connection() as conn:
                 # Insert or update user choice
@@ -1148,7 +1150,7 @@ class ChoiceDatabase:
             logger.info(
                 f"Batch import completed: {imported_count}/{len(choices_data)} choices imported in {duration:.2f}s"
             )
-            logger.info(f"Performance: {imported_count/duration:.1f} choices/second")
+            logger.info(f"Performance: {imported_count / duration:.1f} choices/second")
 
             if validation_errors:
                 logger.warning(
@@ -1298,7 +1300,7 @@ class ChoiceDatabase:
                         imported_count += batch_imported
                     except Exception as e:
                         logger.error(
-                            f"Error importing batch {i//self._batch_size + 1}: {e}"
+                            f"Error importing batch {i // self._batch_size + 1}: {e}"
                         )
                         failed_count += len(batch)
                         # Continue with next batch instead of failing entirely
@@ -1307,7 +1309,7 @@ class ChoiceDatabase:
                     # Log progress for large imports
                     if len(choices) > 1000:
                         logger.info(
-                            f"Imported batch {i//self._batch_size + 1}: {batch_imported}/{len(batch)} choices"
+                            f"Imported batch {i // self._batch_size + 1}: {batch_imported}/{len(batch)} choices"
                         )
 
                 conn.commit()

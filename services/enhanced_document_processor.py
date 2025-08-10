@@ -12,9 +12,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import fitz
-import mammoth
-from docx import Document
+try:
+    import fitz  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    fitz = None  # type: ignore
+try:
+    import mammoth  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    mammoth = None  # type: ignore
+try:
+    from docx import Document  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    Document = None  # type: ignore
 
 from .advanced_pdf_processor import AdvancedPDFProcessor
 from .dolphin_client import get_layout as get_dolphin_layout
@@ -204,22 +213,37 @@ class EnhancedDocumentProcessor:
         start_time = time.time()
 
         try:
-            # Extract text using mammoth for better formatting preservation
-            with open(docx_path, "rb") as docx_file:
-                result = mammoth.extract_raw_text(docx_file)
-                text_content = result.value
+            # Extract text using mammoth for better formatting preservation if available
+            text_content = ""
+            if mammoth is not None:
+                with open(docx_path, "rb") as docx_file:
+                    result = mammoth.extract_raw_text(docx_file)
+                    text_content = result.value or ""
 
-            # Also extract using python-docx for structure information
-            doc = Document(docx_path)
+            # Also extract using python-docx for structure information if available
             paragraphs = []
-            for para in doc.paragraphs:
-                if para.text.strip():
-                    paragraphs.append(
-                        {
-                            "text": para.text,
-                            "style": para.style.name if para.style else "Normal",
-                        }
-                    )
+            if Document is not None:
+                doc = Document(docx_path)
+                for para in doc.paragraphs:
+                    if para.text and para.text.strip():
+                        paragraphs.append(
+                            {
+                                "text": para.text,
+                                "style": para.style.name
+                                if getattr(para, "style", None)
+                                else "Normal",
+                            }
+                        )
+            else:
+                # Fallback: read as plain text if python-docx is unavailable
+                with open(docx_path, "rb") as f:
+                    raw = f.read().decode("utf-8", errors="ignore")
+                text_content = text_content or raw
+                paragraphs = [
+                    {"text": line, "style": "Normal"}
+                    for line in text_content.splitlines()
+                    if line.strip()
+                ]
 
             file_size_mb = os.path.getsize(docx_path) / (1024 * 1024)
             processing_time = time.time() - start_time
@@ -246,9 +270,7 @@ class EnhancedDocumentProcessor:
 
             error_details = traceback.format_exc()
             logger.error(
-                f"Failed to process DOCX file '{Path(docx_path).name}'. "
-                f"Error during {'text extraction' if 'mammoth' in error_details else 'paragraph processing' if 'paragraphs' in error_details else 'metadata generation'}: {e!s}\n"
-                f"Traceback:\n{error_details}"
+                f"Failed to process DOCX file '{Path(docx_path).name}'. Error: {e!s}\nTraceback:\n{error_details}"
             )
             raise
 

@@ -104,7 +104,7 @@ class PhilosophyTranslationExamples:
 
         print("Results:")
         for i, result in enumerate(results):
-            print(f"\n  Text {i+1}:")
+            print(f"\n  Text {i + 1}:")
             print(f"    Original: {texts[i]}")
             print(f"    Translated: {result.translated_text}")
             print(f"    Neologisms: {result.neologism_analysis.total_neologisms}")
@@ -371,7 +371,7 @@ class StatisticsAndPerformanceExamples:
                 session_id=f"stats_session_{i}",
             )
             print(
-                f"Translation {i+1}: {result.neologism_analysis.total_neologisms} neologisms"
+                f"Translation {i + 1}: {result.neologism_analysis.total_neologisms} neologisms"
             )
 
         # Get translation service statistics

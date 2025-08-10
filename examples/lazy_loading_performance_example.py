@@ -82,9 +82,7 @@ def get_eager_loading_memory_estimate():
         try:
             return float(env_memory)
         except ValueError:
-            print(
-                f"Warning: Invalid LAZY_LOADING_EAGER_MEMORY_MB value: " f"{env_memory}"
-            )
+            print(f"Warning: Invalid LAZY_LOADING_EAGER_MEMORY_MB value: {env_memory}")
 
     # Default empirically-derived baseline
     # Based on measurements detailed in docstring above
@@ -150,7 +148,7 @@ def demonstrate_lazy_loading(eager_memory_override=None):
         detector = NeologismDetector()
         end_time = time.time()
         times.append(end_time - start_time)
-        print(f"   Run {i+1}: {times[-1]:.4f}s")
+        print(f"   Run {i + 1}: {times[-1]:.4f}s")
 
     avg_init_time = sum(times) / len(times)
     print(f"   Average instantiation time: {avg_init_time:.4f}s")
@@ -169,7 +167,7 @@ def demonstrate_lazy_loading(eager_memory_override=None):
     # Check initial state
     print(f"   spaCy model loaded: {detector._nlp is not None}")
     print(f"   Terminology loaded: {detector._terminology_map is not None}")
-    print(f"   Indicators loaded: " f"{detector._philosophical_indicators is not None}")
+    print(f"   Indicators loaded: {detector._philosophical_indicators is not None}")
 
     # Trigger lazy loading
     print("\n   Triggering lazy loading...")
@@ -196,9 +194,7 @@ def demonstrate_lazy_loading(eager_memory_override=None):
     # Test 3: Functional test
     print("\n3. Testing functionality...")
 
-    text = (
-        "Das ist ein Test mit Bewusstsein und Wirklichkeit und " "Lebensfeindlichkeit."
-    )
+    text = "Das ist ein Test mit Bewusstsein und Wirklichkeit und Lebensfeindlichkeit."
 
     start_time = time.time()
     analysis = detector.analyze_text(text, "performance_test")
@@ -219,7 +215,7 @@ def demonstrate_lazy_loading(eager_memory_override=None):
 
     multi_init_time = time.time() - start_time
     print(f"   10 instantiations time: {multi_init_time:.4f}s")
-    print(f"   Average per instantiation: {multi_init_time/10:.4f}s")
+    print(f"   Average per instantiation: {multi_init_time / 10:.4f}s")
 
     # Test 5: Memory efficiency
     print("\n5. Memory efficiency comparison...")
@@ -227,17 +223,15 @@ def demonstrate_lazy_loading(eager_memory_override=None):
     # Get configurable memory estimate for eager loading
     if eager_memory_override is not None:
         estimated_eager_memory = eager_memory_override
-        print(f"   Using command-line override: " f"{estimated_eager_memory:.2f} MB")
+        print(f"   Using command-line override: {estimated_eager_memory:.2f} MB")
     else:
         estimated_eager_memory = get_eager_loading_memory_estimate()
 
     actual_lazy_memory = post_init_memory - initial_memory
 
-    print(f"   Estimated eager loading memory: " f"{estimated_eager_memory:.2f} MB")
+    print(f"   Estimated eager loading memory: {estimated_eager_memory:.2f} MB")
     print(f"   Actual lazy loading memory: {actual_lazy_memory:.2f} MB")
-    print(
-        f"   Memory savings: " f"{estimated_eager_memory - actual_lazy_memory:.2f} MB"
-    )
+    print(f"   Memory savings: {estimated_eager_memory - actual_lazy_memory:.2f} MB")
 
     # Test 6: Performance benefits summary
     print("\n6. Performance Benefits Summary:")
@@ -308,7 +302,7 @@ if __name__ == "__main__":
 
     # Show configuration info
     if args.eager_memory:
-        print(f"✓ Used command-line memory override: " f"{args.eager_memory:.2f} MB")
+        print(f"✓ Used command-line memory override: {args.eager_memory:.2f} MB")
     elif os.environ.get("LAZY_LOADING_EAGER_MEMORY_MB"):
         env_val = os.environ.get("LAZY_LOADING_EAGER_MEMORY_MB")
         print(f"✓ Used environment variable: {env_val} MB")

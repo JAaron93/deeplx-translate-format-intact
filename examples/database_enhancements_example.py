@@ -92,7 +92,7 @@ def demonstrate_alpha_configuration():
         translation_result="thrownness",
         context=TranslationContext(
             sentence_context=(
-                "The concept of Geworfenheit describes our thrownness " "into being."
+                "The concept of Geworfenheit describes our thrownness into being."
             ),
             philosophical_domain="Existentialism",
             author="Heidegger",
@@ -156,9 +156,7 @@ def demonstrate_json_encoding():
 
     json_preserve = db1.export_choices_to_json()
     print("\nUnicode Preservation:")
-    print(
-        f"Contains actual characters: 'ä' in json_preserve: " f"{'ä' in json_preserve}"
-    )
+    print(f"Contains actual characters: 'ä' in json_preserve: {'ä' in json_preserve}")
     print(f"File size Unicode: {len(json_preserve)} bytes")
 
     # Example 2: ASCII-only encoding
@@ -169,7 +167,9 @@ def demonstrate_json_encoding():
     json_ascii = db2.export_choices_to_json()
     print("\nASCII-Only Encoding:")
     unicode_marker = "\\u"
-    print(f"Contains Unicode escapes: '{unicode_marker}' in json_ascii: {unicode_marker in json_ascii}")
+    print(
+        f"Contains Unicode escapes: '{unicode_marker}' in json_ascii: {unicode_marker in json_ascii}"
+    )
     print(f"File size ASCII: {len(json_ascii)} bytes")
 
     # Example 3: Runtime encoding adjustment
@@ -258,7 +258,7 @@ def demonstrate_batch_import():
     imported_count_2 = db2.import_choices_from_json(json_data)
     medium_batch_time = time.time() - start_time
     print(f"Imported {imported_count_2} choices in {medium_batch_time:.2f}s")
-    print(f"Performance: {imported_count_2 / medium_batch_time:.0f} " f"choices/second")
+    print(f"Performance: {imported_count_2 / medium_batch_time:.0f} choices/second")
 
     # Example 3: Small batch size for memory-constrained environments
     print("\nSmall Batch Size (10):")
@@ -267,7 +267,7 @@ def demonstrate_batch_import():
     imported_count_3 = db3.import_choices_from_json(json_data)
     small_batch_time = time.time() - start_time
     print(f"Imported {imported_count_3} choices in {small_batch_time:.2f}s")
-    print(f"Performance: {imported_count_3 / small_batch_time:.0f} " f"choices/second")
+    print(f"Performance: {imported_count_3 / small_batch_time:.0f} choices/second")
 
     # Verify data integrity
     print("\nData Integrity Verification:")
@@ -299,8 +299,7 @@ def demonstrate_combined_features():
     print("Database configured with:")
     print(f"  - Learning rate alpha: {db.learning_rate_alpha}")
     print(
-        f"  - JSON ensure_ascii: {db.ensure_ascii} "
-        "(preserves international characters)"
+        f"  - JSON ensure_ascii: {db.ensure_ascii} (preserves international characters)"
     )
     print(f"  - Batch size: {db.batch_size}")
 

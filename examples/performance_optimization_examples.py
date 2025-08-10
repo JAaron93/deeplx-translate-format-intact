@@ -152,7 +152,7 @@ class LargeDocumentProcessor:
             # Calculate total pages
             total_pages = len(content.get("pages", []))
             logger.info(
-                f"Processing {total_pages} pages in chunks of " f"{self.chunk_size}"
+                f"Processing {total_pages} pages in chunks of {self.chunk_size}"
             )
 
             # Process in chunks to manage memory
@@ -162,7 +162,7 @@ class LargeDocumentProcessor:
 
                 self.performance_optimizer.log_performance_status(
                     f"Chunk {chunk_start}-{chunk_end}",
-                    f"Pages {chunk_start+1}-{chunk_end} of {total_pages}",
+                    f"Pages {chunk_start + 1}-{chunk_end} of {total_pages}",
                 )
 
                 # Process chunk
@@ -348,9 +348,7 @@ class ParallelProcessingOptimizer:
         processed_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error(
-                    f"Error processing document " f"{document_paths[i]}: {result}"
-                )
+                logger.error(f"Error processing document {document_paths[i]}: {result}")
                 processed_results.append(
                     {
                         "document_path": document_paths[i],
@@ -424,7 +422,7 @@ class PerformanceExamples:
                     processed = result["processed_pages"]
                     total = result["total_pages"]
                     percent = result["progress_percent"]
-                    print(f"Progress: {percent:.1f}% " f"({processed}/{total} pages)")
+                    print(f"Progress: {percent:.1f}% ({processed}/{total} pages)")
                 elif result["type"] == "complete":
                     print("Processing complete!")
                     print(f"Total pages: {result['total_pages']}")
@@ -607,9 +605,7 @@ class PerformanceExamples:
 
 async def main():
     """Main function to run performance optimization examples."""
-    print(
-        "Philosophy-Enhanced Translation System - " "Performance Optimization Examples"
-    )
+    print("Philosophy-Enhanced Translation System - Performance Optimization Examples")
     print("=" * 80)
 
     examples = PerformanceExamples()

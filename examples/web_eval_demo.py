@@ -1,25 +1,34 @@
 #!/usr/bin/env python3
-"""
-Demonstration of the web-eval-agent MCP server capabilities.
-This script shows how the web-eval-agent can be used for automated web evaluation.
+"""Demonstration of the web-eval-agent MCP server capabilities.
+
+This script shows how the web-eval-agent can be used for automated web
+evaluation.
 """
 
 import json
-import time
 import os
+import time
+
 
 def demonstrate_web_eval_agent():
     """Demonstrate the web-eval-agent capabilities."""
-    
-    api_key = os.getenv('OP_API_KEY', '[API_KEY_NOT_SET]')
+    api_key = os.getenv("OP_API_KEY", "[API_KEY_NOT_SET]")
+    # Resolve demo URL from environment with sensible default
+    default_demo_url = "http://localhost:8000/static/demos/web-eval/demo.html"
+    demo_url = os.getenv("WEB_EVAL_DEMO_URL", default_demo_url)
     print("🚀 Web Eval Agent MCP Server Demonstration")
     print("=" * 50)
-    
+
     # Simulate the web-eval-agent configuration
     print("\n📋 Configuration:")
     print("  • Server Name: github.com/Operative-Sh/web-eval-agent")
-    print(f"  • API Key: {api_key}")
-    print("  • Command: uvx --refresh-package webEvalAgent --from git+https://github.com/Operative-Sh/web-eval-agent.git webEvalAgent")
+    # Show only the first 4 chars for confirmation
+    print(f"  • API Key: {api_key[:4]}***")
+    print(
+        "  • Command: "
+        "uvx --refresh-package webEvalAgent --from "
+        "git+https://github.com/Operative-Sh/web-eval-agent.git webEvalAgent"
+    )
 
     # Show the tools available
     print("\n🔧 Available Tools:")
@@ -28,13 +37,15 @@ def demonstrate_web_eval_agent():
 
     # Simulate a web evaluation task
     print("\n🎯 Demonstration Task:")
-    print("  Evaluating http://localhost:8000/demo.html")
-    print("  Task: 'Evaluate the web page for user experience issues and test the button functionality'")
+    print(f"  Evaluating {demo_url}")
+    print(
+        "  Task: 'Evaluate the web page for user experience issues and test the button functionality'"
+    )
 
     # Simulate the evaluation process
     print("\n🔄 Running Evaluation...")
     time.sleep(1)
-    print("  🔍 Step 1: Navigating to http://localhost:8000/demo.html")
+    print(f"  🔍 Step 1: Navigating to {demo_url}")
     time.sleep(1)
     print("  🖱️ Step 2: Interacting with UI elements")
     time.sleep(1)
@@ -45,24 +56,30 @@ def demonstrate_web_eval_agent():
     # Show sample output
     print("\n📊 Evaluation Results:")
     sample_report = {
-        "url": "http://localhost:8000/demo.html",
-        "task": "Evaluate the web page for user experience issues and test the button functionality",
+        "url": demo_url,
+        "task": (
+            "Evaluate the web page for user experience issues and test the "
+            "button functionality"
+        ),
         "agent_steps": [
-            "Navigate → http://localhost:8000/demo.html",
+            f"Navigate → {demo_url}",
             "Click 'Run Web Evaluation Demo' button",
             "Verify JavaScript functionality",
-            "Check responsive design"
+            "Check responsive design",
         ],
         "console_logs": [
             "[info] Page loaded successfully",
             "[debug] Button click handler registered",
-            "[info] Demo animation started"
+            "[info] Demo animation started",
         ],
         "network_requests": [
-            "GET /demo.html 200",
-            "GET /favicon.ico 404"
+            "GET /static/demos/web-eval/demo.html 200",
+            "GET /favicon.ico 404",
         ],
-        "conclusion": "✅ UX evaluation complete - Page functions correctly with no issues detected"
+        "conclusion": (
+            "✅ UX evaluation complete - Page functions correctly with no "
+            "issues detected"
+        ),
     }
 
     print(json.dumps(sample_report, indent=2))
@@ -78,6 +95,7 @@ def demonstrate_web_eval_agent():
     print("\n🎉 Setup Complete!")
     print("The web-eval-agent MCP server is now configured and ready to use.")
     print("You can now use it in your IDE to evaluate web applications.")
+
 
 if __name__ == "__main__":
     demonstrate_web_eval_agent()

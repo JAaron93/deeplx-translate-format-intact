@@ -13,7 +13,10 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-import fitz  # PyMuPDF for PDF manipulation
+try:
+    import fitz  # type: ignore  # PyMuPDF for PDF manipulation
+except Exception:  # pragma: no cover - optional dependency
+    fitz = None  # type: ignore
 import psutil
 
 logger = logging.getLogger(__name__)
@@ -93,6 +96,11 @@ class AdvancedPDFProcessor:
             raise FileNotFoundError(f"PDF file not found: {pdf_path}")
 
         logger.info(f"Extracting layout from {pdf_path} at {self.dpi} DPI")
+
+        if fitz is None:
+            raise ImportError(
+                "PyMuPDF (fitz) is required for PDF processing but is not installed"
+            )
 
         doc = fitz.open(pdf_path)
         page_layouts = []

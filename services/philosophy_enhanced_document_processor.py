@@ -355,6 +355,10 @@ class PhilosophyEnhancedDocumentProcessor:
 
             # Final progress update
             progress.current_stage = "completed"
+            progress.extraction_progress = 100
+            progress.neologism_detection_progress = 100
+            progress.user_choice_progress = 100
+            progress.translation_progress = 100
             progress.reconstruction_progress = 100
             if progress_callback:
                 progress_callback(progress)
@@ -681,7 +685,7 @@ def create_philosophy_enhanced_document_processor(
     dpi: int = 300,
     preserve_images: bool = True,
     terminology_path: Optional[str] = None,
-    db_path: str = "user_choices.db",
+    db_path: str = "database/user_choices.db",
     **kwargs,
 ) -> PhilosophyEnhancedDocumentProcessor:
     """Create a philosophy-enhanced document processor with default components."""

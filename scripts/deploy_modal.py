@@ -52,7 +52,9 @@ def validate_environment_variables():
     return missing_required, empty_required, missing_optional, empty_optional
 
 
-def report_environment_validation(missing_required, empty_required, missing_optional, empty_optional):
+def report_environment_validation(
+    missing_required, empty_required, missing_optional, empty_optional
+):
     """Report environment variable validation results to the user.
 
     Args:
@@ -86,9 +88,7 @@ def report_environment_validation(missing_required, empty_required, missing_opti
             print(f"⚠️  Optional variable {var} is set but empty")
 
     # Report successfully set optional variables
-    # Get the list from validate_environment_variables to avoid duplication
-    all_optional_vars = ["HF_TOKEN"]  # This should be extracted to a module constant
-    for var in all_optional_vars:
+    for var in OPTIONAL_ENV_VARS:
         if var not in all_optional:
             value = os.getenv(var)
             if value and value.strip():
@@ -103,8 +103,15 @@ def check_environment_variables():
     Returns:
         bool: True if all required variables are valid, False otherwise
     """
-    missing_required, empty_required, missing_optional, empty_optional = validate_environment_variables()
-    return report_environment_validation(missing_required, empty_required, missing_optional, empty_optional)
+    (
+        missing_required,
+        empty_required,
+        missing_optional,
+        empty_optional,
+    ) = validate_environment_variables()
+    return report_environment_validation(
+        missing_required, empty_required, missing_optional, empty_optional
+    )
 
 
 def prepare_modal_secrets():
@@ -124,11 +131,12 @@ def prepare_modal_secrets():
     print("📝 Translation API secret data prepared")
     print("   Run this command to create the secret:")
     secret_cmd = "modal secret create translation-api"
-    for key in translation_secret_data.keys():
+    for key in translation_secret_data:
         secret_cmd += f" {key}=<your-{key.lower().replace('_', '-')}>"
     print(f"   {secret_cmd}")
 
     return True
+
 
 def deploy_dolphin_service():
     """Prepare Dolphin OCR service deployment instructions (stub implementation)."""
@@ -139,6 +147,7 @@ def deploy_dolphin_service():
     print("   To deploy, run: modal deploy services/dolphin_modal_service.py")
 
     return True
+
 
 def deploy_main_application():
     """Deploy the main translation application."""
@@ -182,7 +191,10 @@ def main():
     print("\n2. Deploy the Dolphin OCR service:")
     print("   modal deploy services/dolphin_modal_service.py")
 
-    endpoint_url = os.getenv("MODAL_ENDPOINT_BASE", "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run")
+    endpoint_url = os.getenv(
+        "MODAL_ENDPOINT_BASE",
+        "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run",
+    )
     print(f"   DOLPHIN_ENDPOINT={endpoint_url}")
 
     print("\n4. Test the deployment:")

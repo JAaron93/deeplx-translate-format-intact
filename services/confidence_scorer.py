@@ -311,5 +311,5 @@ class ConfidenceScorer:
         """Update philosophical indicators."""
         self.philosophical_indicators.update(new_indicators)
         logger.info(
-            f"Updated philosophical indicators with " f"{len(new_indicators)} new terms"
+            f"Updated philosophical indicators with {len(new_indicators)} new terms"
         )

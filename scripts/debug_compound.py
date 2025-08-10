@@ -143,9 +143,9 @@ def format_debug_output(word_info: Dict[str, Any], debug_result: Dict[str, Any])
     """
     if "error" in debug_result:
         return f"""
-❌ ERROR analyzing '{word_info['word']}':
-   Type: {debug_result['error']['type']}
-   Message: {debug_result['error']['message']}
+❌ ERROR analyzing '{word_info["word"]}':
+   Type: {debug_result["error"]["type"]}
+   Message: {debug_result["error"]["message"]}
 """
 
     basic = debug_result.get("basic_info", {})
@@ -156,53 +156,53 @@ def format_debug_output(word_info: Dict[str, Any], debug_result: Dict[str, Any])
     assessment = debug_result.get("final_assessment", {})
 
     output = f"""
-🔍 ANALYSIS: {basic.get('word', 'Unknown')} ({word_info.get('category', 'unknown')})
-   Description: {word_info.get('description', 'No description')}
-   Context: {word_info.get('context', 'No context')}
+🔍 ANALYSIS: {basic.get("word", "Unknown")} ({word_info.get("category", "unknown")})
+   Description: {word_info.get("description", "No description")}
+   Context: {word_info.get("context", "No context")}
 
 📊 BASIC INFO:
-   Length: {basic.get('length', 0)} characters
-   Capital letters: {basic.get('capital_count', 0)}
-   In terminology: {basic.get('in_terminology', False)}
+   Length: {basic.get("length", 0)} characters
+   Capital letters: {basic.get("capital_count", 0)}
+   In terminology: {basic.get("in_terminology", False)}
 
 🔗 COMPOUND ANALYSIS:
-   Is compound: {compound.get('is_compound', False)}
-   Compound parts: {compound.get('compound_parts', [])}
-   Compound pattern: {compound.get('compound_pattern', 'None')}
+   Is compound: {compound.get("is_compound", False)}
+   Compound parts: {compound.get("compound_parts", [])}
+   Compound pattern: {compound.get("compound_pattern", "None")}
 
 🧬 MORPHOLOGICAL:
-   Word length: {morphological.get('word_length', 0)}
-   Syllables: {morphological.get('syllable_count', 0)}
-   Morphemes: {morphological.get('morpheme_count', 0)}
-   Root words: {morphological.get('root_words', [])}
-   Prefixes: {morphological.get('prefixes', [])}
-   Suffixes: {morphological.get('suffixes', [])}
-   Structural complexity: {morphological.get('structural_complexity', 0.0):.3f}
-   Morphological productivity: {morphological.get('morphological_productivity', 0.0):.3f}
+   Word length: {morphological.get("word_length", 0)}
+   Syllables: {morphological.get("syllable_count", 0)}
+   Morphemes: {morphological.get("morpheme_count", 0)}
+   Root words: {morphological.get("root_words", [])}
+   Prefixes: {morphological.get("prefixes", [])}
+   Suffixes: {morphological.get("suffixes", [])}
+   Structural complexity: {morphological.get("structural_complexity", 0.0):.3f}
+   Morphological productivity: {morphological.get("morphological_productivity", 0.0):.3f}
 
 🎓 PHILOSOPHICAL CONTEXT:
-   Density: {philosophical.get('philosophical_density', 0.0):.3f}
-   Semantic field: {philosophical.get('semantic_field', 'unknown')}
-   Domain indicators: {philosophical.get('domain_indicators', [])}
-   Philosophical keywords: {philosophical.get('philosophical_keywords', [])}
-   Surrounding terms: {philosophical.get('surrounding_terms', [])}
-   Conceptual clusters: {philosophical.get('conceptual_clusters', [])}
+   Density: {philosophical.get("philosophical_density", 0.0):.3f}
+   Semantic field: {philosophical.get("semantic_field", "unknown")}
+   Domain indicators: {philosophical.get("domain_indicators", [])}
+   Philosophical keywords: {philosophical.get("philosophical_keywords", [])}
+   Surrounding terms: {philosophical.get("surrounding_terms", [])}
+   Conceptual clusters: {philosophical.get("conceptual_clusters", [])}
 
 ⚖️  CONFIDENCE FACTORS:
-   Morphological complexity: {confidence.get('morphological_complexity', 0.0):.3f}
-   Compound structure score: {confidence.get('compound_structure_score', 0.0):.3f}
-   Context density: {confidence.get('context_density', 0.0):.3f}
-   Philosophical indicators: {confidence.get('philosophical_indicators', 0.0):.3f}
-   Semantic coherence: {confidence.get('semantic_coherence', 0.0):.3f}
-   Rarity score: {confidence.get('rarity_score', 0.0):.3f}
-   Pattern productivity: {confidence.get('pattern_productivity', 0.0):.3f}
-   Semantic transparency: {confidence.get('semantic_transparency', 0.0):.3f}
+   Morphological complexity: {confidence.get("morphological_complexity", 0.0):.3f}
+   Compound structure score: {confidence.get("compound_structure_score", 0.0):.3f}
+   Context density: {confidence.get("context_density", 0.0):.3f}
+   Philosophical indicators: {confidence.get("philosophical_indicators", 0.0):.3f}
+   Semantic coherence: {confidence.get("semantic_coherence", 0.0):.3f}
+   Rarity score: {confidence.get("rarity_score", 0.0):.3f}
+   Pattern productivity: {confidence.get("pattern_productivity", 0.0):.3f}
+   Semantic transparency: {confidence.get("semantic_transparency", 0.0):.3f}
 
 🎯 FINAL ASSESSMENT:
-   Is neologism: {assessment.get('is_neologism', False)}
-   Confidence score: {confidence.get('weighted_score', 0.0):.3f}
-   Threshold: {assessment.get('threshold', 0.0):.3f}
-   Neologism type: {assessment.get('neologism_type', 'None')}
+   Is neologism: {assessment.get("is_neologism", False)}
+   Confidence score: {confidence.get("weighted_score", 0.0):.3f}
+   Threshold: {assessment.get("threshold", 0.0):.3f}
+   Neologism type: {assessment.get("neologism_type", "None")}
 """
     return output
 
@@ -352,13 +352,13 @@ Examples:
   python scripts/debug_compound.py --words Bewusstsein Weltanschauung
     # Analyze specific words with detailed output
 
-  python scripts/debug_compound.py --category {available_categories[0] if available_categories else 'compound_words'} --compact
+  python scripts/debug_compound.py --category {available_categories[0] if available_categories else "compound_words"} --compact
     # Analyze one category with compact output
 
   python scripts/debug_compound.py --config custom_words.json --verbose
     # Use custom config with explicit detailed output
 
-  python scripts/debug_compound.py --categories {' '.join(available_categories[:2]) if len(available_categories) >= 2 else 'compound_words simple_words'} --compact
+  python scripts/debug_compound.py --categories {" ".join(available_categories[:2]) if len(available_categories) >= 2 else "compound_words simple_words"} --compact
     # Multiple categories with compact output
 
 Output modes:
@@ -366,7 +366,7 @@ Output modes:
   --verbose  Explicit detailed analysis (same as default)
   --compact  Compact output with only essential information
 
-Available categories: {', '.join(available_categories)}
+Available categories: {", ".join(available_categories)}
         """,
     )
 

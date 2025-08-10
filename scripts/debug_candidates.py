@@ -314,7 +314,7 @@ def debug_candidates():
     print("\n=== Manual Pattern Testing ===")
     total_matches = 0
     for i, pattern in enumerate(compound_patterns):
-        print(f"\nPattern {i+1}: {pattern}")
+        print(f"\nPattern {i + 1}: {pattern}")
         matches = re.findall(pattern, text)
         print(f"Matches: {matches}")
         total_matches += len(matches)

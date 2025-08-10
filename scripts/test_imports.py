@@ -6,7 +6,7 @@ import traceback
 from typing import Optional
 
 
-def test_import(module_name: str, from_module: Optional[str] = None) -> bool:
+def run_import_check(module_name: str, from_module: Optional[str] = None) -> bool:
     """Test importing a module or symbol with explicit import verification.
 
     This function performs actual import operations to verify importability,
@@ -72,11 +72,11 @@ if __name__ == "__main__":
 
     for module in standard_modules:
         total_count += 1
-        if test_import(module):
+        if run_import_check(module):
             success_count += 1
     for module_name, from_module in project_imports:
         total_count += 1
-        if test_import(module_name, from_module):
+        if run_import_check(module_name, from_module):
             success_count += 1
 
     print(f"Import testing complete: {success_count}/{total_count} successful")

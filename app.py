@@ -17,19 +17,50 @@ from api.routes import api_router, app_router
 # Import refactored components
 from ui.gradio_interface import create_gradio_interface
 
-# Configure logging
+# Ensure required directories exist BEFORE configuring logging so file handlers
+# don't fail due to missing paths.
+_REQUIRED_DIRECTORIES = [
+    "static",
+    "uploads",
+    "downloads",
+    ".layout_backups",
+    "templates",
+    "logs",
+]
+
+
+def _ensure_required_dirs() -> list[str]:
+    """Create required directories if missing and return list of created ones."""
+    created: list[str] = []
+    for directory in _REQUIRED_DIRECTORIES:
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+            created.append(directory)
+    return created
+
+
+# Create directories early
+_created_early = _ensure_required_dirs()
+
+# Configure logging (logs/ exists now)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()],
+    handlers=[logging.FileHandler("logs/app.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
+
+# Report any directories created prior to logger setup to keep visibility
+if _created_early:
+    for _d in _created_early:
+        logger.info("Created directory: %s", _d)
+    logger.info("All required directories verified/created before logging setup")
 
 # FastAPI app
 app = FastAPI(
     title="Advanced Document Translator",
     description=(
-        "Professional document translation with advanced formatting " "preservation"
+        "Professional document translation with advanced formatting preservation"
     ),
     version="2.0.0",
 )
@@ -53,20 +84,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("startup")
 async def startup_event():
-    """Create required directories on startup."""
-    required_directories = [
-        "static",
-        "uploads",
-        "downloads",
-        ".layout_backups",
-        "templates",
-    ]
-
-    for directory in required_directories:
-        os.makedirs(directory, exist_ok=True)
-        logger.info(f"Created directory: {directory}")
-
-    logger.info("All required directories created successfully")
+    """Verify required directories exist on startup (create only if missing)."""
+    created = []
+    for directory in _REQUIRED_DIRECTORIES:
+        if not os.path.isdir(directory):
+            os.makedirs(directory, exist_ok=True)
+            created.append(directory)
+    if created:
+        for d in created:
+            logger.info("Created directory: %s", d)
+    logger.info("All required directories verified on startup")
 
 
 def main() -> None:

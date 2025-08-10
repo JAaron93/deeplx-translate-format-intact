@@ -199,6 +199,27 @@ processed_documents/
 ocr_cache/
 dolphin_cache/
 
+# User data and generated content
+database/user_choices.db
+database/*.db
+database/*.sqlite*
+
+# Generated translation files (keep examples if needed)
+downloads/*.pdf
+downloads/*.docx
+uploads/*
+!uploads/.gitkeep
+!downloads/.gitkeep
+
+# Temporary processing files
+temp/images/*
+!temp/images/.gitkeep
+
+# Application logs
+logs/*.log
+logs/*
+!logs/.gitkeep
+
 # Documentation build artifacts
 docs/_build/
 docs/.doctrees/
@@ -217,6 +238,40 @@ _build/
 GEMINI.md
 .claude
 .vincent
+
+# AI Development Tools
+# Kiro IDE specific
+.kiro/settings/
+.kiro/cache/
+.kiro/temp/
+# Keep steering rules but ignore other Kiro files
+!.kiro/steering/
+
+# MCP (Model Context Protocol) configurations - keep workspace configs
+mcp.json
+.mcp/
+!.kiro/settings/mcp.json
+
+# Augment AI specific
+.augment/
+!.augment/rules/
+
+# Vincent AI specific  
+.vincent/
+!.vincent/mcp.json
+
+# Superdesign specific
+.superdesign/
+
+# Claude/Anthropic context files
+.claude/
+CLAUDE.md
+claude_context.md
+
+# Other AI tools
+.cursor/
+.continue/
+.codeium/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -330,6 +385,30 @@ __pypackages__/
 !yarn.lock
 !pnpm-lock.yaml
 
-# Misc
-.benchmarks
-.ruff_cache
+# Development and benchmarking
+.benchmarks/
+.ruff_cache/
+
+# Pre-commit backups
+*.backup
+.pre-commit-config.yaml.backup
+
+# Layout backups
+.layout_backups/
+
+# Performance profiling
+*.prof
+*.profile
+profile_*.txt
+
+# Development databases and test data
+test_*.db
+test_*.sqlite*
+*_test.db
+*_test.sqlite*
+
+# API keys and configuration (additional patterns)
+config/api_keys.json
+config/secrets.json
+config/*.key
+config/*.secret

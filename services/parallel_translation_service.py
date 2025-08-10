@@ -1,8 +1,17 @@
 """Parallel translation service for Dolphin OCR Translate document processing.
 
-This module implements parallelized translation capabilities using asyncio,
-aiohttp, and intelligent rate limiting to efficiently process large documents
-while respecting API constraints.
+This module implements parallelized translation with bounded concurrency,
+robust error handling, and order preservation:
+- Bounded concurrency: An asyncio.Semaphore limits in-flight requests while a
+  token-bucket RateLimiter smooths request bursts and enforces per-second caps.
+- Error handling: Each task retries with exponential backoff for transient
+  failures (timeouts, 5xx, 429), surfaces structured errors, and never raises
+  unhandled exceptions from the batch API.
+- Order preservation: Caller-facing helpers map results back to the original
+  input order using stable indices stored in task metadata.
+
+All logging is done via a module-level logger and avoids emitting raw text
+payloads or full response bodies to minimize sensitive data exposure.
 """
 
 import asyncio
@@ -147,7 +156,6 @@ class BatchProgress:
         return time.time() - self.start_time
 
     @property
-    @property
     def estimated_remaining_time(self) -> float:
         """Estimate remaining time in seconds."""
         if self.completed_tasks == 0 or self.elapsed_time < 0.001:
@@ -165,7 +173,8 @@ class RateLimiter:
         """Initialize rate limiter with token bucket parameters."""
         self.max_requests_per_second = max_requests_per_second
         self.burst_allowance = burst_allowance
-        self.tokens = max_requests_per_second + burst_allowance
+        # Start with burst tokens only; refill up to max + burst
+        self.tokens = float(burst_allowance)
         self.last_update = time.time()
         self._lock = asyncio.Lock()
 
@@ -184,9 +193,15 @@ class RateLimiter:
 
             # Wait if no tokens available
             if self.tokens < 1:
-                wait_time = (1 - self.tokens) / self.max_requests_per_second
+                wait_time = max(
+                    0.0, (1 - self.tokens) / max(1e-9, self.max_requests_per_second)
+                )
                 await asyncio.sleep(wait_time)
-                self.tokens = 0
+                # After waiting, consume one token
+                self.last_update = time.time()
+                self.tokens = max(
+                    0.0, self.tokens + (wait_time * self.max_requests_per_second) - 1
+                )
             else:
                 self.tokens -= 1
 
@@ -219,12 +234,12 @@ class ParallelLingoTranslator:
         # Session will be created when needed
         self._session: Optional[ClientSession] = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "ParallelLingoTranslator":
         """Async context manager entry."""
         await self._ensure_session()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         await self.close()
 
@@ -304,9 +319,9 @@ class ParallelLingoTranslator:
                             )
                             continue
 
-                        # Handle other HTTP errors
-                        error_text = await response.text()
-                        last_error = f"HTTP {response.status}: {error_text}"
+                        # Handle other HTTP errors. Avoid logging or storing full response bodies.
+                        _ = await response.text()
+                        last_error = f"HTTP {response.status}"
 
                         # Don't retry on client errors (4xx except 429)
                         if 400 <= response.status < 500 and response.status != 429:
@@ -345,7 +360,10 @@ class ParallelLingoTranslator:
         if "text" in response_data:
             return response_data["text"]
 
-        logger.warning("Unexpected Lingo response format: %s", response_data)
+        # Avoid logging full response bodies. Log only high-level structure.
+        logger.warning(
+            "Unexpected Lingo response format: keys=%s", list(response_data.keys())
+        )
         raise ValueError("Invalid response format")
 
     async def translate_batch_parallel(
@@ -353,7 +371,17 @@ class ParallelLingoTranslator:
         tasks: List[TranslationTask],
         progress_callback: Optional[Callable[[BatchProgress], None]] = None,
     ) -> List[TranslationResult]:
-        """Translate multiple texts in parallel with progress tracking."""
+        """Translate multiple tasks in parallel with bounded concurrency.
+
+        - Concurrency is bounded by an asyncio.Semaphore; per-second throughput
+          is smoothed by a token-bucket RateLimiter.
+        - Each task retries on transient errors with exponential backoff. The
+          function never raises; exceptions are converted into failed
+          TranslationResult instances.
+        - Ordering: The returned list preserves the 1:1 mapping to input tasks
+          via their metadata indices, enabling callers to reconstruct original
+          order deterministically.
+        """
         if not tasks:
             return []
 
@@ -544,13 +572,13 @@ class ParallelTranslationService:
         self.config = config or ParallelTranslationConfig.from_config()
         self._translator: Optional[ParallelLingoTranslator] = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "ParallelTranslationService":
         """Async context manager entry."""
         self._translator = ParallelLingoTranslator(self.api_key, self.config)
         await self._translator.__aenter__()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         """Async context manager exit."""
         if self._translator:
             await self._translator.__aexit__(exc_type, exc_val, exc_tb)

@@ -119,13 +119,13 @@ LANGUAGE_PATTERNS: dict[str, dict[str, object]] = {
     },
 }
 
+
 class LanguageDetector:
     """Detects language of document content."""
 
     def __init__(self) -> None:
-        """No-op constructor; all data is stored on the class."""
+        """Initialize detector with module-level language mappings."""
         self.language_map = LANGUAGE_MAP
-
 
     def detect_language(self, file_path: str) -> str:
         """Detect the language of a document from its file path.

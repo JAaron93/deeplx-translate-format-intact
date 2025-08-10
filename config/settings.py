@@ -249,6 +249,12 @@ class Settings:
     SOURCE_LANGUAGE: str = "DE"
     TARGET_LANGUAGE: str = "EN"
     TRANSLATION_DELAY: float = float(os.getenv("TRANSLATION_DELAY", "0.1"))
+    # Maximum number of concurrent translation tasks.
+    # Environment variable: TRANSLATION_CONCURRENCY_LIMIT
+    # Default: 8 (must be >= 1)
+    translation_concurrency_limit: int = int(
+        os.getenv("TRANSLATION_CONCURRENCY_LIMIT", "8")
+    )
 
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
@@ -388,6 +394,12 @@ class Settings:
         if self.TRANSLATION_DELAY < 0:
             logger.error(
                 f"Invalid TRANSLATION_DELAY: {self.TRANSLATION_DELAY}. Must be non-negative"
+            )
+            valid = False
+
+        if self.translation_concurrency_limit < 1:
+            logger.error(
+                f"Invalid translation_concurrency_limit: {self.translation_concurrency_limit}. Must be >= 1"
             )
             valid = False
 

@@ -158,7 +158,11 @@ class TestPhilosophyEnhancedTranslationServiceIntegration:
         }
 
         result = await philosophy_service.translate_document_with_neologism_handling(
-            document, "en", "de", "lingo", "test_session"  # Use Lingo provider
+            document,
+            "en",
+            "de",
+            "lingo",
+            "test_session",  # Use Lingo provider
         )
 
         assert "translated_content" in result

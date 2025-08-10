@@ -14,6 +14,11 @@ import traceback
 from contextlib import contextmanager
 from datetime import datetime
 
+# Ensure project root is on sys.path for package imports when running from scripts/
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from database.choice_database import ChoiceDatabase
 from models.user_choice_models import (
     ChoiceScope,
@@ -62,24 +67,24 @@ def test_alpha_parameter_configuration():
     db = ChoiceDatabase(":memory:")
     expected_alpha = 0.1
     assert db.learning_rate_alpha == expected_alpha, (
-        f"Expected default alpha {expected_alpha}, " f"got {db.learning_rate_alpha}"
+        f"Expected default alpha {expected_alpha}, got {db.learning_rate_alpha}"
     )
     print("✓ Default alpha value (0.1) works")
 
     # Test 2: Custom alpha value
     db = ChoiceDatabase(":memory:", learning_rate_alpha=0.05)
     expected_alpha = 0.05
-    assert (
-        db.learning_rate_alpha == expected_alpha
-    ), f"Expected alpha {expected_alpha}, got {db.learning_rate_alpha}"
+    assert db.learning_rate_alpha == expected_alpha, (
+        f"Expected alpha {expected_alpha}, got {db.learning_rate_alpha}"
+    )
     print("✓ Custom alpha value (0.05) works")
 
     # Test 3: Alpha property setter
     db.learning_rate_alpha = 0.2
     expected_alpha = 0.2
-    assert (
-        db.learning_rate_alpha == expected_alpha
-    ), f"Expected alpha {expected_alpha}, got {db.learning_rate_alpha}"
+    assert db.learning_rate_alpha == expected_alpha, (
+        f"Expected alpha {expected_alpha}, got {db.learning_rate_alpha}"
+    )
     print("✓ Alpha property setter works")
 
     # Test 4: Alpha validation - invalid range
@@ -123,9 +128,9 @@ def test_json_encoding_configuration():
 
     # Test 1: Default ensure_ascii (False - preserves international characters)
     db = ChoiceDatabase(":memory:")
-    assert (
-        db.ensure_ascii is False
-    ), f"Expected default ensure_ascii False, got {db.ensure_ascii}"
+    assert db.ensure_ascii is False, (
+        f"Expected default ensure_ascii False, got {db.ensure_ascii}"
+    )
     print("✓ Default ensure_ascii (False) works")
 
     # Test 2: Custom ensure_ascii (True - ASCII only)
@@ -135,9 +140,9 @@ def test_json_encoding_configuration():
 
     # Test 3: ensure_ascii property setter
     db.ensure_ascii = False
-    assert (
-        db.ensure_ascii is False
-    ), f"Expected ensure_ascii False, got {db.ensure_ascii}"
+    assert db.ensure_ascii is False, (
+        f"Expected ensure_ascii False, got {db.ensure_ascii}"
+    )
     print("✓ ensure_ascii property setter works")
 
     # Test 4: Test actual JSON export with international characters
@@ -175,7 +180,7 @@ def test_json_encoding_configuration():
                     "(ensure_ascii=False)"
                 )
             else:
-                print("⚠ JSON export test skipped - database initialization " "issue")
+                print("⚠ JSON export test skipped - database initialization issue")
         else:
             print("⚠ JSON export test skipped - save failed")
 
@@ -187,8 +192,7 @@ def test_json_encoding_configuration():
             json_data = db.export_choices_to_json()
             if json_data and "\\u" in json_data:
                 print(
-                    "✓ JSON export escapes international characters "
-                    "(ensure_ascii=True)"
+                    "✓ JSON export escapes international characters (ensure_ascii=True)"
                 )
             else:
                 print("⚠ JSON export test skipped - encoding test failed")
@@ -245,9 +249,7 @@ def test_batch_import_optimization():
     }
 
     json_data = json.dumps(export_data, indent=2)
-    print(
-        f"✓ Exported {len(test_choices)} choices to JSON " f"({len(json_data)} bytes)"
-    )
+    print(f"✓ Exported {len(test_choices)} choices to JSON ({len(json_data)} bytes)")
 
     # Test 4: Batch import performance test
     with temporary_database_file() as temp_db_path:
@@ -274,32 +276,32 @@ def test_batch_import_optimization():
 
         assert imported_count == 1000, f"Expected 1000 imported, got {imported_count}"
         print(f"✓ Imported {imported_count} choices in {duration:.2f}s")
-        print(f"✓ Performance: {imported_count/duration:.1f} choices/second")
+        print(f"✓ Performance: {imported_count / duration:.1f} choices/second")
 
         # Assert minimum performance requirement (e.g., at least 100 choices/second)
         min_performance = 100  # choices per second
         actual_performance = imported_count / duration
-        assert (
-            actual_performance >= min_performance
-        ), f"Performance below threshold: {actual_performance:.1f} < {min_performance} choices/second"
+        assert actual_performance >= min_performance, (
+            f"Performance below threshold: {actual_performance:.1f} < {min_performance} choices/second"
+        )
         # Test 5: Verify data integrity
         print("🔍 Verifying data integrity after batch import...")
 
         # Check total count
         stats = db.get_database_statistics()
-        assert (
-            stats["total_choices"] == 1000
-        ), f"Expected 1000 total choices, got {stats['total_choices']}"
+        assert stats["total_choices"] == 1000, (
+            f"Expected 1000 total choices, got {stats['total_choices']}"
+        )
 
         # Check specific choice
         choice = db.get_user_choice("batch_test_0500")
         assert choice is not None, "Should be able to retrieve imported choice"
-        assert (
-            choice.neologism_term == "TestTerm500"
-        ), f"Expected TestTerm500, got {choice.neologism_term}"
-        assert (
-            choice.confidence_level == 0.8
-        ), f"Expected confidence 0.8, got {choice.confidence_level}"
+        assert choice.neologism_term == "TestTerm500", (
+            f"Expected TestTerm500, got {choice.neologism_term}"
+        )
+        assert choice.confidence_level == 0.8, (
+            f"Expected confidence 0.8, got {choice.confidence_level}"
+        )
 
         print("✓ Data integrity verification passed")
 
@@ -327,9 +329,9 @@ def test_batch_import_optimization():
         invalid_json = json.dumps(invalid_data)
         imported_count = db.import_choices_from_json(invalid_json)
 
-        assert (
-            imported_count == 0
-        ), f"Expected 0 imported from invalid data, got {imported_count}"
+        assert imported_count == 0, (
+            f"Expected 0 imported from invalid data, got {imported_count}"
+        )
         print("✓ Validation error handling works correctly")
 
     print("✅ Batch Import Optimization: ALL TESTS PASSED\n")

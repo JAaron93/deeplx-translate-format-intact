@@ -7,7 +7,10 @@ import re
 from functools import lru_cache
 from typing import Optional
 
-from spacy.language import Language
+try:
+    from spacy.language import Language  # type: ignore
+except Exception:  # pragma: no cover - optional for tests without spaCy
+    from typing import Any as Language  # type: ignore
 
 from models.neologism_models import MorphologicalAnalysis
 

@@ -55,8 +55,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
         )
     except ValueError:
         logger.warning(
-            f"Invalid DOLPHIN_TIMEOUT_SECONDS value, using default: "
-            f"{DEFAULT_TIMEOUT}"
+            f"Invalid DOLPHIN_TIMEOUT_SECONDS value, using default: {DEFAULT_TIMEOUT}"
         )
         timeout_seconds = DEFAULT_TIMEOUT
 
@@ -81,7 +80,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
 
     if not isinstance(data["pages"], list):
         raise ValueError(
-            "Invalid response format from Dolphin service: " "'pages' is not a list"
+            "Invalid response format from Dolphin service: 'pages' is not a list"
         )
 
     # Validate each page in the response
@@ -109,8 +108,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
             for field in block_required:
                 if field not in block:
                     raise ValueError(
-                        f"Text block {j} in page {i} is missing required "
-                        f"field: {field}"
+                        f"Text block {j} in page {i} is missing required field: {field}"
                     )
 
             # Validate bbox format [x0, y0, x1, y1]

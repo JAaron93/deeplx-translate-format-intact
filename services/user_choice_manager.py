@@ -30,7 +30,7 @@ class UserChoiceManager:
 
     def __init__(
         self,
-        db_path: str = "user_choices.db",
+        db_path: str = "database/user_choices.db",
         auto_resolve_conflicts: bool = True,
         session_expiry_hours: int = 24,
     ):

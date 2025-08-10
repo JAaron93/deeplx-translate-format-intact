@@ -19,16 +19,16 @@ from core.translation_handler import (
     process_advanced_translation_job,
     user_choice_manager,
 )
-from models.user_choice_models import (
-    ChoiceScope,
-    ChoiceType,
-)
 from models.neologism_models import (
     ConfidenceFactors,
     DetectedNeologism,
     MorphologicalAnalysis,
     NeologismType,
     PhilosophicalContext,
+)
+from models.user_choice_models import (
+    ChoiceScope,
+    ChoiceType,
 )
 from utils.language_utils import extract_text_sample_for_language_detection
 
