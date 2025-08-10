@@ -30,4 +30,3 @@ This document summarizes how CI is set up to validate the new philosophy-enhance
 - Additional CI/CD recommendations
   - Fail fast on test flakiness using `--maxfail=1` and consider `pytest-rerunfailures` for non-deterministic external services.
   - Parallelize non-dependent tests with `pytest-xdist -n auto` if the suite becomes slow, avoiding load-marked tests in the parallel run.
-

@@ -256,7 +256,7 @@ mcp.json
 .augment/
 !.augment/rules/
 
-# Vincent AI specific  
+# Vincent AI specific
 .vincent/
 !.vincent/mcp.json
 

@@ -205,26 +205,26 @@ def test_neologism_models():
         "test",
         "word",
     ], f"Expected ['test', 'word'], got {analysis.compound_parts}"
-    assert analysis.compound_pattern == "noun+noun", (
-        f"Expected 'noun+noun', got {analysis.compound_pattern}"
-    )
+    assert (
+        analysis.compound_pattern == "noun+noun"
+    ), f"Expected 'noun+noun', got {analysis.compound_pattern}"
     assert analysis.word_length == 8, f"Expected 8, got {analysis.word_length}"
     assert analysis.syllable_count == 2, f"Expected 2, got {analysis.syllable_count}"
     assert analysis.morpheme_count == 3, f"Expected 3, got {analysis.morpheme_count}"
-    assert analysis.structural_complexity == 0.75, (
-        f"Expected 0.75, got {analysis.structural_complexity}"
-    )
-    assert analysis.morphological_productivity == 0.6, (
-        f"Expected 0.6, got {analysis.morphological_productivity}"
-    )
+    assert (
+        analysis.structural_complexity == 0.75
+    ), f"Expected 0.75, got {analysis.structural_complexity}"
+    assert (
+        analysis.morphological_productivity == 0.6
+    ), f"Expected 0.6, got {analysis.morphological_productivity}"
 
     # Test to_dict method
     analysis_dict = analysis.to_dict()
     assert isinstance(analysis_dict, dict), "to_dict should return a dictionary"
     assert "root_words" in analysis_dict, "Dictionary should contain 'root_words' key"
-    assert analysis_dict["is_compound"] is True, (
-        "Dictionary should preserve boolean values"
-    )
+    assert (
+        analysis_dict["is_compound"] is True
+    ), "Dictionary should preserve boolean values"
     print("✓ MorphologicalAnalysis creation and validation passed")
 
     # Test PhilosophicalContext creation and attributes
@@ -243,12 +243,12 @@ def test_neologism_models():
     )
 
     # Verify PhilosophicalContext attributes
-    assert phil_context.philosophical_density == 0.8, (
-        f"Expected 0.8, got {phil_context.philosophical_density}"
-    )
-    assert phil_context.semantic_field == "epistemology", (
-        f"Expected 'epistemology', got {phil_context.semantic_field}"
-    )
+    assert (
+        phil_context.philosophical_density == 0.8
+    ), f"Expected 0.8, got {phil_context.philosophical_density}"
+    assert (
+        phil_context.semantic_field == "epistemology"
+    ), f"Expected 'epistemology', got {phil_context.semantic_field}"
     assert phil_context.domain_indicators == [
         "knowledge",
         "belief",
@@ -260,24 +260,22 @@ def test_neologism_models():
     assert phil_context.philosophical_keywords == [
         "consciousness",
         "reality",
-    ], (
-        f"Expected ['consciousness', 'reality'], got {phil_context.philosophical_keywords}"
-    )
-    assert phil_context.text_genre == "philosophical_treatise", (
-        f"Expected 'philosophical_treatise', got {phil_context.text_genre}"
-    )
+    ], f"Expected ['consciousness', 'reality'], got {phil_context.philosophical_keywords}"
+    assert (
+        phil_context.text_genre == "philosophical_treatise"
+    ), f"Expected 'philosophical_treatise', got {phil_context.text_genre}"
 
     # Test PhilosophicalContext to_dict method
     phil_dict = phil_context.to_dict()
-    assert isinstance(phil_dict, dict), (
-        "PhilosophicalContext to_dict should return a dictionary"
-    )
-    assert "philosophical_density" in phil_dict, (
-        "Dictionary should contain 'philosophical_density' key"
-    )
-    assert phil_dict["semantic_field"] == "epistemology", (
-        "Dictionary should preserve string values"
-    )
+    assert isinstance(
+        phil_dict, dict
+    ), "PhilosophicalContext to_dict should return a dictionary"
+    assert (
+        "philosophical_density" in phil_dict
+    ), "Dictionary should contain 'philosophical_density' key"
+    assert (
+        phil_dict["semantic_field"] == "epistemology"
+    ), "Dictionary should preserve string values"
     print("✓ PhilosophicalContext creation and validation passed")
 
     # Test ConfidenceFactors creation and attributes
@@ -294,37 +292,37 @@ def test_neologism_models():
     )
 
     # Verify ConfidenceFactors attributes
-    assert confidence_factors.morphological_complexity == 0.7, (
-        f"Expected 0.7, got {confidence_factors.morphological_complexity}"
-    )
-    assert confidence_factors.compound_structure_score == 0.8, (
-        f"Expected 0.8, got {confidence_factors.compound_structure_score}"
-    )
-    assert confidence_factors.context_density == 0.9, (
-        f"Expected 0.9, got {confidence_factors.context_density}"
-    )
-    assert confidence_factors.rarity_score == 0.9, (
-        f"Expected 0.9, got {confidence_factors.rarity_score}"
-    )
+    assert (
+        confidence_factors.morphological_complexity == 0.7
+    ), f"Expected 0.7, got {confidence_factors.morphological_complexity}"
+    assert (
+        confidence_factors.compound_structure_score == 0.8
+    ), f"Expected 0.8, got {confidence_factors.compound_structure_score}"
+    assert (
+        confidence_factors.context_density == 0.9
+    ), f"Expected 0.9, got {confidence_factors.context_density}"
+    assert (
+        confidence_factors.rarity_score == 0.9
+    ), f"Expected 0.9, got {confidence_factors.rarity_score}"
 
     # Test ConfidenceFactors weighted score calculation
     weighted_score = confidence_factors.calculate_weighted_score()
     assert isinstance(weighted_score, float), "Weighted score should be a float"
-    assert 0.0 <= weighted_score <= 1.0, (
-        f"Weighted score should be between 0 and 1, got {weighted_score}"
-    )
+    assert (
+        0.0 <= weighted_score <= 1.0
+    ), f"Weighted score should be between 0 and 1, got {weighted_score}"
 
     # Test ConfidenceFactors to_dict method
     factors_dict = confidence_factors.to_dict()
-    assert isinstance(factors_dict, dict), (
-        "ConfidenceFactors to_dict should return a dictionary"
-    )
-    assert "morphological_complexity" in factors_dict, (
-        "Dictionary should contain 'morphological_complexity' key"
-    )
-    assert "weighted_score" in factors_dict, (
-        "Dictionary should contain calculated 'weighted_score'"
-    )
+    assert isinstance(
+        factors_dict, dict
+    ), "ConfidenceFactors to_dict should return a dictionary"
+    assert (
+        "morphological_complexity" in factors_dict
+    ), "Dictionary should contain 'morphological_complexity' key"
+    assert (
+        "weighted_score" in factors_dict
+    ), "Dictionary should contain calculated 'weighted_score'"
     print("✓ ConfidenceFactors creation and validation passed")
 
     # Test DetectedNeologism creation and attributes
@@ -348,60 +346,60 @@ def test_neologism_models():
     )
 
     # Verify DetectedNeologism attributes
-    assert detected_neologism.term == "Wirklichkeitsbewusstsein", (
-        f"Expected 'Wirklichkeitsbewusstsein', got {detected_neologism.term}"
-    )
-    assert detected_neologism.confidence == 0.85, (
-        f"Expected 0.85, got {detected_neologism.confidence}"
-    )
-    assert detected_neologism.neologism_type == NeologismType.COMPOUND, (
-        f"Expected NeologismType.COMPOUND, got {detected_neologism.neologism_type}"
-    )
-    assert detected_neologism.start_pos == 10, (
-        f"Expected 10, got {detected_neologism.start_pos}"
-    )
-    assert detected_neologism.end_pos == 33, (
-        f"Expected 33, got {detected_neologism.end_pos}"
-    )
+    assert (
+        detected_neologism.term == "Wirklichkeitsbewusstsein"
+    ), f"Expected 'Wirklichkeitsbewusstsein', got {detected_neologism.term}"
+    assert (
+        detected_neologism.confidence == 0.85
+    ), f"Expected 0.85, got {detected_neologism.confidence}"
+    assert (
+        detected_neologism.neologism_type == NeologismType.COMPOUND
+    ), f"Expected NeologismType.COMPOUND, got {detected_neologism.neologism_type}"
+    assert (
+        detected_neologism.start_pos == 10
+    ), f"Expected 10, got {detected_neologism.start_pos}"
+    assert (
+        detected_neologism.end_pos == 33
+    ), f"Expected 33, got {detected_neologism.end_pos}"
     assert (
         detected_neologism.sentence_context
         == "Das Wirklichkeitsbewusstsein ist wichtig."
     ), f"Expected sentence context, got {detected_neologism.sentence_context}"
-    assert detected_neologism.page_number == 42, (
-        f"Expected 42, got {detected_neologism.page_number}"
-    )
-    assert len(detected_neologism.translation_suggestions) == 2, (
-        f"Expected 2 translation suggestions, got {len(detected_neologism.translation_suggestions)}"
-    )
-    assert len(detected_neologism.related_terms) == 3, (
-        f"Expected 3 related terms, got {len(detected_neologism.related_terms)}"
-    )
+    assert (
+        detected_neologism.page_number == 42
+    ), f"Expected 42, got {detected_neologism.page_number}"
+    assert (
+        len(detected_neologism.translation_suggestions) == 2
+    ), f"Expected 2 translation suggestions, got {len(detected_neologism.translation_suggestions)}"
+    assert (
+        len(detected_neologism.related_terms) == 3
+    ), f"Expected 3 related terms, got {len(detected_neologism.related_terms)}"
 
     # Test confidence_level property
     confidence_level = detected_neologism.confidence_level
-    assert confidence_level == ConfidenceLevel.HIGH, (
-        f"Expected ConfidenceLevel.HIGH for confidence 0.85, got {confidence_level}"
-    )
+    assert (
+        confidence_level == ConfidenceLevel.HIGH
+    ), f"Expected ConfidenceLevel.HIGH for confidence 0.85, got {confidence_level}"
 
     # Test DetectedNeologism to_dict method
     neologism_dict = detected_neologism.to_dict()
-    assert isinstance(neologism_dict, dict), (
-        "DetectedNeologism to_dict should return a dictionary"
-    )
+    assert isinstance(
+        neologism_dict, dict
+    ), "DetectedNeologism to_dict should return a dictionary"
     assert "term" in neologism_dict, "Dictionary should contain 'term' key"
     assert "confidence" in neologism_dict, "Dictionary should contain 'confidence' key"
-    assert "confidence_level" in neologism_dict, (
-        "Dictionary should contain 'confidence_level' key"
-    )
-    assert "morphological_analysis" in neologism_dict, (
-        "Dictionary should contain 'morphological_analysis' key"
-    )
-    assert neologism_dict["term"] == "Wirklichkeitsbewusstsein", (
-        "Dictionary should preserve term value"
-    )
-    assert neologism_dict["confidence_level"] == "high", (
-        "Dictionary should contain confidence level as string"
-    )
+    assert (
+        "confidence_level" in neologism_dict
+    ), "Dictionary should contain 'confidence_level' key"
+    assert (
+        "morphological_analysis" in neologism_dict
+    ), "Dictionary should contain 'morphological_analysis' key"
+    assert (
+        neologism_dict["term"] == "Wirklichkeitsbewusstsein"
+    ), "Dictionary should preserve term value"
+    assert (
+        neologism_dict["confidence_level"] == "high"
+    ), "Dictionary should contain confidence level as string"
 
     # Test DetectedNeologism to_json method
     neologism_json = detected_neologism.to_json()

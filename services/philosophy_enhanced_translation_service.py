@@ -9,7 +9,7 @@ import re
 import time
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable
 
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
 from models.user_choice_models import ChoiceType, UserChoice
@@ -123,7 +123,7 @@ class NeologismPreservationResult:
 
     original_text: str
     translated_text: str
-    neologism_analysis: Optional[NeologismAnalysis]
+    neologism_analysis: NeologismAnalysis | None
     neologisms_preserved: list[DetectedNeologism]
     user_choices_applied: list[UserChoice]
     preservation_markers: dict[str, str]  # Maps placeholders to original terms
@@ -154,10 +154,10 @@ class PhilosophyEnhancedTranslationService:
 
     def __init__(
         self,
-        translation_service: Optional[TranslationService] = None,
-        neologism_detector: Optional[NeologismDetector] = None,
-        user_choice_manager: Optional[UserChoiceManager] = None,
-        terminology_path: Optional[str] = None,
+        translation_service: TranslationService | None = None,
+        neologism_detector: NeologismDetector | None = None,
+        user_choice_manager: UserChoiceManager | None = None,
+        terminology_path: str | None = None,
         preserve_neologisms_by_default: bool = True,
         neologism_confidence_threshold: float = 0.5,
         chunk_size: int = 2000,
@@ -228,10 +228,8 @@ class PhilosophyEnhancedTranslationService:
         source_lang: str,
         target_lang: str,
         provider: str = "auto",
-        session_id: Optional[str] = None,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
+        session_id: str | None = None,
+        progress_callback: Callable[[PhilosophyTranslationProgress], None] | None = None,
     ) -> NeologismPreservationResult:
         """Async version: Translate text with integrated neologism detection and user choice handling.
 
@@ -301,10 +299,8 @@ class PhilosophyEnhancedTranslationService:
                 progress,
                 progress_callback,
             )
-            if text.strip() and translated_text == pres.modified_text:
-                # Ensure translated text differs slightly to satisfy downstream expectations
-                translated_text = pres.modified_text + " "
-
+            # Let downstream handle identical translations naturally
+            # If this is truly needed, document the specific downstream requirement
             # Step 4: Restore preserved neologisms
             logger.info("Restoring preserved neologisms in translated text")
             preservation_data = PreservationData(
@@ -372,10 +368,8 @@ class PhilosophyEnhancedTranslationService:
         source_lang: str,
         target_lang: str,
         provider: str = "auto",
-        session_id: Optional[str] = None,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
+        session_id: str | None = None,
+        progress_callback: Callable[[PhilosophyTranslationProgress], None] | None = None,
     ) -> NeologismPreservationResult:
         """Synchronous wrapper: Translate text with integrated neologism detection and user choice handling.
 
@@ -403,42 +397,29 @@ class PhilosophyEnhancedTranslationService:
         target_lang: str,
         provider: str = "auto",
         session_id: Optional[str] = None,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
-    ):
-        """Hybrid wrapper: async callers can await a coroutine returning dicts; sync callers get objects.
-
-        - In async contexts (running event loop): returns a coroutine that resolves to list[dict]
-        - In sync contexts: returns list[NeologismPreservationResult]
-        """
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            # No running loop: return objects directly
-            return asyncio.run(
-                self._translate_batch_with_neologism_handling_async(
-                    texts,
-                    source_lang,
-                    target_lang,
-                    provider,
-                    session_id,
-                    progress_callback,
-                )
+        progress_callback: Optional[Callable[[PhilosophyTranslationProgress], None]] = None,
+    ) -> list[NeologismPreservationResult]:
+        """Synchronous batch translation."""
+        return asyncio.run(
+            self._translate_batch_with_neologism_handling_async(
+                texts, source_lang, target_lang, provider, session_id, progress_callback
             )
+        )
 
-        async def _runner():
-            res = await self._translate_batch_with_neologism_handling_async(
-                texts,
-                source_lang,
-                target_lang,
-                provider,
-                session_id,
-                progress_callback,
-            )
-            return [r.to_dict() for r in res]
+    async def translate_batch_with_neologism_handling_async(
+        self,
+        texts: list[str],
+        source_lang: str,
+        target_lang: str,
+        provider: str = "auto",
+        session_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[PhilosophyTranslationProgress], None]] = None,
+    ) -> list[NeologismPreservationResult]:
+        """Asynchronous batch translation."""
+        return await self._translate_batch_with_neologism_handling_async(
+            texts, source_lang, target_lang, provider, session_id, progress_callback
+        )
 
-        return _runner()
 
     async def _translate_batch_with_neologism_handling_async(
         self,
@@ -446,10 +427,8 @@ class PhilosophyEnhancedTranslationService:
         source_lang: str,
         target_lang: str,
         provider: str = "auto",
-        session_id: Optional[str] = None,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
+        session_id: str | None = None,
+        progress_callback: Callable[[PhilosophyTranslationProgress], None] | None = None,
     ) -> list[NeologismPreservationResult]:
         """Translate a batch of texts with neologism handling.
 
@@ -471,10 +450,10 @@ class PhilosophyEnhancedTranslationService:
         progress.total_chunks = len(texts)
 
         # Step 1: Detect and preserve per-text
-        analyses: list[Optional[NeologismAnalysis]] = []
+        analyses: list[NeologismAnalysis | None] = []
         modified_texts: list[str] = []
-        markers_list: list[Dict[str, str]] = []
-        preserved_list: list[List[DetectedNeologism]] = []
+        markers_list: list[dict[str, str]] = []
+        preserved_list: list[list[DetectedNeologism]] = []
 
         for i, text in enumerate(texts):
             try:
@@ -546,9 +525,7 @@ class PhilosophyEnhancedTranslationService:
         self,
         text: str,
         progress: PhilosophyTranslationProgress,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
+        progress_callback: Callable[[PhilosophyTranslationProgress], None] | None = None,
     ) -> NeologismAnalysis:
         """Detect neologisms in text asynchronously."""
         # Run neologism detection in a thread to avoid blocking
@@ -578,11 +555,9 @@ class PhilosophyEnhancedTranslationService:
         self,
         text: str,
         analysis: NeologismAnalysis,
-        session_id: Optional[str],
+        session_id: str | None,
         progress: PhilosophyTranslationProgress,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
+        progress_callback: Callable[[PhilosophyTranslationProgress], None] | None = None,
     ):
         """Apply user choices to detected neologisms."""
         preservation_markers: dict[str, str] = {}
@@ -632,7 +607,7 @@ class PhilosophyEnhancedTranslationService:
 
     def _apply_choice_to_text(
         self, text: str, neologism: DetectedNeologism, choice: UserChoice
-    ) -> tuple[str, Optional[str]]:
+    ) -> tuple[str, str | None]:
         """Apply a user choice to text."""
         if choice.choice_type == ChoiceType.PRESERVE:
             # Preserve the term as-is with a marker
@@ -736,9 +711,7 @@ class PhilosophyEnhancedTranslationService:
         target_lang: str,
         provider: str,
         progress: PhilosophyTranslationProgress,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
+        progress_callback: Callable[[PhilosophyTranslationProgress], None] | None = None,
     ) -> str:
         """Translate text with preserved markers."""
         # Use the existing translation service (supports sync/async)
@@ -762,9 +735,7 @@ class PhilosophyEnhancedTranslationService:
         translated_text: str,
         preservation_data: PreservationData,
         progress: PhilosophyTranslationProgress,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
+        progress_callback: Callable[[PhilosophyTranslationProgress], None] | None = None,
     ) -> str:
         """Restore preserved neologisms in translated text."""
         restored_text = translated_text
@@ -790,10 +761,8 @@ class PhilosophyEnhancedTranslationService:
         source_lang: str,
         target_lang: str,
         provider: str = "auto",
-        session_id: Optional[str] = None,
-        progress_callback: Optional[
-            Callable[[PhilosophyTranslationProgress], None]
-        ] = None,
+        session_id: str | None = None,
+        progress_callback: Callable[[PhilosophyTranslationProgress], None] | None = None,
     ) -> dict[str, Any]:
         """Translate document content with neologism handling.
 
@@ -1041,10 +1010,8 @@ class PhilosophyEnhancedTranslationService:
     # Convenience functions for easy integration
 
 
-
-
 def create_philosophy_enhanced_translation_service(
-    terminology_path: Optional[str] = None,
+    terminology_path: str | None = None,
     db_path: str = "database/user_choices.db",
     **kwargs,
 ) -> PhilosophyEnhancedTranslationService:
@@ -1061,8 +1028,8 @@ async def translate_with_philosophy_awareness(
     source_lang: str,
     target_lang: str,
     provider: str = "auto",
-    session_id: Optional[str] = None,
-    terminology_path: Optional[str] = None,
+    session_id: str | None = None,
+    terminology_path: str | None = None,
 ) -> dict[str, Any]:
     """Quick function to translate text with philosophy awareness."""
     service = create_philosophy_enhanced_translation_service(terminology_path)

@@ -5,8 +5,17 @@ Modal deployment of the Dolphin OCR model for better performance and control.
 """
 
 from typing import Any, Dict, List
-
 import modal
+import logging
+
+logger = logging.getLogger("dolphin_ocr")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
+    )
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 # Modal App Configuration
 app = modal.App("dolphin-ocr-service")
@@ -71,7 +80,7 @@ def download_model():
     """Download and cache the Dolphin OCR model."""
     from huggingface_hub import snapshot_download
 
-    print("Downloading Dolphin OCR model...")
+    logger.info("Downloading Dolphin OCR model...")
 
     # Download the model to the persistent volume
     try:
@@ -81,10 +90,10 @@ def download_model():
             local_dir_use_symlinks=False,
         )
     except Exception as e:
-        print(f"Failed to download model: {e}")
+        logger.exception(f"Failed to download model: {e}")
         raise
 
-    print(f"Model downloaded to: {model_path}")
+    logger.info(f"Model downloaded to: {model_path}")
     return model_path
 
 
@@ -104,8 +113,8 @@ class DolphinOCRProcessor:
         import torch
         from transformers import AutoModelForVision2Seq, AutoProcessor
 
-        print("Initializing Dolphin OCR processor...")
-        print("Loading Dolphin OCR model and processor (one-time initialization)...")
+        logger.info("Initializing Dolphin OCR processor...")
+        logger.info("Loading Dolphin OCR model and processor (one-time initialization)...")
 
         # Load the model and processor once during initialization
         # Use the path returned by snapshot_download or a consistent location
@@ -119,8 +128,11 @@ class DolphinOCRProcessor:
             torch_dtype=torch.float16,
             device_map="auto",
         )
-        print("✅ Dolphin OCR model and processor loaded successfully!")
-        print(f"Model device: {self.model.device}")
+        
+        # Set model to evaluation mode
+        self.model.eval()
+        
+        logger.info("✅ Dolphin OCR model and processor loaded successfully! Device: %s", self.model.device)
 
     @modal.method()
     def process_pdf(self, pdf_bytes: bytes) -> Dict[str, Any]:
@@ -135,7 +147,7 @@ class DolphinOCRProcessor:
         import torch
         from pdf2image import convert_from_bytes
 
-        print("Processing PDF with cached Dolphin OCR model...")
+        logger.info("Processing PDF with cached Dolphin OCR model...")
 
         # Convert PDF to images
         try:
@@ -146,15 +158,15 @@ class DolphinOCRProcessor:
                 thread_count=2,
             )
         except Exception as e:
-            print(f"Failed to convert PDF: {e}")
+            logger.exception("Failed to convert PDF")
             raise ValueError(f"PDF conversion failed: {e!s}")
 
-        print(f"Processing {len(images)} pages...")
+        logger.debug("Processing %d pages...", len(images))
 
         results = []
 
         for page_num, image in enumerate(images):
-            print(f"Processing page {page_num + 1}/{len(images)}")
+            logger.debug("Processing page %d/%d", page_num + 1, len(images))
 
             # Process the image with Dolphin using cached model and processor
             inputs = self.processor(images=image, return_tensors="pt").to(
@@ -380,7 +392,7 @@ def dolphin_ocr_endpoint(
             "status": "failed",
         }
     except Exception as e:
-        print(f"Unexpected error in OCR endpoint: {e}")
+        logger.exception("Unexpected error in OCR endpoint")
         return {
             "error": "Internal server error during OCR processing",
             "status": "failed",
@@ -390,9 +402,9 @@ def dolphin_ocr_endpoint(
 @app.function()
 def setup_dolphin_service():
     """Initialize the Dolphin service by downloading the model."""
-    print("Setting up Dolphin OCR service...")
+    logger.info("Setting up Dolphin OCR service...")
     model_path = download_model.remote()
-    print(f"Dolphin service ready! Model at: {model_path}")
+    logger.info("Dolphin service ready! Model at: %s", model_path)
     return model_path
 
 

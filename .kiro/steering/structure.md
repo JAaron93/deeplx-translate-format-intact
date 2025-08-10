@@ -128,6 +128,6 @@ s lsines buin allconta` ces/n `servivices ittern
 ##tecture Pa Archi##
 ```
 
-n logsApplicatio        # s/         
+n logsApplicatio        # s/  
 logssing filesroceemporary p       # T       emp/   taging
 tument s Output doc   #

@@ -521,9 +521,9 @@ class TestCompletePhilosophyEnhancedIntegration:
 
         # Check memory usage against configurable limit
         memory_limit = get_memory_limit_mb()
-        assert memory_increase < memory_limit, (
-            f"Memory increase {memory_increase:.1f}MB exceeds limit {memory_limit}MB"
-        )
+        assert (
+            memory_increase < memory_limit
+        ), f"Memory increase {memory_increase:.1f}MB exceeds limit {memory_limit}MB"
 
     def test_12_complete_end_to_end_workflow(self, temp_document_file):
         """Test 12: Complete end-to-end workflow test."""

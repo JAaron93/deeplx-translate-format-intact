@@ -25,8 +25,6 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          # Ensure tools are present even if not in requirements files
-          pip install ruff mypy pytest pytest-cov
 
       - name: Ruff (lint)
         run: |
@@ -55,7 +53,6 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          pip install pytest pytest-cov
 
       - name: Run tests with coverage gate
         env:
@@ -87,4 +84,3 @@ jobs:
       - name: Run targeted philosophy load tests (optional)
         run: |
           pytest -q -m load tests/test_translate_content_philosophy_load.py
-
