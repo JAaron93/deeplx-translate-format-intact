@@ -105,8 +105,15 @@ def test_convert_multi_page_pdf_and_optimize_each(tmp_path):
 
 
 def test_convert_corrupt_pdf_raises(tmp_path):
+    # Skip if pdf2image is not available in the environment
+    pytest.importorskip("pdf2image")
+
+    from pdf2image import exceptions as pdf_exceptions
+
     converter = PDFToImageConverter()
     bad = tmp_path / "broken.pdf"
     bad.write_bytes(b"not-a-pdf")
-    with pytest.raises(Exception):
+    with pytest.raises(
+        (pdf_exceptions.PDFPageCountError, pdf_exceptions.PDFSyntaxError)
+    ):
         converter.convert_pdf_to_images(bad)

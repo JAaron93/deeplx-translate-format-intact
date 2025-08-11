@@ -28,7 +28,7 @@ class PDFToImageConverter:
     """Convert PDF documents to images for OCR processing.
 
     Parameters
-    - dpi: Output resolution (dots per inch). Recommended 300–600 for OCR
+    - dpi: Output resolution (dots per inch). Recommended 300-600 for OCR
     - image_format: Output image format (e.g., "PNG", "JPEG")
     - poppler_path: Optional poppler binaries path (if not on PATH)
 
@@ -116,6 +116,7 @@ class BytesReader:
     """
 
     def __init__(self, data: bytes) -> None:
+        """Initialize the in-memory reader with the provided bytes buffer."""
         from io import BytesIO
 
         self._bio = BytesIO(data)
@@ -149,12 +150,15 @@ class BytesWriter:
     """A minimal in-memory bytes writer that exposes getvalue()."""
 
     def __init__(self) -> None:
+        """Initialize an empty in-memory buffer for writing bytes."""
         from io import BytesIO
 
         self._bio = BytesIO()
 
     def write(self, b: bytes) -> int:  # pragma: no cover - passthrough
+        """Write bytes to the internal buffer and return the number written."""
         return self._bio.write(b)
 
     def getvalue(self) -> bytes:
+        """Return the full contents of the internal buffer as bytes."""
         return self._bio.getvalue()
