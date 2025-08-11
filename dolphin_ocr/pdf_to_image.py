@@ -19,7 +19,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Sequence
 
-
 _DEFAULT_DPI = 300
 _DEFAULT_FORMAT = "PNG"  # Common, lossless for OCR
 
@@ -101,9 +100,7 @@ class PDFToImageConverter:
             # Basic normalization; conservative to avoid overflow and detail loss
             # - Only map near-white pixels to pure white
             # - Clamp scaled values to 255
-            im = im.point(
-                lambda x: 255 if x > 250 else min(255, int(x * 1.1))
-            )
+            im = im.point(lambda x: 255 if x > 250 else min(255, int(x * 1.1)))
             im = im.filter(ImageFilter.SHARPEN)
 
             out = BytesWriter()
@@ -161,5 +158,3 @@ class BytesWriter:
 
     def getvalue(self) -> bytes:
         return self._bio.getvalue()
-
-

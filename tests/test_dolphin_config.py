@@ -8,6 +8,7 @@ from dolphin_ocr.config import (
     QualityThresholds,
 )
 
+
 def test_dolphin_config_validation(monkeypatch):
     monkeypatch.setenv("HF_TOKEN", "testtoken")
     monkeypatch.setenv("DOLPHIN_MODAL_ENDPOINT", "https://example.com/endpoint")
@@ -22,6 +23,7 @@ def test_performance_config_valid_dpi(monkeypatch, dpi):
     monkeypatch.setenv("PDF_DPI", str(dpi))
     perf = PerformanceConfig()
     assert perf.dpi == dpi
+
 
 @pytest.mark.parametrize("invalid_dpi", [149, 601, 0, -100])
 def test_performance_config_invalid_dpi(monkeypatch, invalid_dpi):
@@ -48,6 +50,8 @@ def test_alert_thresholds_ranges(monkeypatch):
     monkeypatch.setenv("ALERT_ERROR_RATE_THRESHOLD", "0.1")
     monkeypatch.setenv("ALERT_ERROR_RATE_WINDOW", "600")
     monkeypatch.setenv("ALERT_CRITICAL_ERROR_THRESHOLD", "5")
+
+
 def test_configuration_manager_summary(monkeypatch):
     monkeypatch.setenv("HF_TOKEN", "abc")
     monkeypatch.setenv(
@@ -77,6 +81,8 @@ def test_configuration_manager_summary(monkeypatch):
     assert isinstance(summary["dpi"], int)
     assert isinstance(summary["error_rate_threshold"], float)
     assert isinstance(summary["min_quality_score"], float)
+
+
 def test_quality_thresholds_ranges(monkeypatch):
     monkeypatch.setenv("MIN_OCR_CONFIDENCE", "0.8")
     monkeypatch.setenv("MIN_TRANSLATION_CONFIDENCE", "0.7")
@@ -103,22 +109,30 @@ def test_configuration_manager_validation_failures(monkeypatch):
 def test_performance_config_validation_failures(monkeypatch):
     # Out-of-range concurrency
     monkeypatch.setenv("MAX_CONCURRENT_REQUESTS", "0")
-    with pytest.raises(ValueError, match="MAX_CONCURRENT_REQUESTS must be between 1 and 100"):
+    with pytest.raises(
+        ValueError, match="MAX_CONCURRENT_REQUESTS must be between 1 and 100"
+    ):
         PerformanceConfig()
     # Out-of-range processing timeout
     monkeypatch.setenv("MAX_CONCURRENT_REQUESTS", "10")
     monkeypatch.setenv("PROCESSING_TIMEOUT", "2000")
-    with pytest.raises(ValueError, match="PROCESSING_TIMEOUT must be between 1 and 1800 seconds"):
+    with pytest.raises(
+        ValueError, match="PROCESSING_TIMEOUT must be between 1 and 1800 seconds"
+    ):
         PerformanceConfig()
 
 
 def test_alert_thresholds_validation_failures(monkeypatch):
     monkeypatch.setenv("ALERT_ERROR_RATE_THRESHOLD", "0.0")
-    with pytest.raises(ValueError, match="ALERT_ERROR_RATE_THRESHOLD must be between 0.01 and 0.5"):
+    with pytest.raises(
+        ValueError, match="ALERT_ERROR_RATE_THRESHOLD must be between 0.01 and 0.5"
+    ):
         AlertThresholds()
 
 
 def test_quality_thresholds_validation_failures(monkeypatch):
     monkeypatch.setenv("MIN_OCR_CONFIDENCE", "0.05")
-    with pytest.raises(ValueError, match="MIN_OCR_CONFIDENCE must be between 0.1 and 1.0"):
+    with pytest.raises(
+        ValueError, match="MIN_OCR_CONFIDENCE must be between 0.1 and 1.0"
+    ):
         QualityThresholds()

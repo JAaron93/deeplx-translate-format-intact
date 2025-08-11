@@ -19,6 +19,7 @@ def test_convert_pdf_to_images_roundtrip(tmp_path, dpi, fmt):
     # Validate actual image format using Pillow
     try:
         from io import BytesIO
+
         from PIL import Image
     except Exception:  # pragma: no cover - if Pillow absent in env
         pytest.skip("Pillow not available to verify image format")
@@ -70,6 +71,7 @@ def test_optimize_image_changes_bytes_when_pillow_available():
     # Skip if Pillow is unavailable
     try:
         from io import BytesIO
+
         from PIL import Image
     except Exception:  # pragma: no cover
         pytest.skip("Pillow not available")
@@ -108,4 +110,3 @@ def test_convert_corrupt_pdf_raises(tmp_path):
     bad.write_bytes(b"not-a-pdf")
     with pytest.raises(Exception):
         converter.convert_pdf_to_images(bad)
-
