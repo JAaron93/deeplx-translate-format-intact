@@ -14,10 +14,18 @@ libraries at module import time to keep startup overhead low.
 
 from __future__ import annotations
 
+import mmap
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Sequence
+
+from dolphin_ocr.errors import (
+    EncryptedPdfError,
+    InvalidDocumentFormatError,
+    MemoryExhaustionError,
+)
 
 _DEFAULT_DPI = 300
 _DEFAULT_FORMAT = "PNG"  # Common, lossless for OCR
@@ -49,6 +57,10 @@ class PDFToImageConverter:
         the configured DPI and image format. The function renders page-wise to
         temporary files to reduce peak memory usage.
         """
+        # Validate file early before invoking heavy dependencies
+        pdf_path = Path(pdf_path)
+        self._validate_pdf_or_raise(pdf_path)
+
         # Lazy import to avoid heavy deps at import time
         try:
             from pdf2image import convert_from_path
@@ -58,28 +70,129 @@ class PDFToImageConverter:
                 "ensure Poppler is available on your system."
             ) from err
 
-        pdf_path = Path(pdf_path)
-        if not pdf_path.exists():
-            raise FileNotFoundError(f"PDF not found: {pdf_path}")
-
         images: list[bytes] = []
-        with TemporaryDirectory(prefix="dolphin_pdf2img_") as tmp_dir:
-            tmp = Path(tmp_dir)
-            # Render to temp files; get paths back
-            paths: Sequence[str] = convert_from_path(
-                str(pdf_path),
-                dpi=self.dpi,
-                fmt=self.image_format.lower(),
-                output_folder=str(tmp),
-                paths_only=True,
-                poppler_path=self.poppler_path,
-            )
+        try:
+            with TemporaryDirectory(prefix="dolphin_pdf2img_") as tmp_dir:
+                tmp = Path(tmp_dir)
+                # Render to temp files; get paths back
+                paths: Sequence[str] = convert_from_path(
+                    str(pdf_path),
+                    dpi=self.dpi,
+                    fmt=self.image_format.lower(),
+                    output_folder=str(tmp),
+                    paths_only=True,
+                    poppler_path=self.poppler_path,
+                )
 
-            for p in paths:
-                data = Path(p).read_bytes()
-                images.append(data)
+                for p in paths:
+                    data = Path(p).read_bytes()
+                    images.append(data)
+        except MemoryError as mem_err:
+            raise MemoryExhaustionError(
+                context={
+                    "path": str(pdf_path),
+                    "dpi": self.dpi,
+                    "image_format": self.image_format,
+                }
+            ) from mem_err
+        except Exception as err:
+            # Map common pdf2image/poppler failures to standardized errors
+            message = str(err)
+            lower = message.lower()
+            invalid_markers = (
+                "syntax error",
+                "not a pdf",
+                "unable to get page count",
+                "couldn't find trailer dictionary",
+                "corrupt",
+            )
+            password_markers = ("password", "encrypted", "/encrypt")
+
+            if any(m in lower for m in password_markers):
+                raise EncryptedPdfError(context={"path": str(pdf_path)}) from err
+            if any(m in lower for m in invalid_markers):
+                raise InvalidDocumentFormatError(
+                    context={"path": str(pdf_path), "reason": message}
+                ) from err
+            # Unknown error: re-raise as-is to avoid masking issues
+            raise
 
         return images
+
+    # ---------- Internal helpers ----------
+    def _validate_pdf_or_raise(self, pdf_path: Path) -> None:
+        """Validate that ``pdf_path`` is an existing, non-encrypted PDF.
+
+        Raises InvalidDocumentFormatError for unsupported formats or corrupt
+        files and EncryptedPdfError for encrypted PDFs.
+        """
+        if not pdf_path.exists():
+            raise InvalidDocumentFormatError(
+                context={"path": str(pdf_path), "reason": "File does not exist"}
+            )
+
+        # Extension check (case-insensitive)
+        if pdf_path.suffix.lower() != ".pdf":
+            raise InvalidDocumentFormatError(
+                context={
+                    "path": str(pdf_path),
+                    "reason": f"Unsupported extension: {pdf_path.suffix}",
+                }
+            )
+
+        # Magic number check
+        try:
+            with pdf_path.open("rb") as f:
+                header = f.read(5)
+        except OSError as os_err:
+            raise InvalidDocumentFormatError(
+                context={"path": str(pdf_path), "reason": str(os_err)}
+            ) from os_err
+
+        if header != b"%PDF-":
+            raise InvalidDocumentFormatError(
+                context={
+                    "path": str(pdf_path),
+                    "reason": "Missing %PDF- header",
+                }
+            )
+
+        # Best-effort encrypted PDF detection using a lightweight scan
+        if self._is_encrypted_pdf(pdf_path):
+            raise EncryptedPdfError(context={"path": str(pdf_path)})
+
+    @staticmethod
+    def _is_encrypted_pdf(pdf_path: Path) -> bool:
+        """Return True if the PDF appears to be encrypted.
+
+        Heuristic: search for '/Encrypt' token anywhere in the file using mmap
+        when available. Falls back to a bounded chunked scan. False negatives
+        are possible; downstream conversion will still be guarded.
+        """
+        with suppress(Exception), pdf_path.open("rb") as f, mmap.mmap(
+            f.fileno(), length=0, access=mmap.ACCESS_READ
+        ) as mm:
+            return mm.find(b"/Encrypt") != -1
+        # Fallback: scan first few megabytes
+        try:
+            max_scan = 8 * 1024 * 1024  # 8 MiB
+            read = 0
+            chunk = 256 * 1024
+            with pdf_path.open("rb") as f:
+                overlap = b""
+                while read < max_scan:
+                    data = f.read(chunk)
+                    if not data:
+                        break
+                    haystack = overlap + data
+                    if b"/Encrypt" in haystack:
+                        return True
+                    read += len(data)
+                    overlap = haystack[-8:]
+        except Exception:
+            # If detection fails, be conservative and allow downstream handling
+            return False
+        return False
 
     def optimize_image_for_ocr(self, image_bytes: bytes) -> bytes:
         """Apply simple Pillow-based optimizations for OCR.

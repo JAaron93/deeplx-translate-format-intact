@@ -1,4 +1,5 @@
 """Central configuration management for Dolphin OCR.
+
 Implements environment-backed configuration objects and a manager with
 validation and a summarized environment view, aligned with the design
 document.
@@ -293,12 +294,7 @@ class ConfigurationManager:
                 self.quality_thresholds.min_overall_quality_score
             ),
             "hf_token_configured": bool(self.dolphin.hf_token),
--            "max_retries": int(getattr(self.dolphin, "max_retries", 0)),
--            "batch_size": int(getattr(self.dolphin, "batch_size", 0)),
--            "processing_timeout": int(
--                getattr(self.performance, "processing_timeout", 0)
--            ),
-+            "max_retries": self.dolphin.max_retries,
-+            "batch_size": self.dolphin.batch_size,
-+            "processing_timeout": self.performance.processing_timeout,
+            "max_retries": self.dolphin.max_retries,
+            "batch_size": self.dolphin.batch_size,
+            "processing_timeout": self.performance.processing_timeout,
         }

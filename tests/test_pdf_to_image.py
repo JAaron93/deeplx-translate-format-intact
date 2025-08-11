@@ -1,11 +1,16 @@
+import sys
+import types
+
 import pytest
 
+from dolphin_ocr.errors import EncryptedPdfError, InvalidDocumentFormatError
 from dolphin_ocr.pdf_to_image import PDFToImageConverter
 from tests.utils_dolphin import get_sample_pdfs, load_asset_bytes
 
 
 @pytest.mark.parametrize("dpi,fmt", [(300, "PNG"), (200, "JPEG")])
 def test_convert_pdf_to_images_roundtrip(tmp_path, dpi, fmt):
+    pytest.importorskip("pdf2image")
     converter = PDFToImageConverter(dpi=dpi, image_format=fmt)
     sample, _, _ = get_sample_pdfs()
     pdf_path = tmp_path / sample
@@ -32,6 +37,7 @@ def test_convert_pdf_to_images_roundtrip(tmp_path, dpi, fmt):
 
 
 def test_optimize_image_passthrough_when_pillow_missing(tmp_path, monkeypatch):
+    pytest.importorskip("pdf2image")
     converter = PDFToImageConverter()
 
     # Force import error path by making PIL import fail
@@ -63,7 +69,7 @@ def test_optimize_image_passthrough_when_pillow_missing(tmp_path, monkeypatch):
 def test_convert_pdf_to_images_nonexistent_path(tmp_path):
     converter = PDFToImageConverter()
     missing = tmp_path / "nope.pdf"
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(InvalidDocumentFormatError):
         converter.convert_pdf_to_images(missing)
 
 
@@ -92,6 +98,7 @@ def test_optimize_image_changes_bytes_when_pillow_available():
 
 
 def test_convert_multi_page_pdf_and_optimize_each(tmp_path):
+    pytest.importorskip("pdf2image")
     converter = PDFToImageConverter(dpi=200, image_format="PNG")
     multi_pdf, _, _ = get_sample_pdfs()
     pdf_path = tmp_path / multi_pdf
@@ -105,15 +112,63 @@ def test_convert_multi_page_pdf_and_optimize_each(tmp_path):
 
 
 def test_convert_corrupt_pdf_raises(tmp_path):
-    # Skip if pdf2image is not available in the environment
-    pytest.importorskip("pdf2image")
-
-    from pdf2image import exceptions as pdf_exceptions
-
     converter = PDFToImageConverter()
     bad = tmp_path / "broken.pdf"
     bad.write_bytes(b"not-a-pdf")
-    with pytest.raises(
-        (pdf_exceptions.PDFPageCountError, pdf_exceptions.PDFSyntaxError)
-    ):
+    # Fails at header validation before invoking pdf2image
+    with pytest.raises(InvalidDocumentFormatError):
         converter.convert_pdf_to_images(bad)
+
+
+def test_unsupported_extension_raises(tmp_path):
+    converter = PDFToImageConverter()
+    not_pdf = tmp_path / "file.txt"
+    not_pdf.write_text("hello")
+    with pytest.raises(InvalidDocumentFormatError) as exc:
+        converter.convert_pdf_to_images(not_pdf)
+    assert getattr(exc.value, "error_code", None) == "DOLPHIN_005"
+
+
+def test_encrypted_pdf_detection_raises(tmp_path):
+    # Minimal PDF header with /Encrypt marker
+    encrypted = tmp_path / "secret.pdf"
+    encrypted.write_bytes(b"%PDF-1.4\n1 0 obj\n<< /Encrypt true >>\nendobj\n")
+    converter = PDFToImageConverter()
+    with pytest.raises(EncryptedPdfError) as exc:
+        converter.convert_pdf_to_images(encrypted)
+    # Encrypted PDFs are mapped to DOLPHIN_014 per errors; ensure class raised
+    assert getattr(exc.value, "error_code", None) == "DOLPHIN_014"
+
+
+def test_corrupt_pdf_header_error_code(tmp_path):
+    converter = PDFToImageConverter()
+    bad = tmp_path / "broken.pdf"
+    bad.write_bytes(b"not-a-pdf")
+    with pytest.raises(InvalidDocumentFormatError) as exc:
+        converter.convert_pdf_to_images(bad)
+    assert exc.value.error_code == "DOLPHIN_005"
+
+
+def test_memory_error_maps_to_dolphin_011(tmp_path, monkeypatch):
+    # Create a minimal valid-looking PDF file (header only)
+    pdf_path = tmp_path / "tiny.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4\n%%EOF\n")
+
+    # Inject a fake pdf2image module that raises MemoryError
+    fake_pdf2image = types.ModuleType("pdf2image")
+
+    def _raise_memory_error(*_args, **_kwargs):
+        raise MemoryError("simulated")
+
+    fake_pdf2image.convert_from_path = _raise_memory_error
+    monkeypatch.setitem(sys.modules, "pdf2image", fake_pdf2image)
+
+    converter = PDFToImageConverter()
+    with pytest.raises(Exception) as exc:
+        converter.convert_pdf_to_images(pdf_path)
+    # Ensure our standardized MemoryExhaustionError (DOLPHIN_011) is raised
+    err = exc.value
+    from dolphin_ocr.errors import MemoryExhaustionError
+
+    assert isinstance(err, MemoryExhaustionError)
+    assert getattr(err, "error_code", None) == "DOLPHIN_011"
