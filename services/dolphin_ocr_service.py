@@ -8,11 +8,33 @@ before a real endpoint is available. Error handling maps to standardized
 
 from __future__ import annotations
 
+import logging
 import os
+import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 import httpx
+
+try:
+    from dolphin_ocr.logging_config import (
+        get_logger as _get_logger,
+    )
+    from dolphin_ocr.logging_config import (
+        setup_logging as _setup_logging,
+    )
+
+    _setup_logging()
+    logger = _get_logger("dolphin_ocr.service")
+except Exception:  # pragma: no cover - fallback logger
+    logger = logging.getLogger("dolphin_ocr.service")
+    if not logger.handlers:
+        _handler = logging.StreamHandler()
+        _handler.setFormatter(
+            logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
+        )
+        logger.addHandler(_handler)
+    logger.setLevel(logging.INFO)
 
 from dolphin_ocr.errors import (
     ApiRateLimitError,
@@ -25,6 +47,8 @@ from dolphin_ocr.errors import (
 DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MiB per image
 DEFAULT_MAX_IMAGES = 32
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_BACKOFF_BASE_SECONDS = 0.5
 
 
 @dataclass
@@ -44,7 +68,16 @@ class DolphinOCRService:
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
     max_image_bytes: int = DEFAULT_MAX_IMAGE_BYTES
     max_images: int = DEFAULT_MAX_IMAGES
+    max_retries: int = DEFAULT_MAX_RETRIES
+    backoff_base_seconds: float = DEFAULT_BACKOFF_BASE_SECONDS
     _client: httpx.Client | None = None
+    _sleeper: Callable[[float], None] | None = None
+
+    # Simple performance counters
+    total_requests: int = 0
+    successful_requests: int = 0
+    failed_requests: int = 0
+    last_duration_ms: float = 0.0
 
     # -------------------- Public API --------------------
     def process_document_images(self, images: list[bytes]) -> dict[str, Any]:
@@ -75,58 +108,79 @@ class DolphinOCRService:
             )
 
         url = f"{endpoint.rstrip('/')}/process-images"
-        try:
-            with self._get_client() as client:
-                resp = client.post(
-                    url,
-                    headers=headers,
-                    files=files,
-                    timeout=self.timeout_seconds,
-                )
-        except httpx.ReadTimeout as err:
-            raise ServiceUnavailableError(
-                "OCR service timed out",
-                context={
-                    "endpoint": endpoint,
-                    "timeout": self.timeout_seconds,
-                },
-            ) from err
-        except httpx.RequestError as err:
-            raise ServiceUnavailableError(
-                "Network error contacting OCR service",
-                context={"endpoint": endpoint, "error": str(err)},
-            ) from err
 
-        # Map non-2xx statuses to standardized errors
-        if resp.status_code == 401 or resp.status_code == 403:
-            raise AuthenticationError(
-                context={"endpoint": endpoint, "status": resp.status_code}
-            )
-        if resp.status_code == 429:
-            raise ApiRateLimitError(
-                context={"endpoint": endpoint, "status": resp.status_code}
-            )
-        if 500 <= resp.status_code <= 599:
-            raise ServiceUnavailableError(
-                context={"endpoint": endpoint, "status": resp.status_code}
-            )
-        if resp.status_code >= 400:
-            raise OcrProcessingError(
-                context={
-                    "endpoint": endpoint,
-                    "status": resp.status_code,
-                    "body": resp.text[:500],
-                }
-            )
-
-        # Parse JSON body
+        attempts = 0
+        start = time.perf_counter()
         try:
-            return resp.json()
-        except ValueError as err:
-            raise OcrProcessingError(
-                "Invalid JSON response from OCR service",
-                context={"endpoint": endpoint, "body": resp.text[:500]},
-            ) from err
+            while True:
+                attempts += 1
+                try:
+                    with self._get_client() as client:
+                        resp = client.post(
+                            url,
+                            headers=headers,
+                            files=files,
+                            timeout=self.timeout_seconds,
+                        )
+                except httpx.ReadTimeout as err:
+                    self._record_metrics(start, success=False)
+                    raise ServiceUnavailableError(
+                        "OCR service timed out",
+                        context={
+                            "endpoint": endpoint,
+                            "timeout": self.timeout_seconds,
+                        },
+                    ) from err
+                except httpx.RequestError as err:
+                    self._record_metrics(start, success=False)
+                    raise ServiceUnavailableError(
+                        "Network error contacting OCR service",
+                        context={"endpoint": endpoint, "error": str(err)},
+                    ) from err
+
+                # Map non-2xx statuses to standardized errors
+                if resp.status_code in (401, 403):
+                    self._record_metrics(start, success=False)
+                    raise AuthenticationError(
+                        context={"endpoint": endpoint, "status": resp.status_code}
+                    )
+                if resp.status_code == 429 and attempts <= self.max_retries:
+                    delay = self._calculate_backoff_delay(attempts)
+                    logger.warning(
+                        "Rate limited (429). Retrying attempt %s/%s after %.2fs",
+                        attempts,
+                        self.max_retries,
+                        delay,
+                    )
+                    self._sleep(delay)
+                    continue
+                if resp.status_code == 429:
+                    self._record_metrics(start, success=False)
+                    raise ApiRateLimitError(
+                        context={"endpoint": endpoint, "status": resp.status_code}
+                    )
+                if 500 <= resp.status_code <= 599:
+                    self._record_metrics(start, success=False)
+                    raise ServiceUnavailableError(
+                        context={"endpoint": endpoint, "status": resp.status_code}
+                    )
+                if resp.status_code >= 400:
+                    self._record_metrics(start, success=False)
+                    raise OcrProcessingError(
+                        context={
+                            "endpoint": endpoint,
+                            "status": resp.status_code,
+                            "body": resp.text[:500],
+                        }
+                    )
+
+                # Success
+                data = self._parse_json(resp, endpoint)
+                self._record_metrics(start, success=True)
+                return data
+        finally:
+            # Count 1 public request regardless of retries
+            self.total_requests += 1
 
     # -------------------- Internals --------------------
     def _require_endpoint(self) -> str:
@@ -153,6 +207,45 @@ class DolphinOCRService:
         if self._client is not None:
             return self._client
         return httpx.Client()
+
+    def _sleep(self, seconds: float) -> None:
+        sleeper = self._sleeper or time.sleep
+        sleeper(max(0.0, seconds))
+
+    def _calculate_backoff_delay(self, attempt: int) -> float:
+        # attempt is 1-based
+        return self.backoff_base_seconds * (2 ** max(0, attempt - 1))
+
+    def _parse_json(self, resp: httpx.Response, endpoint: str) -> dict[str, Any]:
+        try:
+            return resp.json()
+        except ValueError as err:
+            raise OcrProcessingError(
+                "Invalid JSON response from OCR service",
+                context={"endpoint": endpoint, "body": resp.text[:500]},
+            ) from err
+
+    def _record_metrics(self, start: float, *, success: bool) -> None:
+        duration_ms = (time.perf_counter() - start) * 1000.0
+        self.last_duration_ms = duration_ms
+        if success:
+            self.successful_requests += 1
+        else:
+            self.failed_requests += 1
+        success_rate = (
+            (self.successful_requests / max(1, self.total_requests)) * 100.0
+            if self.total_requests
+            else 0.0
+        )
+        logger.info(
+            "dolphin_ocr_service_request duration_ms=%.2f success=%s total=%d ok=%d fail=%d success_rate=%.1f%%",
+            duration_ms,
+            success,
+            self.total_requests,
+            self.successful_requests,
+            self.failed_requests,
+            success_rate,
+        )
 
     def _validate_images(self, images: list[bytes]) -> None:
         """Validate number and size of images before making HTTP request.

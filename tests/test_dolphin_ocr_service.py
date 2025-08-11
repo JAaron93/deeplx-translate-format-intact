@@ -40,6 +40,25 @@ class _MockClient:
         return self._response
 
 
+class _MockClient429TwiceThen200:
+    """Simulate two 429 responses followed by 200 success."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def post(self, *_args, **_kwargs):
+        self.calls += 1
+        if self.calls <= 2:
+            return _MockResponse(429, {"error": "rate-limited"})
+        return _MockResponse(200, {"ok": True})
+
+
 def test_requires_endpoint(monkeypatch):
     svc = DolphinOCRService(hf_token="t", modal_endpoint=None)
     # Ensure env is empty for endpoint
@@ -115,3 +134,25 @@ def test_max_images_validation():
     assert svc.process_document_images([b"a", b"b"]) == {"ok": True}
     with pytest.raises(OcrProcessingError):
         svc.process_document_images([b"a", b"b", b"c"])
+
+
+def test_retry_mechanism_with_backoff():
+    svc = DolphinOCRService(hf_token="t", modal_endpoint="https://example")
+    # Inject mock client that returns 429 twice then 200
+    svc._client = _MockClient429TwiceThen200()
+    # Make backoff predictable and fast
+    sleeps: list[float] = []
+
+    def _fake_sleep(s: float):
+        sleeps.append(s)
+
+    svc._sleeper = _fake_sleep
+    svc.max_retries = 3
+    svc.backoff_base_seconds = 0.01
+
+    out = svc.process_document_images([b"x"])
+    assert out == {"ok": True}
+    # Ensure exponential backoff applied at least twice
+    assert len(sleeps) >= 2
+    assert sleeps[0] == pytest.approx(0.01, rel=1e-3)
+    assert sleeps[1] == pytest.approx(0.02, rel=1e-3)
