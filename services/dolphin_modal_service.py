@@ -4,9 +4,10 @@ This service replaces the HuggingFace Spaces API approach with a direct
 Modal deployment of the Dolphin OCR model for better performance and control.
 """
 
-from typing import Any, Dict, List
-import modal
 import logging
+from typing import Any, Dict, List
+
+import modal
 
 logger = logging.getLogger("dolphin_ocr")
 if not logger.handlers:
@@ -114,7 +115,9 @@ class DolphinOCRProcessor:
         from transformers import AutoModelForVision2Seq, AutoProcessor
 
         logger.info("Initializing Dolphin OCR processor...")
-        logger.info("Loading Dolphin OCR model and processor (one-time initialization)...")
+        logger.info(
+            "Loading Dolphin OCR model and processor (one-time initialization)..."
+        )
 
         # Load the model and processor once during initialization
         # Use the path returned by snapshot_download or a consistent location
@@ -128,11 +131,14 @@ class DolphinOCRProcessor:
             torch_dtype=torch.float16,
             device_map="auto",
         )
-        
+
         # Set model to evaluation mode
         self.model.eval()
-        
-        logger.info("✅ Dolphin OCR model and processor loaded successfully! Device: %s", self.model.device)
+
+        logger.info(
+            "✅ Dolphin OCR model and processor loaded successfully! Device: %s",
+            self.model.device,
+        )
 
     @modal.method()
     def process_pdf(self, pdf_bytes: bytes) -> Dict[str, Any]:
@@ -391,7 +397,7 @@ def dolphin_ocr_endpoint(
             "error": f"Invalid input: {e!s}",
             "status": "failed",
         }
-    except Exception as e:
+    except Exception:
         logger.exception("Unexpected error in OCR endpoint")
         return {
             "error": "Internal server error during OCR processing",
