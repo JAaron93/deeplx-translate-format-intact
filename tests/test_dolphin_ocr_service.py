@@ -56,13 +56,16 @@ def test_requires_token(monkeypatch):
         svc.process_document_images([b"x"])
 
 
-@pytest.mark.parametrize("status,exc", [
-    (401, AuthenticationError),
-    (403, AuthenticationError),
-    (429, ApiRateLimitError),
-    (500, ServiceUnavailableError),
-    (418, OcrProcessingError),
-])
+@pytest.mark.parametrize(
+    "status,exc",
+    [
+        (401, AuthenticationError),
+        (403, AuthenticationError),
+        (429, ApiRateLimitError),
+        (500, ServiceUnavailableError),
+        (418, OcrProcessingError),
+    ],
+)
 def test_http_status_mapped_to_errors(status, exc):
     svc = DolphinOCRService(hf_token="t", modal_endpoint="https://example")
     svc._client = _MockClient(_MockResponse(status, {"error": "x"}))
@@ -91,3 +94,24 @@ def test_empty_images_list_maps_to_processing_error():
         svc.process_document_images([])
 
 
+def test_image_size_validation():
+    svc = DolphinOCRService(hf_token="t", modal_endpoint="https://example")
+    svc.max_image_bytes = 10
+    small = b"1234567890"  # exactly 10
+    big = b"12345678901"  # 11
+    # Exactly at limit passes
+    svc._client = _MockClient(_MockResponse(200, {"ok": True}))
+    assert svc.process_document_images([small]) == {"ok": True}
+    # Over the limit fails
+    with pytest.raises(OcrProcessingError):
+        svc.process_document_images([big])
+
+
+def test_max_images_validation():
+    svc = DolphinOCRService(hf_token="t", modal_endpoint="https://example")
+    svc.max_images = 2
+    svc._client = _MockClient(_MockResponse(200, {"ok": True}))
+    assert svc.process_document_images([b"a"]) == {"ok": True}
+    assert svc.process_document_images([b"a", b"b"]) == {"ok": True}
+    with pytest.raises(OcrProcessingError):
+        svc.process_document_images([b"a", b"b", b"c"])
