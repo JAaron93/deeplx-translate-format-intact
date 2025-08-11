@@ -164,11 +164,11 @@ def test_memory_error_maps_to_dolphin_011(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "pdf2image", fake_pdf2image)
 
     converter = PDFToImageConverter()
-    with pytest.raises(Exception) as exc:
+    converter = PDFToImageConverter()
+    from dolphin_ocr.errors import MemoryExhaustionError
+
+    with pytest.raises(MemoryExhaustionError) as exc:
         converter.convert_pdf_to_images(pdf_path)
     # Ensure our standardized MemoryExhaustionError (DOLPHIN_011) is raised
     err = exc.value
-    from dolphin_ocr.errors import MemoryExhaustionError
-
-    assert isinstance(err, MemoryExhaustionError)
-    assert getattr(err, "error_code", None) == "DOLPHIN_011"
+    assert err.error_code == "DOLPHIN_011"

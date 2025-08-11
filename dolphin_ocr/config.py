@@ -72,12 +72,8 @@ class DolphinConfig:
     timeout_seconds: int = field(
         default_factory=lambda: env_int("DOLPHIN_TIMEOUT_SECONDS", 300)
     )
-    max_retries: int = field(
-        default_factory=lambda: env_int("DOLPHIN_MAX_RETRIES", 3)
-    )
-    batch_size: int = field(
-        default_factory=lambda: env_int("DOLPHIN_BATCH_SIZE", 5)
-    )
+    max_retries: int = field(default_factory=lambda: env_int("DOLPHIN_MAX_RETRIES", 3))
+    batch_size: int = field(default_factory=lambda: env_int("DOLPHIN_BATCH_SIZE", 5))
 
     # NOTE: Validation is deferred to ConfigurationManager; see class docstring.
     def __post_init__(self) -> None:
@@ -93,18 +89,14 @@ class DolphinConfig:
     def validate(self) -> None:
         """Validate Dolphin configuration values."""
         if not self.hf_token:
-            raise ValueError(
-                "HF_TOKEN is required for Dolphin OCR authentication"
-            )
+            raise ValueError("HF_TOKEN is required for Dolphin OCR authentication")
         if not self.modal_endpoint:
             raise ValueError("DOLPHIN_MODAL_ENDPOINT is required")
         # Normalize and validate endpoint using robust URL parsing
         endpoint = (self.modal_endpoint or "").strip()
         parsed = urlparse(endpoint)
         if parsed.scheme not in ("http", "https") or not parsed.netloc:
-            raise ValueError(
-                "DOLPHIN_MODAL_ENDPOINT must be a valid HTTP/HTTPS URL"
-            )
+            raise ValueError("DOLPHIN_MODAL_ENDPOINT must be a valid HTTP/HTTPS URL")
         # Persist normalized value
         self.modal_endpoint = endpoint
         if self.timeout_seconds <= 0 or self.timeout_seconds > 3600:
@@ -141,17 +133,10 @@ class PerformanceConfig:
 
         Ensures concurrency, timeout, DPI and memory limits are sane.
         """
-        if (
-            self.max_concurrent_requests <= 0
-            or self.max_concurrent_requests > 100
-        ):
-            raise ValueError(
-                "MAX_CONCURRENT_REQUESTS must be between 1 and 100"
-            )
+        if self.max_concurrent_requests <= 0 or self.max_concurrent_requests > 100:
+            raise ValueError("MAX_CONCURRENT_REQUESTS must be between 1 and 100")
         if self.processing_timeout <= 0 or self.processing_timeout > 1800:
-            raise ValueError(
-                "PROCESSING_TIMEOUT must be between 1 and 1800 seconds"
-            )
+            raise ValueError("PROCESSING_TIMEOUT must be between 1 and 1800 seconds")
         if self.dpi < 150 or self.dpi > 600:
             raise ValueError(
                 "PDF_DPI must be between 150 and 600 for optimal OCR quality"
@@ -190,24 +175,15 @@ class AlertThresholds:
     def validate(self) -> None:
         """Validate alert threshold ranges."""
         if not 0.01 <= self.error_rate_threshold <= 0.5:
-            raise ValueError(
-                "ALERT_ERROR_RATE_THRESHOLD must be between 0.01 and 0.5"
-            )
+            raise ValueError("ALERT_ERROR_RATE_THRESHOLD must be between 0.01 and 0.5")
         if self.error_rate_window < 60 or self.error_rate_window > 3600:
             raise ValueError(
                 "ALERT_ERROR_RATE_WINDOW must be between 60 and 3600 seconds"
             )
-        if (
-            self.critical_error_threshold < 1
-            or self.critical_error_threshold > 20
-        ):
-            raise ValueError(
-                "ALERT_CRITICAL_ERROR_THRESHOLD must be between 1 and 20"
-            )
+        if self.critical_error_threshold < 1 or self.critical_error_threshold > 20:
+            raise ValueError("ALERT_CRITICAL_ERROR_THRESHOLD must be between 1 and 20")
         if not 1.1 <= self.latency_threshold_multiplier <= 3.0:
-            raise ValueError(
-                "ALERT_LATENCY_MULTIPLIER must be between 1.1 and 3.0"
-            )
+            raise ValueError("ALERT_LATENCY_MULTIPLIER must be between 1.1 and 3.0")
         if not 0.5 <= self.quota_warning_threshold <= 0.95:
             raise ValueError(
                 "ALERT_QUOTA_WARNING_THRESHOLD must be between 0.5 and 0.95"
@@ -240,9 +216,7 @@ class QualityThresholds:
         thresholds = {
             "MIN_OCR_CONFIDENCE": self.min_ocr_confidence,
             "MIN_TRANSLATION_CONFIDENCE": self.min_translation_confidence,
-            "MIN_LAYOUT_PRESERVATION_SCORE": (
-                self.min_layout_preservation_score
-            ),
+            "MIN_LAYOUT_PRESERVATION_SCORE": (self.min_layout_preservation_score),
             "MIN_OVERALL_QUALITY_SCORE": self.min_overall_quality_score,
         }
         for name, value in thresholds.items():
@@ -266,9 +240,7 @@ class ConfigurationManager:
         HF-dependent operations must have an `HF_TOKEN` configured.
         """
         if not self.dolphin.hf_token:
-            raise ValueError(
-                "HF_TOKEN is required for Dolphin OCR authentication"
-            )
+            raise ValueError("HF_TOKEN is required for Dolphin OCR authentication")
 
     def validate_all(self) -> None:
         """Enforce credentials and validate all configuration sections."""
@@ -283,16 +255,10 @@ class ConfigurationManager:
         return {
             "dolphin_endpoint": self.dolphin.modal_endpoint,
             "timeout_seconds": self.dolphin.timeout_seconds,
-            "max_concurrent_requests": (
-                self.performance.max_concurrent_requests
-            ),
+            "max_concurrent_requests": (self.performance.max_concurrent_requests),
             "dpi": self.performance.dpi,
-            "error_rate_threshold": (
-                self.alert_thresholds.error_rate_threshold
-            ),
-            "min_quality_score": (
-                self.quality_thresholds.min_overall_quality_score
-            ),
+            "error_rate_threshold": (self.alert_thresholds.error_rate_threshold),
+            "min_quality_score": (self.quality_thresholds.min_overall_quality_score),
             "hf_token_configured": bool(self.dolphin.hf_token),
             "max_retries": self.dolphin.max_retries,
             "batch_size": self.dolphin.batch_size,

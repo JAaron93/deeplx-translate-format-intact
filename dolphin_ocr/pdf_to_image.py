@@ -15,7 +15,6 @@ libraries at module import time to keep startup overhead low.
 from __future__ import annotations
 
 import mmap
-from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -169,10 +168,17 @@ class PDFToImageConverter:
         when available. Falls back to a bounded chunked scan. False negatives
         are possible; downstream conversion will still be guarded.
         """
-        with suppress(Exception), pdf_path.open("rb") as f, mmap.mmap(
-            f.fileno(), length=0, access=mmap.ACCESS_READ
-        ) as mm:
-            return mm.find(b"/Encrypt") != -1
+        try:
+            with pdf_path.open("rb") as f:
+                try:
+                    with mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ) as mm:
+                        return mm.find(b"/Encrypt") != -1
+                except (OSError, ValueError):
+                    # mmap failed, fall through to chunked scan
+                    pass
+        except OSError:
+            # File open failed, fall through to chunked scan
+            pass
         # Fallback: scan first few megabytes
         try:
             max_scan = 8 * 1024 * 1024  # 8 MiB
