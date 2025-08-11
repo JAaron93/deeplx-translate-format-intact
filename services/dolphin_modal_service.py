@@ -9,14 +9,20 @@ from typing import Any, Dict, List
 
 import modal
 
-logger = logging.getLogger("dolphin_ocr")
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
-    )
-    logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+try:
+    from dolphin_ocr.logging_config import get_logger, setup_logging
+
+    setup_logging()
+    logger = get_logger("modal_service")
+except Exception:  # Fallback to local logger if package not available
+    logger = logging.getLogger("dolphin_ocr.modal_service")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(
+            logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
+        )
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 # Modal App Configuration
 app = modal.App("dolphin-ocr-service")
@@ -91,7 +97,7 @@ def download_model():
             local_dir_use_symlinks=False,
         )
     except Exception as e:
-        logger.exception(f"Failed to download model: {e}")
+        logger.exception("Failed to download model: %s", e)
         raise
 
     logger.info(f"Model downloaded to: {model_path}")
