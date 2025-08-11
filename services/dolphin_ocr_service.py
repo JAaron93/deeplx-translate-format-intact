@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 import httpx
@@ -78,6 +79,9 @@ class DolphinOCRService:
     successful_requests: int = 0
     failed_requests: int = 0
     last_duration_ms: float = 0.0
+    _metrics_lock: threading.Lock = field(
+        default_factory=threading.Lock, init=False, repr=False, compare=False
+    )
 
     # -------------------- Public API --------------------
     def process_document_images(self, images: list[bytes]) -> dict[str, Any]:
@@ -180,7 +184,8 @@ class DolphinOCRService:
                 return data
         finally:
             # Count 1 public request regardless of retries
-            self.total_requests += 1
+            with self._metrics_lock:
+                self.total_requests += 1
 
     # -------------------- Internals --------------------
     def _require_endpoint(self) -> str:
@@ -227,23 +232,23 @@ class DolphinOCRService:
 
     def _record_metrics(self, start: float, *, success: bool) -> None:
         duration_ms = (time.perf_counter() - start) * 1000.0
-        self.last_duration_ms = duration_ms
-        if success:
-            self.successful_requests += 1
-        else:
-            self.failed_requests += 1
-        success_rate = (
-            (self.successful_requests / max(1, self.total_requests)) * 100.0
-            if self.total_requests
-            else 0.0
-        )
+        with self._metrics_lock:
+            self.last_duration_ms = duration_ms
+            if success:
+                self.successful_requests += 1
+            else:
+                self.failed_requests += 1
+            total = self.total_requests
+            ok = self.successful_requests
+            fail = self.failed_requests
+            success_rate = (ok / max(1, total) * 100.0) if total else 0.0
         logger.info(
             "dolphin_ocr_service_request duration_ms=%.2f success=%s total=%d ok=%d fail=%d success_rate=%.1f%%",
             duration_ms,
             success,
-            self.total_requests,
-            self.successful_requests,
-            self.failed_requests,
+            total,
+            ok,
+            fail,
             success_rate,
         )
 
