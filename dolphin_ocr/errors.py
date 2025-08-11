@@ -45,22 +45,12 @@ CODE_TO_MESSAGE: dict[str, str] = {
     "DOLPHIN_006": "OCR processing failed - Unable to extract text",
     "DOLPHIN_007": "Layout analysis failed - Complex document structure",
     # Translation Errors
-    "DOLPHIN_008": (
-        "Translation service error - Lingo.dev API failure"
-    ),
-    "DOLPHIN_009": (
-        "Layout preservation failed - Unable to maintain formatting"
-    ),
-    "DOLPHIN_010": (
-        "Document reconstruction failed - Output generation error"
-    ),
+    "DOLPHIN_008": ("Translation service error - Lingo.dev API failure"),
+    "DOLPHIN_009": ("Layout preservation failed - Unable to maintain formatting"),
+    "DOLPHIN_010": ("Document reconstruction failed - Output generation error"),
     # System Errors
-    "DOLPHIN_011": (
-        "Memory exhaustion - Document too large for processing"
-    ),
-    "DOLPHIN_012": (
-        "Storage error - Unable to save processed document"
-    ),
+    "DOLPHIN_011": ("Memory exhaustion - Document too large for processing"),
+    "DOLPHIN_012": ("Storage error - Unable to save processed document"),
     "DOLPHIN_013": "Configuration error - Invalid system settings",
     "DOLPHIN_014": "Encrypted PDFs not supported - please provide unlocked PDF",
 }
@@ -108,71 +98,85 @@ class DolphinError(Exception):
 
 class ApiRateLimitError(DolphinError):
     """Rate limit exceeded - HuggingFace API quota reached."""
+
     error_code = "DOLPHIN_001"
 
 
 class ServiceUnavailableError(DolphinError):
     """Service unavailable - Dolphin OCR service down."""
+
     error_code = "DOLPHIN_002"
 
 
 class AuthenticationError(DolphinError):
     """Authentication failure - Invalid HuggingFace token."""
+
     error_code = "DOLPHIN_003"
 
 
 class ProcessingTimeoutError(DolphinError):
     """Processing timeout - Document too complex or large."""
+
     error_code = "DOLPHIN_004"
 
 
 class InvalidDocumentFormatError(DolphinError):
     """Invalid document format - Unsupported file type."""
+
     error_code = "DOLPHIN_005"
 
 
 class OcrProcessingError(DolphinError):
     """OCR processing failed - Unable to extract text."""
+
     error_code = "DOLPHIN_006"
 
 
 class LayoutAnalysisError(DolphinError):
     """Layout analysis failed - Complex document structure."""
+
     error_code = "DOLPHIN_007"
 
 
 class TranslationServiceError(DolphinError):
     """Translation service error - Lingo.dev API failure."""
+
     error_code = "DOLPHIN_008"
 
 
 class LayoutPreservationError(DolphinError):
     """Layout preservation failed - Unable to maintain formatting."""
+
     error_code = "DOLPHIN_009"
 
 
 class DocumentReconstructionError(DolphinError):
     """Document reconstruction failed - Output generation error."""
+
     error_code = "DOLPHIN_010"
 
 
 class MemoryExhaustionError(DolphinError):
     """Memory exhaustion - Document too large for processing."""
+
     error_code = "DOLPHIN_011"
 
 
 class StorageError(DolphinError):
     """Storage error - Unable to save processed document."""
+
     error_code = "DOLPHIN_012"
 
 
 class ConfigurationError(DolphinError):
     """Configuration error - Invalid system settings."""
+
     error_code = "DOLPHIN_013"
 
 
 class EncryptedPdfError(DolphinError):
     """Encrypted PDFs not supported - please provide unlocked PDF."""
+
     error_code = "DOLPHIN_014"
 
 

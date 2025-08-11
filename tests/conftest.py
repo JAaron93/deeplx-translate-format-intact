@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 
@@ -14,6 +15,7 @@ def dolphin_env_defaults(monkeypatch):
         ),
     )
     yield
+
 
 @pytest.fixture
 def lingo_translator(monkeypatch):

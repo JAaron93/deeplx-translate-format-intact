@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 from typing import Optional
 
-
 DEFAULT_LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 _log_env = os.getenv("LOG_FILE", "").strip()
 _DEFAULT_LOG_PATH = (
@@ -32,13 +31,10 @@ def setup_logging(
     Creates console and optional file handlers with a consistent format.
     Idempotent: repeated calls won't duplicate handlers.
     """
-
     logger = logging.getLogger(logger_name)
     logger.setLevel(getattr(logging, level, logging.INFO))
 
-    fmt = logging.Formatter(
-        "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
-    )
+    fmt = logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
 
     # Console handler
     if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
@@ -67,10 +63,7 @@ def setup_logging(
 
 def get_logger(name: str) -> logging.Logger:
     """Get a child logger under the Dolphin OCR namespace."""
-
     parent = logging.getLogger(DEFAULT_LOGGER_NAME)
     if not parent.handlers:
         setup_logging()
     return parent.getChild(name)
-
-

@@ -1,24 +1,23 @@
 import pytest
+
 from dolphin_ocr.config import (
+    AlertThresholds,
+    ConfigurationManager,
     DolphinConfig,
     PerformanceConfig,
-    AlertThresholds,
     QualityThresholds,
-    ConfigurationManager,
 )
 
 
 def test_dolphin_config_validation(monkeypatch):
     monkeypatch.setenv("HF_TOKEN", "testtoken")
-    monkeypatch.setenv(
-        "DOLPHIN_MODAL_ENDPOINT", "https://example.com/endpoint"
-    )
+    monkeypatch.setenv("DOLPHIN_MODAL_ENDPOINT", "https://example.com/endpoint")
     cfg = DolphinConfig()
     assert cfg.hf_token == "testtoken"
     assert cfg.modal_endpoint.startswith("https://")
 
-@pytest.mark.parametrize("dpi", [150, 300, 600])
 
+@pytest.mark.parametrize("dpi", [150, 300, 600])
 def test_performance_config_valid_dpi(monkeypatch, dpi):
     monkeypatch.setenv("PDF_DPI", str(dpi))
     perf = PerformanceConfig()
@@ -61,4 +60,3 @@ def test_configuration_manager_summary(monkeypatch):
     summary = cm.get_environment_summary()
     assert summary["hf_token_configured"] is True
     assert summary["dolphin_endpoint"].startswith("https://")
-

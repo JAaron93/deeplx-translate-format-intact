@@ -16,5 +16,3 @@ __all__: list[str] = [
     "setup_logging",
     "get_logger",
 ]
-
-

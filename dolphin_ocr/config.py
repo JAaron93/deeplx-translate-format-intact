@@ -302,5 +302,3 @@ class ConfigurationManager:
 +            "batch_size": self.dolphin.batch_size,
 +            "processing_timeout": self.performance.processing_timeout,
         }
-
-

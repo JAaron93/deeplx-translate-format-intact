@@ -16,33 +16,33 @@ graph TB
         UI[Gradio Web Interface]
         API[FastAPI REST Endpoints]
     end
-    
+
     subgraph "Application Layer"
         DM[Document Manager]
         TM[Translation Manager]
         LPE[Layout Preservation Engine]
         QM[Quality Monitor]
     end
-    
+
     subgraph "Service Layer"
         PIC[PDF-to-Image Converter]
         DOS[Dolphin OCR Service]
         LTS[Layout-Aware Translation Service]
         DR[Document Reconstructor]
     end
-    
+
     subgraph "External Services"
         HF[Hugging Face Spaces]
         ML[Modal Labs Infrastructure]
         LINGO[Lingo.dev Translation API]
     end
-    
+
     subgraph "Storage Layer"
         FS[File System Storage]
         CACHE[Processing Cache]
         LOGS[Monitoring & Logs]
     end
-    
+
     UI --> API
     API --> DM
     DM --> PIC
@@ -54,14 +54,14 @@ graph TB
     LTS --> LPE
     LPE --> DR
     DR --> FS
-    
+
     TM --> QM
     QM --> LOGS
-    
+
     classDef external fill:#e1f5fe
     classDef service fill:#f3e5f5
     classDef storage fill:#e8f5e8
-    
+
     class HF,ML,LINGO external
     class PIC,DOS,LTS,DR service
     class FS,CACHE,LOGS storage
@@ -79,7 +79,7 @@ sequenceDiagram
     participant LayoutEngine
     participant TranslationSvc
     participant Reconstructor
-    
+
     Client->>API: Upload Document
     API->>DocManager: Process Request
     DocManager->>PDFConverter: Convert PDF to Images
@@ -188,20 +188,20 @@ class LayoutPreservationEngine:
         self.font_scale_limits = font_scale_limits
         self.max_bbox_expansion = max_bbox_expansion
 
-    def analyze_text_fit(self, original: str, translated: str, 
+    def analyze_text_fit(self, original: str, translated: str,
                          bbox: BoundingBox, font: FontInfo) -> FitAnalysis:
         """Analyze if translated text fits in original layout."""
         pass
-         
+
     def determine_layout_strategy(self, analysis: FitAnalysis) -> LayoutStrategy:
         """Determine optimal strategy for layout preservation."""
         # Strategy logic based on text length ratio, available space, etc.
         pass
-        
+
     def apply_layout_adjustments(self, text: str, strategy: LayoutStrategy) -> AdjustedLayout:
         """Apply font scaling, text wrapping, or bbox expansion."""
-        
-    def calculate_quality_score(self, original_layout: Layout, 
+
+    def calculate_quality_score(self, original_layout: Layout,
                                adjusted_layout: Layout) -> float:
         """Calculate layout preservation quality score."""
 yout-Aware Translation Service
@@ -213,22 +213,22 @@ yout-Aware Translation Service
 class LayoutAwareTranslationService:
     def __init__(self, lingo_client: McpLingoClient, layout_engine: LayoutPreservationEngine):
         """Initialize with translation and layout services."""
-        
-    async def translate_with_layout_constraints(self, 
-                                              text: str, 
-                                              source_lang: str, 
+
+    async def translate_with_layout_constraints(self,
+                                              text: str,
+                                              source_lang: str,
                                               target_lang: str,
                                               layout_context: LayoutContext) -> TranslationResult:
         """Translate text considering layout constraints."""
-        
-    async def translate_document_batch(self, 
+
+    async def translate_document_batch(self,
                                      text_blocks: List[TextBlock],
                                      source_lang: str,
                                      target_lang: str) -> List[TranslationResult]:
         """Batch translation with layout optimization."""
-        
-    def optimize_translation_for_layout(self, 
-                                       translation: str, 
+
+    def optimize_translation_for_layout(self,
+                                       translation: str,
                                        constraints: LayoutConstraints) -> str:
         """Optimize translation length and structure for layout."""
 ```
@@ -243,12 +243,12 @@ class PDFDocumentReconstructor:
     def __init__(self):
         """Initialize PDF-specific reconstructor."""
         self.supported_format = ".pdf"
-        
+
     def is_pdf_format(self, file_path: str) -> bool:
         """Check if the document is a PDF format."""
         file_extension = Path(file_path).suffix.lower()
         return file_extension == self.supported_format
-    
+
     def validate_pdf_format_or_raise(self, file_path: str) -> None:
         """Validate PDF format or raise exception."""
         file_extension = Path(file_path).suffix.lower()
@@ -265,24 +265,24 @@ class PDFDocumentReconstructor:
                     )
         except FileNotFoundError as e:
             raise UnsupportedFormatError(f"File not found: {file_path}") from e
-    
-    async def reconstruct_pdf_document(self, 
+
+    async def reconstruct_pdf_document(self,
                                      translated_layout: TranslatedLayout,
                                      original_file_path: str,
                                      output_path: str) -> ReconstructionResult:
         """Reconstruct PDF document with translated content."""
         self.validate_pdf_format_or_raise(original_file_path)
-        
+
         try:
             return await self.reconstruct_pdf(translated_layout, original_file_path, output_path)
-                
+
         except Exception as e:
             logger.error(f"PDF reconstruction failed for %s: %s", original_file_path, e, exc_info=True)
             raise DocumentReconstructionError(
                 f"Failed to reconstruct PDF document: {str(e)}"
             ) from e
-        
-    async def reconstruct_pdf(self, 
+
+    async def reconstruct_pdf(self,
                             translated_layout: TranslatedLayout,
                             original_file_path: str,
                             output_path: str) -> ReconstructionResult:
@@ -303,9 +303,9 @@ class PDFDocumentReconstructor:
                     # Fallback to standard letter size
                     page_width, page_height = 612, 792
                     warnings.append(f"No elements found for page {page.page_number}, using default size")
-                
+
                 pdf_canvas.setPageSize((page_width, page_height))
-                
+
                 # Step 3b: Process each translated element on the page
                 for element in page.translated_elements:
                     try:
@@ -314,13 +314,13 @@ class PDFDocumentReconstructor:
                         font_family = element.font_info.family or "Helvetica"
                         font_size = element.font_info.size or 12
                         font_weight = element.font_info.weight or "normal"
-                        
+
                         # Step 3d: Handle font registration and selection
                         if font_weight == "bold":
                             font_name = f"{font_family}-Bold"
                         else:
                             font_name = font_family
-                        
+
                         # Step 3e: Set font with fallback handling
                         try:
                             pdf_canvas.setFont(font_name, font_size)
@@ -329,39 +329,39 @@ class PDFDocumentReconstructor:
                             fallback_font = "Helvetica-Bold" if font_weight == "bold" else "Helvetica"
                             pdf_canvas.setFont(fallback_font, font_size)
                             warnings.append(f"Font {font_name} not available, using {fallback_font}")
-                        
+
                         # Step 3f: Set text color
                         if element.font_info.color:
                             r, g, b = element.font_info.color
                             pdf_canvas.setFillColorRGB(r/255, g/255, b/255)
-                        
+
                         # Step 3g: Handle text positioning and wrapping
                         text_lines = element.adjusted_text.split('\n')
                         line_height = font_size * 1.2  # Standard line height
-                        
+
                         for i, line in enumerate(text_lines):
                             line_y = y - (i * line_height)
-                            
+
                             # Step 3h: Check if text fits within bounding box
                             if line_y < (y - height):
                                 warnings.append(f"Text overflow on page {page.page_number}: truncating content")
                                 break
-                            
+
                             # Step 3i: Draw text line
                             pdf_canvas.drawString(x, line_y, line)
-                        
+
                     except Exception as element_error:
                         warnings.append(f"Failed to render element on page {page.page_number}: {element_error}")
                         continue
-                
+
                 # Step 3j: Finish current page
                 pdf_canvas.showPage()
-            
+
             # Step 4: Save and close PDF
             pdf_canvas.save()
-            
+
             processing_time = time.time() - start_time
-            
+
             return ReconstructionResult(
                 output_path=output_path,
                 format=".pdf",
@@ -370,10 +370,10 @@ class PDFDocumentReconstructor:
                 quality_metrics=self._calculate_pdf_quality_metrics(translated_layout),
                 warnings=warnings
             )
-            
+
         except Exception as e:
             raise DocumentReconstructionError(f"PDF reconstruction failed: {str(e)}") from e
-    
+
 
 
 
@@ -382,20 +382,20 @@ class PDFDocumentReconstructor:
         if self.type == "table":
             if self.rows <= 0 or self.cols <= 0:
                 raise ValueError(f"Table type requires positive dimensions, got {self.rows}x{self.cols}")
-            
+
             if self.table_data is None:
                 raise ValueError("Table type requires table_data to be provided")
-            
+
             if len(self.table_data) != self.rows:
                 raise ValueError(f"Table data has {len(self.table_data)} rows, expected {self.rows}")
-            
+
             for i, row in enumerate(self.table_data):
                 if len(row) != self.cols:
                     raise ValueError(f"Row {i} has {len(row)} columns, expected {self.cols}")
-        
+
         elif self.type == "list" and self.list_type not in [None, "bullet", "number"]:
             raise ValueError(f"Invalid list_type: {self.list_type}")
-        
+
         if not self.elements:
             raise ValueError("StructuredElementGroup must contain at least one element")
     elements: List[TranslatedElement]
@@ -404,11 +404,11 @@ class PDFDocumentReconstructor:
     rows: int = 0
     cols: int = 0
     table_data: Optional[List[List[TranslatedElement]]] = None
-        
-    def validate_pdf_reconstruction_quality(self, 
-                                           original: str, 
-        def validate_pdf_reconstruction_quality(self, 
-                                               original: str, 
+
+    def validate_pdf_reconstruction_quality(self,
+                                           original: str,
+        def validate_pdf_reconstruction_quality(self,
+                                               original: str,
                                                reconstructed: str,
                                                font_size_tolerance: float = 2.0,   # ±2pt as per Requirement 6.4
                                                position_tolerance: float = 0.05,    # ±5% as per Requirement 6.4
@@ -423,11 +423,11 @@ class PDFDocumentReconstructor:
                 raise FileNotFoundError(f"Original PDF file not found: {original}")
             if not Path(reconstructed).exists():
                 raise FileNotFoundError(f"Reconstructed PDF file not found: {reconstructed}")
-            
+
             # Format validation (removes redundant extension checks)
             self.validate_pdf_format_or_raise(original)
             self.validate_pdf_format_or_raise(reconstructed)
-            
+
             # Perform PDF-specific quality validation with configurable parameters
             return self._validate_pdf_quality(
                 original=original,
@@ -440,8 +440,8 @@ class PDFDocumentReconstructor:
                 min_layout_fidelity=min_layout_fidelity,
                 min_text_content_accuracy=min_text_content_accuracy
             )
-    def _validate_pdf_quality(self, 
-                             original: str, 
+    def _validate_pdf_quality(self,
+                             original: str,
                              reconstructed: str,
                              font_size_tolerance: float,
                              position_tolerance: float,
@@ -451,11 +451,11 @@ class PDFDocumentReconstructor:
                              min_layout_fidelity: float) -> QualityReport:
         """Perform detailed PDF quality validation with configurable thresholds."""
         # Pseudo-code for PDF quality validation implementation:
-        
+
         # Step 1: Extract layout information from both PDFs
         original_layout = self._extract_pdf_layout(original)
         reconstructed_layout = self._extract_pdf_layout(reconstructed)
-        
+
         quality_metrics = {
             "font_size_compliance": 0.0,
             "position_accuracy": 0.0,
@@ -464,13 +464,13 @@ class PDFDocumentReconstructor:
             "layout_hash_match": False,
             "overall_fidelity": 0.0
         }
-        
+
         validation_warnings = []
-        
+
         # Step 2: Font size tolerance validation
         font_size_violations = 0
         total_elements = 0
-        
+
         for orig_page, recon_page in zip(original_layout.pages, reconstructed_layout.pages):
             for orig_elem, recon_elem in zip(orig_page.elements, recon_page.elements):
                 total_elements += 1
@@ -480,33 +480,33 @@ class PDFDocumentReconstructor:
                     validation_warnings.append(
                         f"Font size deviation {font_size_diff:.1f}pt exceeds tolerance {font_size_tolerance}pt"
                     )
-        
+
         quality_metrics["font_size_compliance"] = 1.0 - (font_size_violations / max(total_elements, 1))
-        
+
         # Step 3: Position tolerance validation
         position_violations = 0
-        
+
         for orig_page, recon_page in zip(original_layout.pages, reconstructed_layout.pages):
             for orig_elem, recon_elem in zip(orig_page.elements, recon_page.elements):
                 # Calculate relative position deviation
                 orig_x, orig_y = orig_elem.bbox[0], orig_elem.bbox[1]
                 recon_x, recon_y = recon_elem.bbox[0], recon_elem.bbox[1]
-                
+
                 x_deviation = abs(orig_x - recon_x) / max(orig_page.width, 1)
                 y_deviation = abs(orig_y - recon_y) / max(orig_page.height, 1)
-                
+
                 if x_deviation > position_tolerance or y_deviation > position_tolerance:
                     position_violations += 1
                     validation_warnings.append(
                         f"Position deviation ({x_deviation:.3f}, {y_deviation:.3f}) exceeds tolerance {position_tolerance}"
                     )
-        
+
         quality_metrics["position_accuracy"] = 1.0 - (position_violations / max(total_elements, 1))
-        
+
         # Step 4: Exact formatting validation (bold, italic, underline)
         if require_exact_formatting:
             formatting_violations = 0
-            
+
             for orig_page, recon_page in zip(original_layout.pages, reconstructed_layout.pages):
                 for orig_elem, recon_elem in zip(orig_page.elements, recon_page.elements):
                     if (orig_elem.font_weight != recon_elem.font_weight or
@@ -517,11 +517,11 @@ class PDFDocumentReconstructor:
                             f"Formatting mismatch: expected {orig_elem.font_weight}/{orig_elem.font_style}, "
                             f"got {recon_elem.font_weight}/{recon_elem.font_style}"
                         )
-            
+
             quality_metrics["formatting_exactness"] = 1.0 - (formatting_violations / max(total_elements, 1))
         else:
             quality_metrics["formatting_exactness"] = 1.0  # Skip exact formatting check
-        
+
         # Step 5: Visual similarity scoring (if enabled)
         if enable_visual_similarity:
             quality_metrics["visual_similarity_score"] = self._calculate_visual_similarity(
@@ -529,18 +529,18 @@ class PDFDocumentReconstructor:
             )
         else:
             quality_metrics["visual_similarity_score"] = 1.0  # Skip visual similarity
-        
+
         # Step 6: Layout hash verification (if enabled)
         if enable_layout_hash_check:
             original_hash = self._calculate_layout_hash(original_layout)
             reconstructed_hash = self._calculate_layout_hash(reconstructed_layout)
             quality_metrics["layout_hash_match"] = (original_hash == reconstructed_hash)
-            
+
             if not quality_metrics["layout_hash_match"]:
                 validation_warnings.append("Layout hash mismatch detected")
         else:
             quality_metrics["layout_hash_match"] = True  # Skip hash check
-        
+
         # Step 7: Calculate overall fidelity score
         quality_metrics["overall_fidelity"] = (
             quality_metrics["font_size_compliance"] * 0.25 +
@@ -548,15 +548,15 @@ class PDFDocumentReconstructor:
             quality_metrics["formatting_exactness"] * 0.20 +
             quality_metrics["visual_similarity_score"] * 0.20
         )
-        
+
         # Step 8: Validate against minimum fidelity threshold
         fidelity_passed = quality_metrics["overall_fidelity"] >= min_layout_fidelity
-        
+
         if not fidelity_passed:
             validation_warnings.append(
                 f"Overall fidelity {quality_metrics['overall_fidelity']:.3f} below minimum {min_layout_fidelity}"
             )
-        
+
         return QualityReport(
             overall_score=quality_metrics["overall_fidelity"],
             font_size_compliance=quality_metrics["font_size_compliance"],
@@ -599,28 +599,28 @@ class ReconstructionResult:
 class ErrorHandler:
     ERROR_CODES = {
         "DOLPHIN_001": "Rate limit exceeded",
-        "DOLPHIN_002": "Service unavailable", 
+        "DOLPHIN_002": "Service unavailable",
         "DOLPHIN_003": "Authentication failure",
         "DOLPHIN_004": "Processing timeout",
         "DOLPHIN_005": "Invalid document format"
     }
-    
+
     def handle_error(self, error: Exception, context: Dict) -> ErrorResponse:
         """Handle errors with standardized codes and logging."""
-        
+
     def should_trigger_alert(self, error_type: str, frequency: int) -> bool:
         """Determine if error frequency warrants alerting."""
 
 class MonitoringService:
     def track_performance_metrics(self, operation: str, duration: float, success: bool):
         """Track operation performance and success rates."""
-        
+
     def check_alert_thresholds(self) -> List[Alert]:
         """Check if any metrics exceed alert thresholds."""
-        
+
     def generate_performance_report(self, time_range: str) -> PerformanceReport:
         """Generate detailed performance and quality reports."""
-```## 
+```##
 Data Models
 
 ### Core Data Structures
@@ -695,34 +695,34 @@ class DolphinConfig:
     """Dolphin OCR service configuration with environment defaults and validation."""
     hf_token: str = field(default_factory=lambda: os.getenv("HF_TOKEN", ""))
     modal_endpoint: str = field(default_factory=lambda: os.getenv(
-        "DOLPHIN_MODAL_ENDPOINT", 
+        "DOLPHIN_MODAL_ENDPOINT",
         "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run"
     ))
     timeout_seconds: int = field(default_factory=lambda: int(os.getenv("DOLPHIN_TIMEOUT_SECONDS", "300")))
     max_retries: int = field(default_factory=lambda: int(os.getenv("DOLPHIN_MAX_RETRIES", "3")))
     batch_size: int = field(default_factory=lambda: int(os.getenv("DOLPHIN_BATCH_SIZE", "5")))
-    
+
     def __post_init__(self):
         """Validate configuration after initialization."""
         self.validate()
-    
+
     def validate(self) -> None:
         """Validate configuration values and raise errors for invalid settings."""
         if not self.hf_token:
             raise ValueError("HF_TOKEN is required for Dolphin OCR authentication")
-        
+
         if not self.modal_endpoint:
             raise ValueError("DOLPHIN_MODAL_ENDPOINT is required")
-        
+
         if not self.modal_endpoint.startswith(("http://", "https://")):
             raise ValueError("DOLPHIN_MODAL_ENDPOINT must be a valid HTTP/HTTPS URL")
-        
+
         if self.timeout_seconds <= 0 or self.timeout_seconds > 3600:
             raise ValueError("DOLPHIN_TIMEOUT_SECONDS must be between 1 and 3600 seconds")
-        
+
         if self.max_retries < 0 or self.max_retries > 10:
             raise ValueError("DOLPHIN_MAX_RETRIES must be between 0 and 10")
-        
+
         if self.batch_size <= 0 or self.batch_size > 50:
             raise ValueError("DOLPHIN_BATCH_SIZE must be between 1 and 50")
 
@@ -733,22 +733,22 @@ class PerformanceConfig:
     processing_timeout: int = field(default_factory=lambda: int(os.getenv("PROCESSING_TIMEOUT", "300")))
     dpi: int = field(default_factory=lambda: int(os.getenv("PDF_DPI", "300")))
     memory_limit_mb: int = field(default_factory=lambda: int(os.getenv("MEMORY_LIMIT_MB", "2048")))
-    
+
     def __post_init__(self):
         """Validate performance configuration."""
         self.validate()
-    
+
     def validate(self) -> None:
         """Validate performance configuration values."""
         if self.max_concurrent_requests <= 0 or self.max_concurrent_requests > 100:
             raise ValueError("MAX_CONCURRENT_REQUESTS must be between 1 and 100")
-        
+
         if self.processing_timeout <= 0 or self.processing_timeout > 1800:
             raise ValueError("PROCESSING_TIMEOUT must be between 1 and 1800 seconds")
-        
+
         if self.dpi < 150 or self.dpi > 600:
             raise ValueError("PDF_DPI must be between 150 and 600 for optimal OCR quality")
-        
+
         if self.memory_limit_mb < 512 or self.memory_limit_mb > 8192:
             raise ValueError("MEMORY_LIMIT_MB must be between 512 and 8192 MB")
 
@@ -760,25 +760,25 @@ class AlertThresholds:
     critical_error_threshold: int = field(default_factory=lambda: int(os.getenv("ALERT_CRITICAL_ERROR_THRESHOLD", "3")))
     latency_threshold_multiplier: float = field(default_factory=lambda: float(os.getenv("ALERT_LATENCY_MULTIPLIER", "1.5")))
     quota_warning_threshold: float = field(default_factory=lambda: float(os.getenv("ALERT_QUOTA_WARNING_THRESHOLD", "0.8")))
-    
+
     def __post_init__(self):
         """Validate alert threshold configuration."""
         self.validate()
-    
+
     def validate(self) -> None:
         """Validate alert threshold values."""
         if not 0.01 <= self.error_rate_threshold <= 0.5:
             raise ValueError("ALERT_ERROR_RATE_THRESHOLD must be between 0.01 (1%) and 0.5 (50%)")
-        
+
         if self.error_rate_window < 60 or self.error_rate_window > 3600:
             raise ValueError("ALERT_ERROR_RATE_WINDOW must be between 60 and 3600 seconds")
-        
+
         if self.critical_error_threshold < 1 or self.critical_error_threshold > 20:
             raise ValueError("ALERT_CRITICAL_ERROR_THRESHOLD must be between 1 and 20")
-        
+
         if not 1.1 <= self.latency_threshold_multiplier <= 3.0:
             raise ValueError("ALERT_LATENCY_MULTIPLIER must be between 1.1 and 3.0")
-        
+
         if not 0.5 <= self.quota_warning_threshold <= 0.95:
             raise ValueError("ALERT_QUOTA_WARNING_THRESHOLD must be between 0.5 (50%) and 0.95 (95%)")
 
@@ -789,11 +789,11 @@ class QualityThresholds:
     min_translation_confidence: float = field(default_factory=lambda: float(os.getenv("MIN_TRANSLATION_CONFIDENCE", "0.7")))
     min_layout_preservation_score: float = field(default_factory=lambda: float(os.getenv("MIN_LAYOUT_PRESERVATION_SCORE", "0.7")))
     min_overall_quality_score: float = field(default_factory=lambda: float(os.getenv("MIN_OVERALL_QUALITY_SCORE", "0.8")))
-    
+
     def __post_init__(self):
         """Validate quality threshold configuration."""
         self.validate()
-    
+
     def validate(self) -> None:
         """Validate quality threshold values."""
         thresholds = {
@@ -802,28 +802,28 @@ class QualityThresholds:
             "MIN_LAYOUT_PRESERVATION_SCORE": self.min_layout_preservation_score,
             "MIN_OVERALL_QUALITY_SCORE": self.min_overall_quality_score
         }
-        
+
         for name, value in thresholds.items():
             if not 0.1 <= value <= 1.0:
                 raise ValueError(f"{name} must be between 0.1 and 1.0")
 
 class ConfigurationManager:
     """Centralized configuration management with validation and environment loading."""
-    
+
     def __init__(self):
         """Initialize configuration manager with validated configs."""
         self.dolphin = DolphinConfig()
         self.performance = PerformanceConfig()
         self.alert_thresholds = AlertThresholds()
         self.quality_thresholds = QualityThresholds()
-    
+
     def validate_all(self) -> None:
         """Validate all configuration sections."""
         self.dolphin.validate()
         self.performance.validate()
         self.alert_thresholds.validate()
         self.quality_thresholds.validate()
-    
+
     def get_environment_summary(self) -> Dict[str, Any]:
         """Get summary of current configuration for logging/debugging."""
         return {
@@ -842,23 +842,23 @@ class ConfigurationManager:
 ```python
 class DolphinErrorCodes:
     """Standardized error codes for Dolphin OCR system."""
-    
+
     # API and Authentication Errors
     DOLPHIN_001 = "Rate limit exceeded - HuggingFace API quota reached"
     DOLPHIN_002 = "Service unavailable - Dolphin OCR service down"
     DOLPHIN_003 = "Authentication failure - Invalid HuggingFace token"
-    
+
     # Processing Errors
     DOLPHIN_004 = "Processing timeout - Document too complex or large"
     DOLPHIN_005 = "Invalid document format - Unsupported file type"
     DOLPHIN_006 = "OCR processing failed - Unable to extract text"
     DOLPHIN_007 = "Layout analysis failed - Complex document structure"
-    
+
     # Translation Errors
     DOLPHIN_008 = "Translation service error - Lingo.dev API failure"
     DOLPHIN_009 = "Layout preservation failed - Unable to maintain formatting"
     DOLPHIN_010 = "Document reconstruction failed - Output generation error"
-    
+
     # System Errors
     DOLPHIN_011 = "Memory exhaustion - Document too large for processing"
     DOLPHIN_012 = "Storage error - Unable to save processed document"
@@ -870,7 +870,7 @@ class DolphinErrorCodes:
 ```python
 class ErrorHandlingStrategy:
     """Comprehensive error handling with recovery mechanisms."""
-    
+
     def handle_api_error(self, error: Exception, context: Dict) -> ErrorResponse:
         """Handle API-related errors with appropriate retry logic."""
         if isinstance(error, httpx.HTTPStatusError):
@@ -880,9 +880,9 @@ class ErrorHandlingStrategy:
                 return self._handle_service_unavailable(error, context)
             elif error.response.status_code == 401:
                 return self._handle_auth_failure(error, context)
-        
+
         return self._handle_generic_error(error, context)
-    
+
     def _handle_rate_limit(self, error: Exception, context: Dict) -> ErrorResponse:
         """Handle rate limiting with exponential backoff."""
         retry_after = self._extract_retry_after(error)
@@ -892,11 +892,11 @@ class ErrorHandlingStrategy:
             retry_after=retry_after,
             recoverable=True
         )
-    
+
     def _handle_service_unavailable(self, error: Exception, context: Dict) -> ErrorResponse:
         """Handle service unavailability with fallback options."""
         return ErrorResponse(
-            error_code="DOLPHIN_002", 
+            error_code="DOLPHIN_002",
             message="Dolphin OCR service temporarily unavailable",
             estimated_recovery_time=300,  # 5 minutes
             recoverable=True
@@ -908,18 +908,18 @@ class ErrorHandlingStrategy:
 ```python
 class AlertManager:
     """Manages alerts based on error patterns and thresholds."""
-    
+
     def __init__(self, config: AlertThresholds):
         self.config = config
         self.error_tracker = ErrorTracker()
         self.alert_history = AlertHistory()
-    
+
     def check_error_rate_threshold(self) -> Optional[Alert]:
         """Check if error rate exceeds threshold over time window."""
         current_rate = self.error_tracker.get_error_rate(
             window_seconds=self.config.error_rate_window
         )
-        
+
         if current_rate > self.config.error_rate_threshold:
             return Alert(
                 type="ERROR_RATE_EXCEEDED",
@@ -928,15 +928,15 @@ class AlertManager:
                 metrics={"current_rate": current_rate, "threshold": self.config.error_rate_threshold},
                 suggested_actions=["Check service health", "Review recent deployments", "Scale resources"]
             )
-        
+
         return None
-    
+
     def check_performance_degradation(self) -> Optional[Alert]:
         """Check for performance degradation beyond SLO thresholds."""
         current_p95 = self.error_tracker.get_p95_latency(window_seconds=600)  # 10 minutes
         slo_threshold = 30.0  # 30 seconds P95 SLO
         alert_threshold = slo_threshold * self.config.latency_threshold_multiplier
-        
+
         if current_p95 > alert_threshold:
             return Alert(
                 type="PERFORMANCE_DEGRADATION",
@@ -945,7 +945,7 @@ class AlertManager:
                 metrics={"current_p95": current_p95, "slo": slo_threshold, "threshold": alert_threshold},
                 suggested_actions=["Check Modal worker health", "Review document complexity", "Consider scaling"]
             )
-        
+
         return None
 ```## T
 esting Strategy
@@ -955,7 +955,7 @@ esting Strategy
 ```python
 class DolphinOCRTestSuite:
     """Comprehensive test suite for Dolphin OCR migration."""
-    
+
     def test_pdf_to_image_conversion(self):
         """Test PDF to image conversion with various document types."""
         test_cases = [
@@ -963,11 +963,11 @@ class DolphinOCRTestSuite:
             ("multi_column.pdf", {"expected_pages": 5, "complex_layout": True}),
             ("scanned_document.pdf", {"expected_pages": 10, "ocr_required": True})
         ]
-        
+
         for pdf_file, expectations in test_cases:
             with self.subTest(pdf_file=pdf_file):
                 self._test_conversion_quality(pdf_file, expectations)
-    
+
     def test_ocr_accuracy_benchmarks(self):
         """Test OCR accuracy against known benchmarks."""
         benchmark_documents = [
@@ -975,11 +975,11 @@ class DolphinOCRTestSuite:
             ("german_philosophy.pdf", {"min_accuracy": 0.92, "language": "de"}),
             ("mixed_layout.pdf", {"min_accuracy": 0.90, "complex_layout": True})
         ]
-        
+
         for doc, requirements in benchmark_documents:
             accuracy = self._measure_ocr_accuracy(doc)
             self.assertGreaterEqual(accuracy, requirements["min_accuracy"])
-    
+
     def test_layout_preservation_quality(self):
         """Test layout preservation across different document types."""
         test_scenarios = [
@@ -987,7 +987,7 @@ class DolphinOCRTestSuite:
             ("text_wrapping", {"length_ratio": 1.8, "expected_strategy": "text_wrap"}),
             ("hybrid_approach", {"length_ratio": 2.2, "expected_strategy": "hybrid"})
         ]
-        
+
         for scenario, params in test_scenarios:
             result = self._test_layout_strategy(scenario, params)
             self.assertEqual(result.strategy_used, params["expected_strategy"])
@@ -999,11 +999,11 @@ class DolphinOCRTestSuite:
 ```python
 class IntegrationTestSuite:
     """End-to-end integration tests for complete workflow."""
-    
+
     async def test_complete_document_processing_workflow(self):
         """Test complete workflow from upload to translated output."""
         test_document = "test_documents/sample_academic_paper.pdf"
-        
+
         # Step 1: Document upload and validation
         request = DocumentProcessingRequest(
             file_path=test_document,
@@ -1011,33 +1011,33 @@ class IntegrationTestSuite:
             target_language="de",
             processing_options=ProcessingOptions(dpi=300, preserve_formatting=True)
         )
-        
+
         # Step 2: Process through complete pipeline
         result = await self.document_processor.process_document(request)
-        
+
         # Step 3: Validate results
         self.assertIsNotNone(result.output_path)
         self.assertGreaterEqual(result.quality_metrics.overall_quality_score, 0.8)
         self.assertLessEqual(result.processing_stats.total_time, 300)  # 5 minutes max
-        
+
         # Step 4: Validate output document
         self._validate_output_document(result.output_path, test_document)
-    
+
     def test_performance_under_load(self):
         """Test system performance under concurrent load."""
         concurrent_requests = 10
         test_documents = self._generate_test_documents(concurrent_requests)
-        
+
         start_time = time.time()
         results = await asyncio.gather(*[
             self.document_processor.process_document(doc) for doc in test_documents
         ])
         total_time = time.time() - start_time
-        
+
         # Validate performance metrics
         successful_results = [r for r in results if r.success]
         self.assertGreaterEqual(len(successful_results), concurrent_requests * 0.9)  # 90% success rate
-        
+
         total_pages = sum(r.processing_stats.pages_processed for r in successful_results)
         throughput = total_pages / (total_time / 60)  # pages per minute
         self.assertGreaterEqual(throughput, 20)  # Minimum 20 pages/minute
@@ -1048,7 +1048,7 @@ class IntegrationTestSuite:
 ```python
 class PerformanceTestSuite:
     """Performance benchmarking and SLO validation."""
-    
+
     def test_processing_latency_slos(self):
         """Test processing latency against defined SLOs."""
         document_types = [
@@ -1056,28 +1056,28 @@ class PerformanceTestSuite:
             ("text_documents", {"p95_slo": 15, "p99_slo": 30}),
             ("complex_layouts", {"p95_slo": 45, "p99_slo": 90})
         ]
-        
+
         for doc_type, slos in document_types:
             latencies = self._measure_processing_latencies(doc_type, sample_size=100)
-            
+
             p95_latency = np.percentile(latencies, 95)
             p99_latency = np.percentile(latencies, 99)
-            
-            self.assertLessEqual(p95_latency, slos["p95_slo"], 
+
+            self.assertLessEqual(p95_latency, slos["p95_slo"],
                                f"P95 latency {p95_latency}s exceeds SLO {slos['p95_slo']}s for {doc_type}")
             self.assertLessEqual(p99_latency, slos["p99_slo"],
                                f"P99 latency {p99_latency}s exceeds SLO {slos['p99_slo']}s for {doc_type}")
-    
+
     def test_throughput_under_concurrency(self):
         """Test system throughput under various concurrency levels."""
         concurrency_levels = [1, 5, 10, 20]
-        
+
         for concurrency in concurrency_levels:
             throughput = self._measure_throughput(concurrency, duration_seconds=300)
-            
+
             # Minimum throughput expectations based on concurrency
             min_expected_throughput = min(concurrency * 2, 20)  # pages/minute
-            
+
             self.assertGreaterEqual(throughput, min_expected_throughput,
                                   f"Throughput {throughput} pages/min below minimum {min_expected_throughput} at concurrency {concurrency}")
 ```

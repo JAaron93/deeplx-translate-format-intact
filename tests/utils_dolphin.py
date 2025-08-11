@@ -31,7 +31,7 @@ def load_asset_bytes(name: str) -> bytes:
         if not fallback_path.exists():
             msg = (
                 f"Test asset not found: {name!r}! Tried packages 'tests.assets', "
-                f"'assets' and path {str(fallback_path)}. Ensure the 'assets/' "
+                f"'assets' and path {fallback_path!s}. Ensure the 'assets/' "
                 "directory contains the expected file."
             )
             raise FileNotFoundError(msg)
@@ -54,5 +54,3 @@ def get_sample_pdfs() -> tuple[str, str, str]:
         "complex-layout-1-page-klages.pdf",
         "large-text-149-pages-klages-from-page-370.pdf",
     )
-
-

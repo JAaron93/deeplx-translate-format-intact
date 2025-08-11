@@ -1,19 +1,19 @@
 from dolphin_ocr.errors import (
-    DolphinError,
-    ApiRateLimitError,
-    ServiceUnavailableError,
-    AuthenticationError,
-    ProcessingTimeoutError,
-    InvalidDocumentFormatError,
-    OcrProcessingError,
-    LayoutAnalysisError,
-    TranslationServiceError,
-    LayoutPreservationError,
-    DocumentReconstructionError,
-    MemoryExhaustionError,
-    StorageError,
-    ConfigurationError,
     CODE_TO_MESSAGE,
+    ApiRateLimitError,
+    AuthenticationError,
+    ConfigurationError,
+    DocumentReconstructionError,
+    DolphinError,
+    InvalidDocumentFormatError,
+    LayoutAnalysisError,
+    LayoutPreservationError,
+    MemoryExhaustionError,
+    OcrProcessingError,
+    ProcessingTimeoutError,
+    ServiceUnavailableError,
+    StorageError,
+    TranslationServiceError,
     get_error_message,
 )
 
@@ -47,5 +47,3 @@ def test_error_hierarchy_and_codes():
         e2 = _Tmp()
         assert msg in str(e2)
         assert get_error_message(code) == msg
-
-
