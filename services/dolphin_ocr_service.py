@@ -48,7 +48,7 @@ from dolphin_ocr.errors import (
 DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MiB per image
 DEFAULT_MAX_IMAGES = 32
-DEFAULT_MAX_RETRIES = 3
+DEFAULT_MAX_ATTEMPTS = 3
 DEFAULT_BACKOFF_BASE_SECONDS = 0.5
 
 
@@ -69,7 +69,7 @@ class DolphinOCRService:
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS
     max_image_bytes: int = DEFAULT_MAX_IMAGE_BYTES
     max_images: int = DEFAULT_MAX_IMAGES
-    max_retries: int = DEFAULT_MAX_RETRIES
+    max_attempts: int = DEFAULT_MAX_ATTEMPTS
     backoff_base_seconds: float = DEFAULT_BACKOFF_BASE_SECONDS
     _client: httpx.Client | None = None
     _sleeper: Callable[[float], None] | None = None
@@ -148,12 +148,12 @@ class DolphinOCRService:
                     raise AuthenticationError(
                         context={"endpoint": endpoint, "status": resp.status_code}
                     )
-                if resp.status_code == 429 and attempts <= self.max_retries:
+                if resp.status_code == 429 and attempts < self.max_attempts:
                     delay = self._calculate_backoff_delay(attempts)
                     logger.warning(
                         "Rate limited (429). Retrying attempt %s/%s after %.2fs",
                         attempts,
-                        self.max_retries,
+                        self.max_attempts,
                         delay,
                     )
                     self._sleep(delay)

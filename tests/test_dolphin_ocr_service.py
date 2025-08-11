@@ -147,7 +147,7 @@ def test_retry_mechanism_with_backoff():
         sleeps.append(s)
 
     svc._sleeper = _fake_sleep
-    svc.max_retries = 3
+    svc.max_attempts = 3
     svc.backoff_base_seconds = 0.01
 
     out = svc.process_document_images([b"x"])
