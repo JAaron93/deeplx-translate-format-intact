@@ -241,7 +241,7 @@ class DolphinOCRService:
             total = self.total_requests
             ok = self.successful_requests
             fail = self.failed_requests
-            success_rate = (ok / max(1, total) * 100.0) if total else 0.0
+            success_rate = ok / max(1, total) * 100.0
         logger.info(
             "dolphin_ocr_service_request duration_ms=%.2f success=%s total=%d ok=%d fail=%d success_rate=%.1f%%",
             duration_ms,
