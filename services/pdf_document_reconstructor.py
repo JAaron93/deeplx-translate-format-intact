@@ -102,7 +102,9 @@ class PDFDocumentReconstructor:
         configured = str(cls.supported_extension).casefold().lstrip(".")
         return ext == configured
 
-    def validate_pdf_format_or_raise(self, file_path: str | PathLike[str]) -> None:
+    def validate_pdf_format_or_raise(
+        self, file_path: str | PathLike[str]
+    ) -> None:
         """Validate that a file is a readable, non-encrypted PDF.
 
         Raises UnsupportedFormatError when any requirement is not met.
@@ -140,27 +142,56 @@ class PDFDocumentReconstructor:
         # Encrypted PDF detection via pypdf, if available
         try:
             pypdf = importlib.import_module("pypdf")
-            reader = pypdf.PdfReader(str(p))
-            if getattr(reader, "is_encrypted", False):
-                # Standardized rejection per requirements (DOLPHIN_014)
-                raise UnsupportedFormatError(
-                    ("Encrypted PDFs not supported - " "please provide unlocked PDF"),
-                    error_code="DOLPHIN_014",
-                )
         except ModuleNotFoundError:
             # pypdf not installed; skip encryption detection
             pass
-        except UnsupportedFormatError:
-            # Re-raise our own exceptions
-            raise
-        except (OSError, ValueError, AttributeError, TypeError) as e:
-            # Warn but don't fail on pypdf errors; the file passed basic checks
-            msg = f"Could not check PDF encryption: {e}"
-            warnings.warn(
-                msg,
-                category=PDFEncryptionCheckWarning,
-                stacklevel=2,
+        else:
+            # Build a dynamic exception tuple including
+            # pypdf.errors.PdfReadError when available. This avoids a hard
+            # dependency on pypdf internals.
+            pdf_read_error = getattr(
+                getattr(pypdf, "errors", object),
+                "PdfReadError",
+                None,
             )
+            base_excs: list[type[BaseException]] = [
+                OSError,
+                ValueError,
+                AttributeError,
+                TypeError,
+                RuntimeError,
+                KeyError,
+                IndexError,
+            ]
+            if pdf_read_error is not None:
+                # Runtime type; pypdf may not export errors module
+                base_excs.append(pdf_read_error)
+
+            try:
+                with p.open("rb") as fh:
+                    reader = pypdf.PdfReader(fh)
+                if getattr(reader, "is_encrypted", False):
+                    # Standardized rejection per requirements (DOLPHIN_014)
+                    raise UnsupportedFormatError(
+                        (
+                            "Encrypted PDFs not supported - "
+                            "please provide unlocked PDF"
+                        ),
+                        error_code="DOLPHIN_014",
+                    )
+            except UnsupportedFormatError:
+                # Re-raise our own exceptions
+                raise
+            except tuple(base_excs) as e:
+                # Warn but don't fail on pypdf parsing/IO errors; the file
+                # passed basic checks and we only best-effort inspect
+                # encryption.
+                msg = f"Could not check PDF encryption: {e}"
+                warnings.warn(
+                    msg,
+                    category=PDFEncryptionCheckWarning,
+                    stacklevel=2,
+                )
 
     # ------------------------ Reconstruction API ------------------------
     def reconstruct_pdf_document(
@@ -189,7 +220,8 @@ class PDFDocumentReconstructor:
 
             logging.exception("Unexpected error during PDF reconstruction")
             raise DocumentReconstructionError(
-                f"Unexpected error during PDF reconstruction: {type(exc).__name__}: {exc}"
+                "Unexpected error during PDF reconstruction: "
+                f"{type(exc).__name__}: {exc}"
             ) from exc
 
     def reconstruct_pdf(
@@ -206,7 +238,9 @@ class PDFDocumentReconstructor:
         try:
             canvas_mod = importlib.import_module("reportlab.pdfgen.canvas")
             pagesizes_mod = importlib.import_module("reportlab.lib.pagesizes")
-            pdfmetrics_mod = importlib.import_module("reportlab.pdfbase.pdfmetrics")
+            pdfmetrics_mod = importlib.import_module(
+                "reportlab.pdfbase.pdfmetrics"
+            )
         except ImportError as e:  # pragma: no cover
             raise DocumentReconstructionError(
                 f"ReportLab is required for PDF reconstruction: {e}"

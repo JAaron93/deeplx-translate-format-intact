@@ -14,7 +14,8 @@ from services.pdf_document_reconstructor import (
 )
 
 reportlab = pytest.importorskip(
-    "reportlab", reason="ReportLab required for PDF reconstruction tests"
+    "reportlab",
+    reason="ReportLab required for PDF reconstruction tests",
 )
 
 
@@ -77,6 +78,67 @@ def test_reconstruct_single_line_simple(tmp_path: Path):
         assert "Hello" in extracted
     except ModuleNotFoundError:
         pass
+
+
+def test_pypdf_parse_error_emits_warning_but_validation_succeeds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    original_path = _write_minimal_pdf_header(tmp_path)
+    output_path = str(tmp_path / "out_warning.pdf")
+
+    elem = TranslatedElement(
+        original_text="Hi",
+        translated_text="Hi",
+        adjusted_text=None,
+        bbox=BoundingBox(x=50, y=750, width=200, height=20),
+        font_info=FontInfo(family="Helvetica", size=12),
+    )
+    layout = TranslatedLayout(
+        pages=[
+            TranslatedPage(
+                page_number=1,
+                translated_elements=[elem],
+                width=300,
+                height=800,
+            )
+        ]
+    )
+
+    # Create a stub pypdf module whose PdfReader raises a parse-like error
+    class _StubErrors:
+        class PdfReadError(Exception):
+            pass
+
+    class _StubPdfReader:
+        def __init__(self, _fh):
+            raise _StubErrors.PdfReadError("simulated parse error")
+
+    class _StubPypdf:
+        errors = _StubErrors
+        PdfReader = _StubPdfReader
+
+    import importlib as _il
+
+    def _fake_import(name: str, *args, **kwargs):
+        if name == "pypdf":
+            return _StubPypdf
+        return _il.import_module(name, *args, **kwargs)
+
+    # If pypdf isn't installed, this still works since we intercept import
+    monkeypatch.setattr("importlib.import_module", _fake_import)
+
+    recon = _reconstructor()
+    from services.pdf_document_reconstructor import PDFEncryptionCheckWarning
+
+    with pytest.warns(PDFEncryptionCheckWarning):
+        # Should not raise despite the parse error; just warn and continue
+        result = recon.reconstruct_pdf_document(
+            translated_layout=layout,
+            original_file_path=original_path,
+            output_path=output_path,
+        )
+    assert result.success is True
+    assert Path(output_path).exists()
 
 
 def test_reconstruct_multiline_wrap_and_overflow(tmp_path: Path):

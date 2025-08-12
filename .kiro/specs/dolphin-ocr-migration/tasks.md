@@ -99,6 +99,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Enhance summary logging with warning category breakdown: aggregate warnings into dictionary of reason->count (e.g., "OCR confidence low": 5, "image corruption": 2, "page skip": 1), include category counts in warning/info messages, and clamp verbosity for large documents by truncating logged text snippets to fixed safe length (e.g., 200 chars) with "(truncated)" indicator
     - Create unit tests for each helper method with various PDF types (text-based, image-based, hybrid)
     - _Requirements: 6.11, 6.12_
+
   - [ ] 6.4 Add basic PDF quality validation
     - Implement validate_pdf_reconstruction_quality method with simple quality checks
     - Add basic threshold checking for text accuracy, font preservation, and layout preservation
@@ -114,12 +115,14 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Create unit tests for error handling scenarios with proper error code assignment
     - Maintain a simple registry (e.g., errors/codes.py) enumerating all DOLPHIN_* codes with descriptions
     - _Requirements: 8.1, 8.2_
+
   - [ ] 7.2 Build basic monitoring system
     - Write simple MonitoringService class with basic performance metrics tracking
     - Add basic error rate monitoring and performance logging
     - Create simple logging for service health and basic metrics
     - Write unit tests for monitoring functionality
     - _Requirements: 8.3, 8.4, 8.5_
+
  - [ ] 8. Integrate complete document processing workflow
   - [ ] 8.1 Create main document processor orchestrating all services
     - Write DocumentProcessor class integrating all services (PDF converter, OCR, translation, reconstruction)
@@ -187,6 +190,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Update requirements.txt to remove PyMuPDF and add new dependencies (pdf2image, reportlab)
     - Create migration validation tests ensuring no PyMuPDF code remains
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
+
   - [ ] 11.2 Update documentation and deployment configuration
     - Update README.md and documentation to reflect new Dolphin OCR PDF-only capabilities
     - Modify deployment scripts and environment configuration for new dependencies
