@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 from pathlib import Path
+
 import pytest
+
 from services.pdf_document_reconstructor import (
     PDFDocumentReconstructor,
     UnsupportedFormatError,
@@ -53,9 +56,7 @@ def test_validate_accepts_valid_pdf(tmp_path: Path):
     recon.validate_pdf_format_or_raise(fpath)
 
 
-def test_validate_without_pypdf(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_validate_without_pypdf(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """Validation works when pypdf is not installed (skip encryption check)."""
     fpath = _write_bytes(tmp_path, "test.pdf", b"%PDF-1.7\nrest")
 

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import warnings
+from os import PathLike
 from pathlib import Path
 from typing import Optional
-import os
-from os import PathLike
 
 
 class UnsupportedFormatError(Exception):
@@ -14,9 +13,7 @@ class UnsupportedFormatError(Exception):
     (e.g., DOLPHIN_014 for encrypted PDFs).
     """
 
-    def __init__(
-        self, message: str, *, error_code: Optional[str] = None
-    ) -> None:
+    def __init__(self, message: str, *, error_code: Optional[str] = None) -> None:
         super().__init__(message)
         self.error_code = error_code
 
@@ -100,10 +97,7 @@ class PDFDocumentReconstructor:
             if getattr(reader, "is_encrypted", False):
                 # Standardized rejection per requirements (DOLPHIN_014)
                 raise UnsupportedFormatError(
-                    (
-                        "Encrypted PDFs not supported - "
-                        "please provide unlocked PDF"
-                    ),
+                    ("Encrypted PDFs not supported - " "please provide unlocked PDF"),
                     error_code="DOLPHIN_014",
                 )
         except ModuleNotFoundError:
