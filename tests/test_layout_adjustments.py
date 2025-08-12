@@ -24,13 +24,11 @@ def test_apply_font_scale_only():
         wrap_lines=1,
     )
 
-    adjusted_text, adjusted_font, adjusted_bbox = (
-        engine.apply_layout_adjustments(
-            text=text,
-            bbox=bbox,
-            font=font,
-            strategy=strat,
-        )
+    adjusted_text, adjusted_font, adjusted_bbox = engine.apply_layout_adjustments(
+        text=text,
+        bbox=bbox,
+        font=font,
+        strategy=strat,
     )
 
     assert adjusted_text == text
@@ -50,13 +48,11 @@ def test_apply_text_wrap_with_word_boundaries():
         wrap_lines=3,
     )
 
-    adjusted_text, adjusted_font, adjusted_bbox = (
-        engine.apply_layout_adjustments(
-            text=text,
-            bbox=bbox,
-            font=font,
-            strategy=strat,
-        )
+    adjusted_text, adjusted_font, adjusted_bbox = engine.apply_layout_adjustments(
+        text=text,
+        bbox=bbox,
+        font=font,
+        strategy=strat,
     )
 
     lines = adjusted_text.split("\n")
@@ -82,13 +78,11 @@ def test_hybrid_wrap_and_scale_with_bbox_expansion():
         wrap_lines=2,
     )
 
-    adjusted_text, adjusted_font, adjusted_bbox = (
-        engine.apply_layout_adjustments(
-            text=text,
-            bbox=bbox,
-            font=font,
-            strategy=strat,
-        )
+    adjusted_text, adjusted_font, adjusted_bbox = engine.apply_layout_adjustments(
+        text=text,
+        bbox=bbox,
+        font=font,
+        strategy=strat,
     )
 
     # Font scaled down a bit
