@@ -23,7 +23,8 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Create basic test suite for common error scenarios
     - Integrate with standardized error codes (DOLPHIN_005, DOLPHIN_011)
     - _Requirements: 8.1, 8.2, 1.5_
-    - [ ] 3. Create enhanced Dolphin OCR service integration
+
+- [ ] 3. Create enhanced Dolphin OCR service integration
   - [ ] 3.1 Implement DolphinOCRService class with Hugging Face authentication
     - Write DolphinOCRService class with HF token authentication and Modal endpoint configuration
     - Implement process_document_images method with batch optimization

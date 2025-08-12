@@ -14,10 +14,11 @@ from services.dolphin_ocr_service import DolphinOCRService
 
 
 class _MockResponse:
-    def __init__(self, status_code: int, body: Any):
+    def __init__(self, status_code: int, body: Any, headers: dict | None = None):
         self.status_code = status_code
         self._body = body
         self.text = body if isinstance(body, str) else json.dumps(body)
+        self.headers = headers or {}
 
     def json(self):
         if isinstance(self._body, str):
@@ -55,7 +56,8 @@ class _MockClient429TwiceThen200:
     def post(self, *_args, **_kwargs):
         self.calls += 1
         if self.calls <= 2:
-            return _MockResponse(429, {"error": "rate-limited"})
+            # provide Retry-After header to exercise code path
+            return _MockResponse(429, {"error": "rate-limited"}, headers={"Retry-After": "0"})
         return _MockResponse(200, {"ok": True})
 
 
@@ -87,6 +89,10 @@ def test_requires_token(monkeypatch):
 )
 def test_http_status_mapped_to_errors(status, exc):
     svc = DolphinOCRService(hf_token="t", modal_endpoint="https://example")
+    # Avoid real sleeps for 429 case
+    if status == 429:
+        svc._sleeper = lambda _s: None  # type: ignore[assignment]
+        svc.backoff_base_seconds = 0.0
     svc._client = _MockClient(_MockResponse(status, {"error": "x"}))
     with pytest.raises(exc):
         svc.process_document_images([b"x"])
@@ -152,7 +158,9 @@ def test_retry_mechanism_with_backoff():
 
     out = svc.process_document_images([b"x"])
     assert out == {"ok": True}
-    # Ensure exponential backoff applied at least twice
-    assert len(sleeps) >= 2
+    # Ensure exponential backoff applied exactly twice (3 total attempts)
+    assert len(sleeps) == 2
     assert sleeps[0] == pytest.approx(0.01, rel=1e-3)
     assert sleeps[1] == pytest.approx(0.02, rel=1e-3)
+    # Optional: also assert expected number of calls were made
+    assert getattr(svc._client, "calls", None) == 3

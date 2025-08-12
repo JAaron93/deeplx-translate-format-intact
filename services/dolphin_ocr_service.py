@@ -10,32 +10,15 @@ from __future__ import annotations
 
 import logging
 import os
+import random
 import threading
 import time
+from contextlib import suppress
 from dataclasses import dataclass, field
 from typing import Any, Callable
+from urllib.parse import urlparse
 
 import httpx
-
-try:
-    from dolphin_ocr.logging_config import (
-        get_logger as _get_logger,
-    )
-    from dolphin_ocr.logging_config import (
-        setup_logging as _setup_logging,
-    )
-
-    _setup_logging()
-    logger = _get_logger("dolphin_ocr.service")
-except Exception:  # pragma: no cover - fallback logger
-    logger = logging.getLogger("dolphin_ocr.service")
-    if not logger.handlers:
-        _handler = logging.StreamHandler()
-        _handler.setFormatter(
-            logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
-        )
-        logger.addHandler(_handler)
-    logger.setLevel(logging.INFO)
 
 from dolphin_ocr.errors import (
     ApiRateLimitError,
@@ -44,6 +27,28 @@ from dolphin_ocr.errors import (
     OcrProcessingError,
     ServiceUnavailableError,
 )
+
+
+def _setup_service_logger() -> logging.Logger:
+    """Setup logger with fallback to basic configuration."""
+    try:  # pragma: no cover
+        from dolphin_ocr.logging_config import get_logger, setup_logging
+
+        setup_logging()
+        return get_logger("dolphin_ocr.service")
+    except Exception:  # pragma: no cover
+        lg = logging.getLogger("dolphin_ocr.service")
+        if not lg.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(
+                logging.Formatter("[%(asctime)s] %(levelname)s %(name)s: %(message)s")
+            )
+            lg.addHandler(handler)
+        lg.setLevel(logging.INFO)
+        return lg
+
+
+logger = _setup_service_logger()
 
 DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MiB per image
@@ -82,6 +87,16 @@ class DolphinOCRService:
     _metrics_lock: threading.Lock = field(
         default_factory=threading.Lock, init=False, repr=False, compare=False
     )
+
+    # Backward-compat attribute alias (attribute access only)
+    @property
+    def max_retries(self) -> int:  # pragma: no cover - trivial alias
+        """Backward-compat alias for ``max_attempts`` (attribute access only)."""
+        return self.max_attempts
+
+    @max_retries.setter
+    def max_retries(self, value: int) -> None:  # pragma: no cover - trivial alias
+        self.max_attempts = value
 
     # -------------------- Public API --------------------
     def process_document_images(self, images: list[bytes]) -> dict[str, Any]:
@@ -142,42 +157,10 @@ class DolphinOCRService:
                         context={"endpoint": endpoint, "error": str(err)},
                     ) from err
 
-                # Map non-2xx statuses to standardized errors
-                if resp.status_code in (401, 403):
-                    self._record_metrics(start, success=False)
-                    raise AuthenticationError(
-                        context={"endpoint": endpoint, "status": resp.status_code}
-                    )
-                if resp.status_code == 429 and attempts < self.max_attempts:
-                    delay = self._calculate_backoff_delay(attempts)
-                    logger.warning(
-                        "Rate limited (429). Retrying attempt %s/%s after %.2fs",
-                        attempts,
-                        self.max_attempts,
-                        delay,
-                    )
-                    self._sleep(delay)
+                # Map non-2xx statuses to standardized errors or retry
+                action = self._handle_response_status(resp, endpoint, attempts, start)
+                if action == "retry":
                     continue
-                if resp.status_code == 429:
-                    self._record_metrics(start, success=False)
-                    raise ApiRateLimitError(
-                        context={"endpoint": endpoint, "status": resp.status_code}
-                    )
-                if 500 <= resp.status_code <= 599:
-                    self._record_metrics(start, success=False)
-                    raise ServiceUnavailableError(
-                        context={"endpoint": endpoint, "status": resp.status_code}
-                    )
-                if resp.status_code >= 400:
-                    self._record_metrics(start, success=False)
-                    raise OcrProcessingError(
-                        context={
-                            "endpoint": endpoint,
-                            "status": resp.status_code,
-                            "body": resp.text[:500],
-                        }
-                    )
-
                 # Success
                 data = self._parse_json(resp, endpoint)
                 self._record_metrics(start, success=True)
@@ -197,20 +180,45 @@ class DolphinOCRService:
                 "DOLPHIN_MODAL_ENDPOINT is required",
                 context={"env": bool(os.getenv("DOLPHIN_MODAL_ENDPOINT"))},
             )
+
+        # Basic URL validation to avoid accidental typos/misconfigurations
+        parsed = urlparse(endpoint)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ConfigurationError(
+                "DOLPHIN_MODAL_ENDPOINT must be a valid HTTP(S) URL",
+                context={
+                    "endpoint": endpoint,
+                    "scheme": parsed.scheme or "",
+                    "netloc": parsed.netloc or "",
+                },
+            )
         return endpoint
 
     def _build_auth_headers(self) -> dict[str, str]:
         token = ((self.hf_token or os.getenv("HF_TOKEN")) or "").strip()
         if not token:
             raise AuthenticationError("HF_TOKEN is required for authentication")
-        return {
-            "Authorization": f"Bearer {token}",
-        }
+        return {"Authorization": f"Bearer {token}"}
 
-    def _get_client(self) -> httpx.Client:
-        # Allow injection for tests, but always return a usable client context
+    def _get_client(self):
+        """Return a context manager yielding an httpx.Client.
+
+        - If an injected client exists (``self._client``), yield it without
+          closing on context exit (no-op manager).
+        - Otherwise, create a new ephemeral client and close it on exit.
+        """
         if self._client is not None:
-            return self._client
+
+            class _NoopCtx:
+                def __enter__(self):
+                    return outer_client
+
+                def __exit__(self, exc_type, exc, tb):
+                    return False  # do not suppress
+
+            outer_client = self._client
+            return _NoopCtx()
+
         return httpx.Client()
 
     def _sleep(self, seconds: float) -> None:
@@ -220,6 +228,76 @@ class DolphinOCRService:
     def _calculate_backoff_delay(self, attempt: int) -> float:
         # attempt is 1-based
         return self.backoff_base_seconds * (2 ** max(0, attempt - 1))
+
+    def _add_jitter(self, delay: float) -> float:
+        """Add jitter for real sleeps only.
+
+        Jitter is applied only when ``self._sleeper`` is ``None`` because tests
+        inject a custom sleeper to make timing deterministic (so we disable
+        jitter under tests).
+        """
+        if self._sleeper is None:
+            # Uniform jitter in [0.9, 1.1] to spread retry storms
+            return delay * random.uniform(0.9, 1.1)
+        return delay
+
+    def _handle_response_status(
+        self, resp: httpx.Response, endpoint: str, attempts: int, start: float
+    ) -> str:
+        """Handle non-2xx statuses. Returns "retry" to retry, else raises or proceeds.
+
+        On success, caller should continue to parse JSON.
+        """
+        # 401/403
+        if resp.status_code in (401, 403):
+            self._record_metrics(start, success=False)
+            raise AuthenticationError(
+                context={"endpoint": endpoint, "status": resp.status_code}
+            )
+
+        # 429 with retries remaining
+        if resp.status_code == 429 and attempts < self.max_attempts:
+            delay = self._calculate_backoff_delay(attempts)
+            retry_after = resp.headers.get("Retry-After")
+            if retry_after is not None:
+                with suppress(ValueError):
+                    delay = max(delay, float(retry_after))
+            delay = self._add_jitter(delay)
+            logger.warning(
+                "Rate limited (429). Retrying in %.2fs (next %s/%s)",
+                delay,
+                attempts + 1,
+                self.max_attempts,
+            )
+            self._sleep(delay)
+            return "retry"
+
+        # 429 hard failure
+        if resp.status_code == 429:
+            self._record_metrics(start, success=False)
+            raise ApiRateLimitError(
+                context={"endpoint": endpoint, "status": resp.status_code}
+            )
+
+        # 5xx
+        if 500 <= resp.status_code <= 599:
+            self._record_metrics(start, success=False)
+            raise ServiceUnavailableError(
+                context={"endpoint": endpoint, "status": resp.status_code}
+            )
+
+        # Other 4xx
+        if resp.status_code >= 400:
+            self._record_metrics(time.perf_counter(), success=False)
+            raise OcrProcessingError(
+                context={
+                    "endpoint": endpoint,
+                    "status": resp.status_code,
+                    "body": resp.text[:500],
+                }
+            )
+
+        return "ok"
 
     def _parse_json(self, resp: httpx.Response, endpoint: str) -> dict[str, Any]:
         try:
@@ -243,13 +321,15 @@ class DolphinOCRService:
             fail = self.failed_requests
             success_rate = ok / max(1, total) * 100.0
         logger.info(
-            "dolphin_ocr_service_request duration_ms=%.2f success=%s total=%d ok=%d fail=%d success_rate=%.1f%%",
-            duration_ms,
-            success,
-            total,
-            ok,
-            fail,
-            success_rate,
+            "dolphin_ocr_service_request",
+            extra={
+                "duration_ms": round(duration_ms, 2),
+                "success": success,
+                "total": total,
+                "ok": ok,
+                "fail": fail,
+                "success_rate": round(success_rate, 1),
+            },
         )
 
     def _validate_images(self, images: list[bytes]) -> None:
