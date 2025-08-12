@@ -24,11 +24,13 @@ def test_apply_font_scale_only():
         wrap_lines=1,
     )
 
-    adjusted_text, adjusted_font, adjusted_bbox = engine.apply_layout_adjustments(
-        text=text,
-        bbox=bbox,
-        font=font,
-        strategy=strat,
+    adjusted_text, adjusted_font, adjusted_bbox = (
+        engine.apply_layout_adjustments(
+            text=text,
+            bbox=bbox,
+            font=font,
+            strategy=strat,
+        )
     )
 
     assert adjusted_text == text
@@ -43,18 +45,23 @@ def test_apply_text_wrap_with_word_boundaries():
     font = FontInfo(size=12)
     text = "one two three four five six seven"
     strat = LayoutStrategy(
-        type=StrategyType.TEXT_WRAP, font_scale=1.0, wrap_lines=3
+        type=StrategyType.TEXT_WRAP,
+        font_scale=1.0,
+        wrap_lines=3,
     )
 
-    adjusted_text, adjusted_font, adjusted_bbox = engine.apply_layout_adjustments(
-        text=text,
-        bbox=bbox,
-        font=font,
-        strategy=strat,
+    adjusted_text, adjusted_font, adjusted_bbox = (
+        engine.apply_layout_adjustments(
+            text=text,
+            bbox=bbox,
+            font=font,
+            strategy=strat,
+        )
     )
 
     lines = adjusted_text.split("\n")
     assert 1 < len(lines) <= 3
+    assert all(line for line in lines)
     assert adjusted_font.size == font.size
     assert adjusted_bbox.height >= bbox.height  # may expand
 
@@ -65,10 +72,9 @@ def test_hybrid_wrap_and_scale_with_bbox_expansion():
         max_bbox_expansion=0.3,
     )
 
-    text = (
-        "This is a long sentence that likely needs wrapping to fit nicely"
-    )
-    bbox = BoundingBox(0, 0, 60, 20)  # short height forces expansion or trimming
+    text = "This is a long sentence that likely needs wrapping to fit nicely"
+    # Short height forces expansion or trimming
+    bbox = BoundingBox(0, 0, 60, 20)
     font = FontInfo(size=12)
     strat = LayoutStrategy(
         type=StrategyType.HYBRID,
@@ -76,11 +82,13 @@ def test_hybrid_wrap_and_scale_with_bbox_expansion():
         wrap_lines=2,
     )
 
-    adjusted_text, adjusted_font, adjusted_bbox = engine.apply_layout_adjustments(
-        text=text,
-        bbox=bbox,
-        font=font,
-        strategy=strat,
+    adjusted_text, adjusted_font, adjusted_bbox = (
+        engine.apply_layout_adjustments(
+            text=text,
+            bbox=bbox,
+            font=font,
+            strategy=strat,
+        )
     )
 
     # Font scaled down a bit
@@ -88,7 +96,8 @@ def test_hybrid_wrap_and_scale_with_bbox_expansion():
     # Wrapped to at most requested lines or capacity
     assert 1 <= len(adjusted_text.split("\n")) <= strat.wrap_lines
     # BBox expanded but within limit
-    assert bbox.height <= adjusted_bbox.height <= (
-        bbox.height * (1.0 + engine.max_bbox_expansion)
+    assert (
+        bbox.height
+        <= adjusted_bbox.height
+        <= (bbox.height * (1.0 + engine.max_bbox_expansion))
     )
-

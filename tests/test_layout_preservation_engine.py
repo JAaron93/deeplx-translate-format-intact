@@ -79,8 +79,7 @@ def test_strategy_selection_across_length_ratios(
     # Map NONE vs FONT_SCALE for 1.0 vs 1.2; 1.8 -> wrap; 2.2 -> likely hybrid
     # Allow TEXT_WRAP fallback if HYBRID was expected
     assert decision.type == expected or (
-        expected == StrategyType.HYBRID
-        and decision.type == StrategyType.TEXT_WRAP
+        expected == StrategyType.HYBRID and decision.type == StrategyType.TEXT_WRAP
     )
 
 
