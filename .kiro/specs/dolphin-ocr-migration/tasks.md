@@ -2,37 +2,37 @@
 
 Convert the Dolphin OCR migration design into a series of prompts for a code-generation LLM that will implement each step in a test-driven manner. Prioritize best practices, incremental progress, and early testing, ensuring no big jumps in complexity at any stage. Make sure that each prompt builds on the previous prompts, and ends with wiring things together. There should be no hanging or orphaned code that isn't integrated into a previous step. Focus ONLY on tasks that involve writing, modifying, or testing code.
 
-- [ ] 1. Set up core infrastructure and configuration management
+- [x] 1. Set up core infrastructure and configuration management
   - Create basic configuration management system with environment variable loading
   - Implement standardized error codes and exception classes for Dolphin OCR system
   - Set up basic logging configuration
   - Create base test fixtures and utilities for Dolphin OCR testing
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 8.1, 8.2_
 
-- [ ] 2. Implement PDF-to-Image conversion service
-  - [ ] 2.1 Create PDFToImageConverter class with pdf2image integration
+- [x] 2. Implement PDF-to-Image conversion service
+  - [x] 2.1 Create PDFToImageConverter class with pdf2image integration
     - Write PDFToImageConverter class with configurable DPI and format settings
     - Implement convert_pdf_to_images method with memory-efficient page processing
     - Add image optimization for OCR processing with Pillow integration
     - Create unit tests for PDF conversion with various document types
     - _Requirements: 1.3, 4.1, 4.2_
 
-  - [ ] 2.2 Add error handling and validation for PDF conversion
+  - [x] 2.2 Add error handling and validation for PDF conversion
     - Implement robust error handling for corrupted PDFs and unsupported formats
     - Add file validation and format checking before conversion
     - Create basic test suite for common error scenarios
     - Integrate with standardized error codes (DOLPHIN_005, DOLPHIN_011)
     - _Requirements: 8.1, 8.2, 1.5_
 
-- [ ] 3. Create enhanced Dolphin OCR service integration
-  - [ ] 3.1 Implement DolphinOCRService class with Hugging Face authentication
+- [x] 3. Create enhanced Dolphin OCR service integration
+  - [x] 3.1 Implement DolphinOCRService class with Hugging Face authentication
     - Write DolphinOCRService class with HF token authentication and Modal endpoint configuration
     - Implement process_document_images method with batch optimization
     - Add basic OCR result validation and structure checking
     - Create unit tests for OCR service with mocked API responses
     - _Requirements: 5.1, 5.2, 5.3, 2.1, 2.2_
 
-  - [ ] 3.2 Add basic performance optimization and error handling for OCR service
+  - [x] 3.2 Add basic performance optimization and error handling for OCR service
     - Implement basic retry mechanisms with exponential backoff for rate limits
     - Add timeout handling and graceful failure for service unavailability
     - Create basic performance logging with response times and success rates
@@ -40,37 +40,38 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Gate live API tests behind an env flag (e.g., RUN_LIVE_DOLPHIN_TESTS=true) and skip by default in CI
     - _Requirements: 4.5, 4.6, 4.7, 8.3, 8.4, 8.5_
 
-- [ ] 4. Develop layout preservation engine
-  - [ ] 4.1 Create core layout analysis and strategy determination
+- [x] 4. Develop layout preservation engine
+  - [x] 4.1 Create core layout analysis and strategy determination
     - Write LayoutPreservationEngine class with text fit analysis capabilities
     - Implement determine_layout_strategy method with font scaling, text wrapping, and hybrid approaches
     - Add quality score calculation for layout preservation assessment
     - Create unit tests for layout strategy selection with various text length ratios
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 4.2 Implement layout adjustment application and optimization
+  - [x] 4.2 Implement layout adjustment application and optimization
     - Write apply_layout_adjustments method with font scaling and text wrapping logic
     - Add basic text wrapping respecting word boundaries
     - Implement bbox expansion and hybrid strategy application
     - Create basic test suite for layout adjustments
     - _Requirements: 3.4, 3.5_
 
-- [ ] 5. Build layout-aware translation service
-  - [ ] 5.1 Create translation service with layout constraints
+- [x] 5. Build layout-aware translation service
+  - [x] 5.1 Create translation service with layout constraints
     - Write LayoutAwareTranslationService class integrating McpLingoClient and LayoutPreservationEngine
     - Implement translate_with_layout_constraints method with length optimization
     - Add batch translation processing with layout context preservation
     - Create unit tests for translation with layout constraint handling
     - _Requirements: 7.1, 7.2, 7.3_
 
-  - [ ] 5.2 Add translation optimization and quality assurance
+  - [x] 5.2 Add translation optimization and quality assurance
     - Implement translation length optimization for layout fitting
     - Add confidence score tracking from both OCR and translation processes
     - Create translation quality validation with layout impact assessment
     - Write integration tests for complete translation workflow with layout preservation
     - _Requirements: 7.4, 7.5_
-- [ ] 6. Implement PDF document reconstructor
-  - [ ] 6.1 Create PDFDocumentReconstructor with basic format validation
+
+- [-] 6. Implement PDF document reconstructor
+  - [-] 6.1 Create PDFDocumentReconstructor with basic format validation
     - Write PDFDocumentReconstructor class with basic PDF format validation using file extension and simple header checks
     - Implement basic PDF format checking methods (is_pdf_format, validate_pdf_format_or_raise)
     - Add encrypted PDF detection and rejection with error code DOLPHIN_014
