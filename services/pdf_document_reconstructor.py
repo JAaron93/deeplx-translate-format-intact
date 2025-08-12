@@ -90,9 +90,7 @@ class PDFDocumentReconstructor:
     supported_extension = ".pdf"
 
     @classmethod
-    def is_pdf_format(
-        cls, file_path: str | PathLike[str]
-    ) -> bool:
+    def is_pdf_format(cls, file_path: str | PathLike[str]) -> bool:
         """Return True if the path ends with the configured PDF extension.
 
         Implemented as a classmethod so subclasses can override
@@ -104,9 +102,7 @@ class PDFDocumentReconstructor:
         configured = str(cls.supported_extension).casefold().lstrip(".")
         return ext == configured
 
-    def validate_pdf_format_or_raise(
-        self, file_path: str | PathLike[str]
-    ) -> None:
+    def validate_pdf_format_or_raise(self, file_path: str | PathLike[str]) -> None:
         """Validate that a file is a readable, non-encrypted PDF.
 
         Raises UnsupportedFormatError when any requirement is not met.
@@ -148,10 +144,7 @@ class PDFDocumentReconstructor:
             if getattr(reader, "is_encrypted", False):
                 # Standardized rejection per requirements (DOLPHIN_014)
                 raise UnsupportedFormatError(
-                    (
-                        "Encrypted PDFs not supported - "
-                        "please provide unlocked PDF"
-                    ),
+                    ("Encrypted PDFs not supported - " "please provide unlocked PDF"),
                     error_code="DOLPHIN_014",
                 )
         except ModuleNotFoundError:
@@ -193,6 +186,7 @@ class PDFDocumentReconstructor:
         except Exception as exc:  # pragma: no cover
             # Log unexpected exceptions for debugging
             import logging
+
             logging.exception("Unexpected error during PDF reconstruction")
             raise DocumentReconstructionError(
                 f"Unexpected error during PDF reconstruction: {type(exc).__name__}: {exc}"
@@ -211,12 +205,8 @@ class PDFDocumentReconstructor:
 
         try:
             canvas_mod = importlib.import_module("reportlab.pdfgen.canvas")
-            pagesizes_mod = importlib.import_module(
-                "reportlab.lib.pagesizes"
-            )
-            pdfmetrics_mod = importlib.import_module(
-                "reportlab.pdfbase.pdfmetrics"
-            )
+            pagesizes_mod = importlib.import_module("reportlab.lib.pagesizes")
+            pdfmetrics_mod = importlib.import_module("reportlab.pdfbase.pdfmetrics")
         except ImportError as e:  # pragma: no cover
             raise DocumentReconstructionError(
                 f"ReportLab is required for PDF reconstruction: {e}"

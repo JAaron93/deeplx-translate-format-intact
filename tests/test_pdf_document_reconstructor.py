@@ -62,6 +62,7 @@ def test_validate_without_pypdf(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
 
     # Make import of pypdf raise ModuleNotFoundError deterministically
     import builtins as _bi
+
     _orig_import = _bi.__import__
 
     def _no_pypdf(name, *args, **kwargs):

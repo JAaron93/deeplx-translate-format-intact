@@ -1,6 +1,8 @@
 from __future__ import annotations
-from pathlib import Path
+
 import os
+from pathlib import Path
+
 import pytest
 
 from dolphin_ocr.layout import BoundingBox, FontInfo
@@ -10,7 +12,10 @@ from services.pdf_document_reconstructor import (
     TranslatedLayout,
     TranslatedPage,
 )
-reportlab = pytest.importorskip("reportlab", reason="ReportLab required for PDF reconstruction tests")
+
+reportlab = pytest.importorskip(
+    "reportlab", reason="ReportLab required for PDF reconstruction tests"
+)
 
 
 def _write_minimal_pdf_header(tmp_path: Path, name: str = "orig.pdf") -> str:
