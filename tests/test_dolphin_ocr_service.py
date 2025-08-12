@@ -57,7 +57,9 @@ class _MockClient429TwiceThen200:
         self.calls += 1
         if self.calls <= 2:
             # provide Retry-After header to exercise code path
-            return _MockResponse(429, {"error": "rate-limited"}, headers={"Retry-After": "0"})
+            return _MockResponse(
+                429, {"error": "rate-limited"}, headers={"Retry-After": "0"}
+            )
         return _MockResponse(200, {"ok": True})
 
 
