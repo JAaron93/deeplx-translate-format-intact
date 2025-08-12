@@ -71,7 +71,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - _Requirements: 7.4, 7.5_
 
 - [-] 6. Implement PDF document reconstructor
-  - [-] 6.1 Create PDFDocumentReconstructor with basic format validation
+  - [x] 6.1 Create PDFDocumentReconstructor with basic format validation
     - Write PDFDocumentReconstructor class with basic PDF format validation using file extension and simple header checks
     - Implement basic PDF format checking methods (is_pdf_format, validate_pdf_format_or_raise)
     - Add encrypted PDF detection and rejection with error code DOLPHIN_014
@@ -81,7 +81,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Unit tests: encrypted PDFs, basic format validation, error handling
     - _Requirements: 6.1, 6.2, 6.9, 6.10_
 
-  - [ ] 6.2 Implement PDF reconstruction with layout preservation
+  - [-] 6.2 Implement PDF reconstruction with layout preservation
     - Write reconstruct_pdf method using reportlab with translated layout integration
     - Implement font handling, text positioning, and multi-line text wrapping
     - Add color preservation and style application from original layout

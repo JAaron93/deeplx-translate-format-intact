@@ -60,17 +60,16 @@ def test_validate_without_pypdf(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     """Validation works when pypdf is not installed (skip encryption check)."""
     fpath = _write_bytes(tmp_path, "test.pdf", b"%PDF-1.7\nrest")
 
-    # Make import of pypdf appear absent by patching finder
-    import importlib.util as _iu
+    # Make import of pypdf raise ModuleNotFoundError deterministically
+    import builtins as _bi
+    _orig_import = _bi.__import__
 
-    original_find_spec = _iu.find_spec
+    def _no_pypdf(name, *args, **kwargs):
+        if name.split(".", 1)[0] == "pypdf":
+            raise ModuleNotFoundError("No module named 'pypdf'")
+        return _orig_import(name, *args, **kwargs)
 
-    def _find_spec(name, *args, **kwargs):
-        if name == "pypdf":
-            return None
-        return original_find_spec(name, *args, **kwargs)
-
-    monkeypatch.setattr(_iu, "find_spec", _find_spec)
+    monkeypatch.setattr(_bi, "__import__", _no_pypdf)
 
     recon = PDFDocumentReconstructor()
     # Should not raise - encryption check is skipped
