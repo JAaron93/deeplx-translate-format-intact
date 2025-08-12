@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
 from dolphin_ocr.layout import (
     BoundingBox,
@@ -18,7 +17,7 @@ from services.layout_aware_translation_service import (
 
 @dataclass
 class _FakeBatchCall:
-    texts: List[str]
+    texts: list[str]
     source_lang: str
     target_lang: str
 
@@ -36,8 +35,8 @@ class _FakeLingo:
         return self._mapping.get(text, text)
 
     def translate_batch(
-        self, texts: List[str], source_lang: str, target_lang: str
-    ) -> List[str]:
+        self, texts: list[str], source_lang: str, target_lang: str
+    ) -> list[str]:
         self.batch_calls.append(
             _FakeBatchCall(
                 texts=list(texts),
@@ -61,9 +60,7 @@ def test_single_translation_with_font_scale_and_length_optimization():
     mapping = {"Hello": "Hello   world"}
     lingo = _FakeLingo(mapping)
     engine = _make_engine()
-    service = LayoutAwareTranslationService(
-        lingo_client=lingo, layout_engine=engine
-    )
+    service = LayoutAwareTranslationService(lingo_client=lingo, layout_engine=engine)
 
     ctx = LayoutContext(bbox=BoundingBox(0, 0, 50, 30), font=FontInfo(size=12))
 
@@ -86,18 +83,14 @@ def test_batch_translation_preserves_layout_context_and_uses_batch():
     # Block A will yield NONE (same text)
     # Block B will induce HYBRID or TEXT_WRAP due to tight box and long
     # translation
-    long_translation = (
-        "This is an excessively verbose translation requiring compromise"
-    )
+    long_translation = "This is an excessively verbose translation requiring compromise"
     mapping = {
         "Short": "Short",
         "Base": long_translation,
     }
     lingo = _FakeLingo(mapping)
     engine = _make_engine()
-    service = LayoutAwareTranslationService(
-        lingo_client=lingo, layout_engine=engine
-    )
+    service = LayoutAwareTranslationService(lingo_client=lingo, layout_engine=engine)
 
     blocks = [
         TextBlock(

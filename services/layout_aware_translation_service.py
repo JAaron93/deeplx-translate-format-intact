@@ -18,8 +18,8 @@ from typing import Protocol
 
 from dolphin_ocr.layout import (
     BoundingBox,
-    FontInfo,
     FitAnalysis,
+    FontInfo,
     LayoutPreservationEngine,
     LayoutStrategy,
 )
@@ -132,9 +132,7 @@ class LayoutAwareTranslationService:
         """
         # Prefer confidence-aware method if available
         translation_conf: float | None = None
-        translate_with_conf = getattr(
-            self._lingo, "translate_with_confidence", None
-        )
+        translate_with_conf = getattr(self._lingo, "translate_with_confidence", None)
         if callable(translate_with_conf):
             raw_translation, translation_conf = translate_with_conf(
                 text,
@@ -142,9 +140,7 @@ class LayoutAwareTranslationService:
                 target_lang,
             )
         else:
-            raw_translation = self._lingo.translate(
-                text, source_lang, target_lang
-            )
+            raw_translation = self._lingo.translate(text, source_lang, target_lang)
         optimized_translation = self._optimize_for_length(raw_translation)
 
         analysis = self._engine.analyze_text_fit(
@@ -166,9 +162,7 @@ class LayoutAwareTranslationService:
             strategy=strategy,
         )
 
-        quality_score = self._engine.calculate_quality_score(
-            analysis, strategy
-        )
+        quality_score = self._engine.calculate_quality_score(analysis, strategy)
 
         return TranslationResult(
             source_text=text,
@@ -297,7 +291,6 @@ class LayoutAwareTranslationService:
         sophisticated strategies (synonym selection, soft constraints to the
         LLM/MT system) can be layered later without changing the external API.
         """
-
         # Collapse sequences of whitespace to single spaces
         compact = " ".join(text.split())
         return compact.strip()

@@ -62,9 +62,7 @@ class TranslationQualityValidator:
             except ValueError:
                 large_expansion_threshold = 1.6
         # Validate reasonable bounds (must be >= 1.0)
-        self._large_expansion_threshold = max(
-            1.0, float(large_expansion_threshold)
-        )
+        self._large_expansion_threshold = max(1.0, float(large_expansion_threshold))
 
         if warn_on_wrap_overflow is None:
             env_flag = os.getenv("QUALITY_WARN_WRAP_OVERFLOW", "true").lower()
@@ -114,9 +112,7 @@ class TranslationQualityValidator:
         if strategy.wrap_lines > 1:
             max_lines = max(1, analysis.max_lines)
             normalized = (strategy.wrap_lines - 1) / max(1, max_lines - 1)
-            layout_quality -= (
-                self._wrap_lines_penalty_weight * normalized
-            )
+            layout_quality -= self._wrap_lines_penalty_weight * normalized
         if strategy.type == StrategyType.NONE:
             layout_quality += self._no_adjustment_bonus
         layout_quality = max(0.0, min(1.0, layout_quality))
@@ -136,9 +132,7 @@ class TranslationQualityValidator:
             strategy.type == StrategyType.TEXT_WRAP
             and analysis.lines_needed > analysis.max_lines
         ):
-            warnings.append(
-                "Wrapping exceeds capacity; potential truncation"
-            )
+            warnings.append("Wrapping exceeds capacity; potential truncation")
         return QualityReport(
             overall_score=overall,
             text_length_ratio=analysis.length_ratio,

@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 from dolphin_ocr.layout import (
@@ -24,9 +25,7 @@ class FakeLingoClient:
     ]
 
     # Minimal methods to satisfy protocol at runtime
-    def translate(
-        self, text: str, _source_lang: str, _target_lang: str
-    ) -> str:
+    def translate(self, text: str, _source_lang: str, _target_lang: str) -> str:
         return self.mapping.get(text, (text, 0.8))[0]
 
     def translate_batch(
