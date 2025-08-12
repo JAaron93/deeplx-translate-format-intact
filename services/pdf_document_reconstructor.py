@@ -102,9 +102,7 @@ class PDFDocumentReconstructor:
         configured = str(cls.supported_extension).casefold().lstrip(".")
         return ext == configured
 
-    def validate_pdf_format_or_raise(
-        self, file_path: str | PathLike[str]
-    ) -> None:
+    def validate_pdf_format_or_raise(self, file_path: str | PathLike[str]) -> None:
         """Validate that a file is a readable, non-encrypted PDF.
 
         Raises UnsupportedFormatError when any requirement is not met.
@@ -238,9 +236,7 @@ class PDFDocumentReconstructor:
         try:
             canvas_mod = importlib.import_module("reportlab.pdfgen.canvas")
             pagesizes_mod = importlib.import_module("reportlab.lib.pagesizes")
-            pdfmetrics_mod = importlib.import_module(
-                "reportlab.pdfbase.pdfmetrics"
-            )
+            pdfmetrics_mod = importlib.import_module("reportlab.pdfbase.pdfmetrics")
         except ImportError as e:  # pragma: no cover
             raise DocumentReconstructionError(
                 f"ReportLab is required for PDF reconstruction: {e}"
