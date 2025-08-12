@@ -66,8 +66,7 @@ class FitAnalysis:
 
     Attributes:
     - length_ratio: translated_length / original_length (>= 0)
-    - one_line_width: Estimated width (points) if rendered on one line at the
-      current font size.
+    - one_line_width: Estimated width (points) on one line at current size
     - max_lines: Maximum number of lines that fit the bounding box height.
     - lines_needed: Required number of lines at the current font size to fit
       the text when wrapping at box width.
@@ -158,8 +157,10 @@ class LayoutPreservationEngine:
         length_ratio = translated_len / float(original_len)
 
         # Estimate width if rendered on a single line at current font size.
-        # Use a simple model: width = font_size * avg_char_em * num_chars
-        one_line_width = font.size * self.average_char_width_em * translated_len
+        # Use a simple model: width ≈ font_size * avg_char_em * num_chars
+        one_line_width = (
+            font.size * self.average_char_width_em * translated_len
+        )
 
         # Height constraints: how many lines can we draw in this bbox?
         line_height = font.size * self.line_height_factor
@@ -171,9 +172,13 @@ class LayoutPreservationEngine:
         can_fit_without_changes = one_line_width <= bbox.width
 
         # Minimal scale factor required to fit on a single line.
-        required_scale_for_single_line = min(1.0, bbox.width / max(1.0, one_line_width))
+        required_scale_for_single_line = min(
+            1.0, bbox.width / max(1.0, one_line_width)
+        )
         can_scale_to_single_line = (
-            self.font_scale_min <= required_scale_for_single_line <= self.font_scale_max
+            self.font_scale_min
+            <= required_scale_for_single_line
+            <= self.font_scale_max
         )
 
         can_wrap_within_height = lines_needed <= max_lines
@@ -226,8 +231,8 @@ class LayoutPreservationEngine:
 
         # 4) Hybrid: combine modest scaling with wrapping.
         # Improved accuracy: simulate wrapped line count after applying the
-        # candidate scale. Because our width heuristic is linear in font size,
-        # we model:
+        # candidate scale. Because width grows linearly with font size, we
+        # model:
         #   lines_after_scale = ceil(lines_needed * scale)
         # where lines_needed = ceil(one_line_width / box_width) at scale=1.
         # Accept HYBRID only when the simulated line count fits within
@@ -283,3 +288,127 @@ class LayoutPreservationEngine:
 
         # Clamp to [0, 1]
         return max(0.0, min(1.0, score))
+
+    # -------------------- Adjustment Application --------------------
+    def apply_layout_adjustments(
+        self,
+        *,
+        text: str,
+        bbox: BoundingBox,
+        font: FontInfo,
+        strategy: LayoutStrategy,
+    ) -> tuple[str, FontInfo, BoundingBox]:
+        """Apply the selected layout strategy to text, font, and bounding box.
+
+        Returns a tuple: (adjusted_text, adjusted_font, adjusted_bbox).
+        """
+        # 1) Apply font scaling when required
+        scale = 1.0
+        if strategy.type in (StrategyType.FONT_SCALE, StrategyType.HYBRID):
+            scale = max(self.font_scale_min, min(self.font_scale_max, strategy.font_scale))
+        new_font = FontInfo(
+            family=font.family,
+            size=max(1.0, font.size * scale),
+            weight=font.weight,
+            style=font.style,
+            color=font.color,
+        )
+
+        # 2) Compute wrapping based on strategy
+        adjusted_text = text
+        new_bbox = bbox
+
+        if strategy.type in (StrategyType.TEXT_WRAP, StrategyType.HYBRID):
+            chars_per_line = self._estimate_chars_per_line(
+                new_font.size, bbox.width
+            )
+            wrapped_lines = self._wrap_text_to_width(text, chars_per_line)
+
+            # If a target number of lines is suggested by strategy, keep within
+            # it
+            target_lines = max(1, strategy.wrap_lines)
+            # Compute capacity and expand bbox height if allowed and needed
+            capacity = self._max_lines_for_bbox(new_font.size, bbox.height)
+            needed = len(wrapped_lines)
+            if needed > capacity and self.max_bbox_expansion > 0.0:
+                line_height = new_font.size * self.line_height_factor
+                required_height = line_height * needed
+                max_height = bbox.height * (1.0 + self.max_bbox_expansion)
+                expanded_height = min(max_height, required_height)
+                new_bbox = BoundingBox(
+                    bbox.x, bbox.y, bbox.width, expanded_height
+                )
+                capacity = self._max_lines_for_bbox(new_font.size, new_bbox.height)
+
+            # If still exceeding capacity, trim to capacity as a last resort
+            if needed > capacity:
+                wrapped_lines = wrapped_lines[:capacity]
+
+            # Also respect target_lines if provided (best-effort)
+            if needed > target_lines:
+                wrapped_lines = wrapped_lines[:target_lines]
+
+            adjusted_text = "\n".join(wrapped_lines)
+
+        # NONE or FONT_SCALE without wrapping: leave text/bbox as-is
+        return adjusted_text, new_font, new_bbox
+
+    # -------------------- Helpers --------------------
+    def _max_lines_for_bbox(self, font_size: float, bbox_height: float) -> int:
+        """Return the maximum lines that fit for a given font size and height."""
+        line_height = max(1.0, font_size * self.line_height_factor)
+        return max(1, floor(bbox_height / line_height))
+
+    def _estimate_chars_per_line(self, font_size: float, bbox_width: float) -> int:
+        """Estimate characters per line given font size and box width.
+
+        Uses the same linear width heuristic as analysis: width ≈ size * em * n.
+        """
+        avg_char_width = max(0.1, self.average_char_width_em) * max(1.0, font_size)
+        per_line = int(bbox_width // max(1.0, avg_char_width))
+        return max(1, per_line)
+
+    def _wrap_text_to_width(self, text: str, chars_per_line: int) -> list[str]:
+        """Wrap text respecting word boundaries; hard-break very long words.
+
+        This is a simple greedy wrapper adequate for deterministic tests.
+        """
+        if chars_per_line <= 0:
+            chars_per_line = 1
+
+        words = text.split()
+        if not words:
+            return [""]
+
+        lines: list[str] = []
+        current = words[0]
+        for word in words[1:]:
+            # Can the word fit on the current line (with a space)?
+            if len(current) + 1 + len(word) <= chars_per_line:
+                current += " " + word
+                continue
+
+            # Emit current line
+            lines.append(current)
+
+            # If the word itself is longer than available width, hard-wrap it
+            if len(word) > chars_per_line:
+                start = 0
+                while start < len(word):
+                    chunk = word[start : start + chars_per_line]
+                    if len(chunk) == chars_per_line:
+                        lines.append(chunk)
+                    else:
+                        current = chunk
+                    start += chars_per_line
+                if start % chars_per_line == 0:
+                    current = ""
+                continue
+
+            # Start a new line with the word
+            current = word
+
+        if current:
+            lines.append(current)
+
+        return lines

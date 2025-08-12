@@ -76,13 +76,12 @@ def test_strategy_selection_across_length_ratios(
     analysis = analyze(engine, base_text, translated, bbox)
     decision = engine.determine_layout_strategy(analysis)
 
-    # Map NONE vs FONT_SCALE for 1.0 vs 1.2; 1.8 -> wrap; 2.2 -> likely
-    # hybrid
-    if expected == StrategyType.HYBRID and decision.type == StrategyType.TEXT_WRAP:
-        # Allow TEXT_WRAP fallback if hybrid can't improve lines under limits
-        assert decision.type in {StrategyType.HYBRID, StrategyType.TEXT_WRAP}
-    else:
-        assert decision.type == expected
+    # Map NONE vs FONT_SCALE for 1.0 vs 1.2; 1.8 -> wrap; 2.2 -> likely hybrid
+    # Allow TEXT_WRAP fallback if HYBRID was expected
+    assert decision.type == expected or (
+        expected == StrategyType.HYBRID
+        and decision.type == StrategyType.TEXT_WRAP
+    )
 
 
 def test_strategy_text_wrap_when_single_line_not_possible_but_height_allows():
