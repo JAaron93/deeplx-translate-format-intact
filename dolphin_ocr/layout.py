@@ -21,6 +21,7 @@ SCALE_PENALTY_WEIGHT: float = 0.35
 WRAP_PENALTY_WEIGHT: float = 0.25
 NONE_BONUS: float = 0.05
 
+
 @dataclass(frozen=True)
 class BoundingBox:
     """Axis-aligned bounding box represented as (x, y, width, height).
@@ -121,7 +122,6 @@ class LayoutPreservationEngine:
           size (em). 0.5 is a reasonable approximation for many fonts.
         - line_height_factor: Multiplier for line height relative to font size.
         """
-
         self.font_scale_min = float(font_scale_limits[0])
         self.font_scale_max = float(font_scale_limits[1])
         if self.font_scale_min <= 0 or self.font_scale_max <= 0:
@@ -151,7 +151,6 @@ class LayoutPreservationEngine:
         required number of wrapped lines by dividing by box width. Height fit
         is based on a line-height model.
         """
-
         # Use 1 as minimum to avoid division by zero and provide meaningful
         # ratio for empty strings
         original_len = max(1, len(original))
@@ -160,9 +159,7 @@ class LayoutPreservationEngine:
 
         # Estimate width if rendered on a single line at current font size.
         # Use a simple model: width = font_size * avg_char_em * num_chars
-        one_line_width = (
-            font.size * self.average_char_width_em * translated_len
-        )
+        one_line_width = font.size * self.average_char_width_em * translated_len
 
         # Height constraints: how many lines can we draw in this bbox?
         line_height = font.size * self.line_height_factor
@@ -174,13 +171,9 @@ class LayoutPreservationEngine:
         can_fit_without_changes = one_line_width <= bbox.width
 
         # Minimal scale factor required to fit on a single line.
-        required_scale_for_single_line = min(
-            1.0, bbox.width / max(1.0, one_line_width)
-        )
+        required_scale_for_single_line = min(1.0, bbox.width / max(1.0, one_line_width))
         can_scale_to_single_line = (
-            self.font_scale_min
-            <= required_scale_for_single_line
-            <= self.font_scale_max
+            self.font_scale_min <= required_scale_for_single_line <= self.font_scale_max
         )
 
         can_wrap_within_height = lines_needed <= max_lines
@@ -204,7 +197,6 @@ class LayoutPreservationEngine:
         3) TEXT_WRAP: Wrap text if it fits within box height
         4) HYBRID: Combine scaling with wrapping if neither alone is enough.
         """
-
         # 1) No change needed
         if analysis.can_fit_without_changes:
             return LayoutStrategy(
@@ -273,7 +265,6 @@ class LayoutPreservationEngine:
           normalized by the maximum allowed lines from the analysis.
         - Prefer NONE over other strategies when otherwise equivalent.
         """
-
         score = 1.0
 
         # Scaling penalty
@@ -283,9 +274,7 @@ class LayoutPreservationEngine:
         # Wrapping penalty relative to available lines
         if decision.wrap_lines > 1:
             max_lines = max(1, analysis.max_lines)
-            normalized_lines = (
-                (decision.wrap_lines - 1) / max(1, max_lines - 1)
-            )
+            normalized_lines = (decision.wrap_lines - 1) / max(1, max_lines - 1)
             score -= WRAP_PENALTY_WEIGHT * normalized_lines
 
         # Minor preference adjustment: NONE slightly boosted

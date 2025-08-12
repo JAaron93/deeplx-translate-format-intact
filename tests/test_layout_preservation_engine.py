@@ -78,10 +78,7 @@ def test_strategy_selection_across_length_ratios(
 
     # Map NONE vs FONT_SCALE for 1.0 vs 1.2; 1.8 -> wrap; 2.2 -> likely
     # hybrid
-    if (
-        expected == StrategyType.HYBRID
-        and decision.type == StrategyType.TEXT_WRAP
-    ):
+    if expected == StrategyType.HYBRID and decision.type == StrategyType.TEXT_WRAP:
         # Allow TEXT_WRAP fallback if hybrid can't improve lines under limits
         assert decision.type in {StrategyType.HYBRID, StrategyType.TEXT_WRAP}
     else:
@@ -109,9 +106,7 @@ def test_strategy_hybrid_when_neither_scaling_nor_wrapping_alone_is_enough():
     # Extremely narrow and short box: wrapping alone exceeds height
     bbox = BoundingBox(x=0, y=0, width=35, height=20)  # likely max_lines == 1
     orig = "Base"
-    trans = (
-        "This is an excessively verbose translation requiring compromise"
-    )
+    trans = "This is an excessively verbose translation requiring compromise"
     analysis = analyze(engine, orig, trans, bbox)
     assert analysis.can_fit_without_changes is False
     assert analysis.can_scale_to_single_line is False
