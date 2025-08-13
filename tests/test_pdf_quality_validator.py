@@ -20,9 +20,7 @@ def test_extract_text_hybrid_pypdf_only(monkeypatch: pytest.MonkeyPatch):
         def __init__(self, text: str) -> None:
             self._t = text
 
-        def extract_text(
-            self, _extraction_mode: str | None = None
-        ) -> str:
+        def extract_text(self, _extraction_mode: str | None = None) -> str:
             return self._t
 
     class _FakeReader:
@@ -49,9 +47,7 @@ def test_extract_text_hybrid_pdfminer_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ):
     class _FakePage:
-        def extract_text(
-            self, _extraction_mode: str | None = None
-        ) -> str:
+        def extract_text(self, _extraction_mode: str | None = None) -> str:
             return ""  # force missing -> use pdfminer
 
     class _FakeReader:
@@ -286,10 +282,7 @@ def test_warning_counts_not_affected_by_truncation(
     # Truncated warnings all look the same
     assert res.warnings.count("pypdf") >= 2
     # But counts are computed from full messages before truncation
-    keys = [
-        k for k in res.warning_counts
-        if k.startswith("pypdf extract page ")
-    ]
+    keys = [k for k in res.warning_counts if k.startswith("pypdf extract page ")]
     assert len(keys) == 2
 
 
@@ -347,9 +340,7 @@ def test_compare_layout_hashes_max_length_ratio_clamps(
 
     v = PDFQualityValidator()
     raw = v.compare_layout_hashes(str(a), str(b))
-    clamped = v.compare_layout_hashes(
-        str(a), str(b), max_length_ratio=10.0
-    )
+    clamped = v.compare_layout_hashes(str(a), str(b), max_length_ratio=10.0)
 
     assert float(clamped["score"]) >= float(raw["score"])
     assert clamped["used_normalization"] is False

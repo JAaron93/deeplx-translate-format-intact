@@ -12,6 +12,7 @@ from typing import Iterable, Iterator, Sequence
 @dataclass(frozen=True)
 class ExtractTextResult:
     """Result of text extraction per page and summary metadata."""
+
     text_per_page: list[str]
     warnings: list[str]
     warning_counts: dict[str, int]
@@ -32,15 +33,9 @@ class PDFQualityValidator:
     DEFAULT_OVERALL_TIMEOUT_S = float(
         os.getenv("PDF_QUALITY_OVERALL_TIMEOUT_SECONDS", "60")
     )
-    DEFAULT_OCR_TIMEOUT_S = float(
-        os.getenv("PDF_QUALITY_OCR_TIMEOUT_SECONDS", "5")
-    )
-    DEFAULT_PDFMINER_CHUNK = int(
-        os.getenv("PDF_QUALITY_PDFMINER_CHUNK_SIZE", "16")
-    )
-    DEFAULT_OCR_BATCH_PAGES = int(
-        os.getenv("PDF_QUALITY_OCR_BATCH_PAGES", "8")
-    )
+    DEFAULT_OCR_TIMEOUT_S = float(os.getenv("PDF_QUALITY_OCR_TIMEOUT_SECONDS", "5"))
+    DEFAULT_PDFMINER_CHUNK = int(os.getenv("PDF_QUALITY_PDFMINER_CHUNK_SIZE", "16"))
+    DEFAULT_OCR_BATCH_PAGES = int(os.getenv("PDF_QUALITY_OCR_BATCH_PAGES", "8"))
     DEFAULT_PDF_DPI = int(os.getenv("PDF_DPI", "300"))
     DEFAULT_TESS_LANG = os.getenv("TESSERACT_LANG", "eng")
     DEFAULT_POPPLER_PATH = os.getenv("POPPLER_PATH")
@@ -58,9 +53,7 @@ class PDFQualityValidator:
             counts[w] = counts.get(w, 0) + 1
         return counts
 
-    def _elapsed_exceeded(
-        self, start_ts: float, overall_timeout_s: float
-    ) -> bool:
+    def _elapsed_exceeded(self, start_ts: float, overall_timeout_s: float) -> bool:
         return time.time() - start_ts >= overall_timeout_s
 
     # ---------------------------- Extraction ----------------------------
@@ -94,16 +87,12 @@ class PDFQualityValidator:
             if overall_timeout_seconds is not None
             else self.DEFAULT_OVERALL_TIMEOUT_S
         )
-        pdfminer_chunk = (
-            pdfminer_chunk_size or self.DEFAULT_PDFMINER_CHUNK
-        )
+        pdfminer_chunk = pdfminer_chunk_size or self.DEFAULT_PDFMINER_CHUNK
         ocr_batch = ocr_batch_pages or self.DEFAULT_OCR_BATCH_PAGES
         target_dpi = dpi or self.DEFAULT_PDF_DPI
         tess_lang = (lang or self.DEFAULT_TESS_LANG) or "eng"
         poppler_path = (
-            poppler_path
-            if poppler_path is not None
-            else self.DEFAULT_POPPLER_PATH
+            poppler_path if poppler_path is not None else self.DEFAULT_POPPLER_PATH
         )
 
         # Normalize/clamp configuration values to safe minimums
@@ -124,34 +113,24 @@ class PDFQualityValidator:
             pypdf_reader = pypdf.PdfReader(pdf_path)
             total_pages = len(pypdf_reader.pages)
         except (ImportError, OSError, ValueError) as e:
-            warnings_out.append(
-                f"pypdf open failed: {type(e).__name__}"
-            )
+            warnings_out.append(f"pypdf open failed: {type(e).__name__}")
 
         if total_pages <= 0:
             # Try pdfminer to estimate pages by iterating pages quickly
             try:
-                pdfminer_pdfpage = importlib.import_module(
-                    "pdfminer.pdfpage"
-                )
-                pdfminer_pdfparser = importlib.import_module(
-                    "pdfminer.pdfparser"
-                )
-                pdfminer_pdfdocument = importlib.import_module(
-                    "pdfminer.pdfdocument"
-                )
+                pdfminer_pdfpage = importlib.import_module("pdfminer.pdfpage")
+                pdfminer_pdfparser = importlib.import_module("pdfminer.pdfparser")
+                pdfminer_pdfdocument = importlib.import_module("pdfminer.pdfdocument")
 
                 with open(pdf_path, "rb") as fh:
                     parser = pdfminer_pdfparser.PDFParser(fh)
                     doc = pdfminer_pdfdocument.PDFDocument(parser)
                     total_pages = sum(
-                        1
-                        for _ in pdfminer_pdfpage.PDFPage.create_pages(doc)
+                        1 for _ in pdfminer_pdfpage.PDFPage.create_pages(doc)
                     )
             except (ImportError, OSError, ValueError) as e:
                 warnings_out.append(
-                    "pdfminer page count failed: "
-                    f"{type(e).__name__}"
+                    "pdfminer page count failed: " f"{type(e).__name__}"
                 )
 
         if total_pages <= 0:
@@ -176,9 +155,7 @@ class PDFQualityValidator:
         if pypdf_reader is not None:
             for idx in range(capped_pages):
                 if self._elapsed_exceeded(start_ts, overall_timeout):
-                    warnings_out.append(
-                        "overall timeout reached during pypdf phase"
-                    )
+                    warnings_out.append("overall timeout reached during pypdf phase")
                     break
                 try:
                     page = pypdf_reader.pages[idx]
@@ -194,8 +171,7 @@ class PDFQualityValidator:
                         used_pypdf += 1
                 except (ValueError, RuntimeError, TypeError) as e:
                     warnings_out.append(
-                        "pypdf extract page "
-                        f"{idx+1} failed: {type(e).__name__}"
+                        "pypdf extract page " f"{idx+1} failed: {type(e).__name__}"
                     )
 
         # 3) Fill gaps with pdfminer in page chunks using iterator slicing
@@ -205,9 +181,7 @@ class PDFQualityValidator:
             if pypdf_text[i]:
                 text_per_page[i] = pypdf_text[i] or ""
 
-        remaining_indices = [
-            i for i in range(capped_pages) if not text_per_page[i]
-        ]
+        remaining_indices = [i for i in range(capped_pages) if not text_per_page[i]]
         if remaining_indices:
             try:
                 pdfminer_high = importlib.import_module("pdfminer.high_level")
@@ -237,16 +211,12 @@ class PDFQualityValidator:
                     # Split text per page by form feed if present
                     parts = mined.split("\x0c") if mined else []
                     for local_idx, page_i in enumerate(chunk):
-                        page_text = (
-                            parts[local_idx] if local_idx < len(parts) else ""
-                        )
+                        page_text = parts[local_idx] if local_idx < len(parts) else ""
                         if page_text:
                             text_per_page[page_i] = page_text
                             used_pdfminer += 1
             except (ImportError, OSError, ValueError) as e:
-                warnings_out.append(
-                    f"pdfminer extract failed: {type(e).__name__}"
-                )
+                warnings_out.append(f"pdfminer extract failed: {type(e).__name__}")
 
         # 4) OCR fallback per page in streaming batches via pdf2image
         still_missing = [
@@ -281,9 +251,7 @@ class PDFQualityValidator:
                     ocr_batch,
                 ):
                     if self._elapsed_exceeded(start_ts, overall_timeout):
-                        warnings_out.append(
-                            "overall timeout reached during OCR phase"
-                        )
+                        warnings_out.append("overall timeout reached during OCR phase")
                         break
                     # Convert to 1-based; last is exclusive already
                     first = page_range.start + 1
@@ -304,17 +272,14 @@ class PDFQualityValidator:
                             "PDFPageCountError",
                         }:
                             warnings_out.append(
-                                "pdf2image unavailable or poppler "
-                                f"missing: {et}"
+                                "pdf2image unavailable or poppler " f"missing: {et}"
                             )
                             break
                         warnings_out.append(f"pdf2image failure: {et}")
                         break
                     except TypeError as e:
                         # Older pdf2image might not accept some kwargs
-                        warnings_out.append(
-                            f"pdf2image type error: {type(e).__name__}"
-                        )
+                        warnings_out.append(f"pdf2image type error: {type(e).__name__}")
                         break
 
                     # Map images back to page indices
@@ -330,18 +295,13 @@ class PDFQualityValidator:
                             ocr_pages.append(page_i + 1)
                         else:
                             warnings_out.append(
-                                "OCR produced empty text on page "
-                                f"{page_i+1}"
+                                "OCR produced empty text on page " f"{page_i+1}"
                             )
             except (ImportError, OSError, ValueError) as e:
-                warnings_out.append(
-                    f"OCR fallback not available: {type(e).__name__}"
-                )
+                warnings_out.append(f"OCR fallback not available: {type(e).__name__}")
             except subprocess.CalledProcessError as e:
                 # Tesseract may bubble this up from underlying calls
-                warnings_out.append(
-                    f"OCR process failed: {type(e).__name__}"
-                )
+                warnings_out.append(f"OCR process failed: {type(e).__name__}")
 
         # Final aggregation and summary
         extractor_summary = (
@@ -364,7 +324,7 @@ class PDFQualityValidator:
         i = 0
         n = len(indices)
         while i < n:
-            yield list(indices[i:i + chunk_size])
+            yield list(indices[i : i + chunk_size])
             i += chunk_size
 
     def _iter_pages_for_indices(
@@ -464,9 +424,7 @@ class PDFQualityValidator:
                     return len(pypdf.PdfReader(pdf_path).pages)
                 except (ImportError, OSError, ValueError):
                     try:
-                        pdfminer_pdfpage = importlib.import_module(
-                            "pdfminer.pdfpage"
-                        )
+                        pdfminer_pdfpage = importlib.import_module("pdfminer.pdfpage")
                         pdfminer_pdfparser = importlib.import_module(
                             "pdfminer.pdfparser"
                         )
@@ -477,10 +435,7 @@ class PDFQualityValidator:
                             parser = pdfminer_pdfparser.PDFParser(fh)
                             doc = pdfminer_pdfdocument.PDFDocument(parser)
                             return sum(
-                                1
-                                for _ in pdfminer_pdfpage.PDFPage.create_pages(
-                                    doc
-                                )
+                                1 for _ in pdfminer_pdfpage.PDFPage.create_pages(doc)
                             )
                     except (ImportError, OSError, ValueError):
                         return 0
@@ -510,11 +465,7 @@ class PDFQualityValidator:
                 la_eff, lb_eff = small, large
 
         denom = max(la_eff, lb_eff)
-        score = (
-            1.0
-            if denom == 0
-            else 1.0 - (abs(la_eff - lb_eff) / float(denom))
-        )
+        score = 1.0 if denom == 0 else 1.0 - (abs(la_eff - lb_eff) / float(denom))
 
         # Provide hashes for traceability (not used for scoring)
         a_hash = hashlib.sha1(a_sig.encode("utf-8")).hexdigest()
