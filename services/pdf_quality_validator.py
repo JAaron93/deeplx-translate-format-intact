@@ -531,51 +531,8 @@ class PDFQualityValidator:
         layout_ok = layout_score >= float(min_layout_score)
 
         # Font preservation: attempt to collect font names from both PDFs
-        def _collect_fonts(pdf_path: str) -> set[str]:
-            try:
-                pypdf = importlib.import_module("pypdf")
-                reader = pypdf.PdfReader(pdf_path)
-                names: set[str] = set()
-                for page in list(reader.pages)[:50]:
-                    try:
-                        # Standard pypdf resources path
-                        resources = None
-                        if hasattr(page, "get"):
-                            resources = page.get("/Resources") or page.get("Resources")
-                        if resources is None:
-                            resources = getattr(page, "resources", None)
-                        fonts_dict = None
-                        if resources is not None and hasattr(resources, "get"):
-                            fonts_dict = resources.get("/Font") or resources.get("Font")
-                        if fonts_dict is None:
-                            fonts_dict = getattr(page, "fonts", None)
-                        if isinstance(fonts_dict, dict):
-                            for key, font_obj in fonts_dict.items():
-                                name = None
-                                try:
-                                    if hasattr(font_obj, "get"):
-                                        name = font_obj.get(
-                                            "/BaseFont"
-                                        ) or font_obj.get("BaseFont")
-                                except (ValueError, RuntimeError, TypeError):
-                                    name = None
-                                if not name:
-                                    name = str(key)
-                                if isinstance(name, bytes):
-                                    try:
-                                        name = name.decode("latin1", "ignore")
-                                    except (ValueError, RuntimeError, TypeError):
-                                        name = None
-                                if isinstance(name, str):
-                                    names.add(name.strip("/"))
-                    except (ValueError, RuntimeError, TypeError, OSError):
-                        continue
-                return names
-            except (ImportError, OSError, ValueError):
-                return set()
-
-        fonts_a = _collect_fonts(original_pdf)
-        fonts_b = _collect_fonts(reconstructed_pdf)
+        fonts_a = self._collect_fonts(original_pdf)
+        fonts_b = self._collect_fonts(reconstructed_pdf)
 
         if fonts_a or fonts_b:
             union = fonts_a.union(fonts_b)
@@ -608,6 +565,51 @@ class PDFQualityValidator:
             "used_page_normalization": bool(page_normalize_layout),
             "warnings": warnings,
         }
+
+    def _collect_fonts(self, pdf_path: str) -> set[str]:
+        """Extract font names from a PDF using pypdf.
+
+        Returns a set of distinct font names found in the first 50 pages.
+        Returns empty set on import/read errors.
+        """
+        try:
+            pypdf = importlib.import_module("pypdf")
+            reader = pypdf.PdfReader(pdf_path)
+            names: set[str] = set()
+            for page in list(reader.pages)[:50]:
+                try:
+                    resources = None
+                    if hasattr(page, "get"):
+                        resources = page.get("/Resources") or page.get("Resources")
+                    if resources is None:
+                        resources = getattr(page, "resources", None)
+                    fonts_dict = None
+                    if resources is not None and hasattr(resources, "get"):
+                        fonts_dict = resources.get("/Font") or resources.get("Font")
+                    if fonts_dict is None:
+                        fonts_dict = getattr(page, "fonts", None)
+                    if isinstance(fonts_dict, dict):
+                        for key, font_obj in fonts_dict.items():
+                            name = None
+                            try:
+                                if hasattr(font_obj, "get"):
+                                    name = font_obj.get("/BaseFont") or font_obj.get("BaseFont")
+                            except (ValueError, RuntimeError, TypeError):
+                                name = None
+                            if not name:
+                                name = str(key)
+                            if isinstance(name, bytes):
+                                try:
+                                    name = name.decode("latin1", "ignore")
+                                except (ValueError, RuntimeError, TypeError):
+                                    name = None
+                            if isinstance(name, str):
+                                names.add(name.strip("/"))
+                except (ValueError, RuntimeError, TypeError, OSError):
+                    continue
+            return names
+        except (ImportError, OSError, ValueError):
+            return set()
 
     def _extract_text_direct_only(self, pdf_path: str) -> str:
         """Fast direct extraction helper used by compare_layout_hashes.

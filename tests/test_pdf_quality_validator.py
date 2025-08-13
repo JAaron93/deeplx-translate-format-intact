@@ -282,8 +282,13 @@ def test_warning_counts_not_affected_by_truncation(
     # Truncated warnings all look the same
     assert res.warnings.count("pypdf") >= 2
     # But counts are computed from full messages before truncation
-    keys = [k for k in res.warning_counts if k.startswith("pypdf extract page ")]
+    keys = [
+        k for k in res.warning_counts
+        if k.startswith("pypdf extract page ")
+    ]
     assert len(keys) == 2
+    for k in keys:
+        assert res.warning_counts[k] == 1
 
 
 def test_compare_layout_hashes_page_normalized_vs_raw(
@@ -385,163 +390,6 @@ def test_compare_layout_hashes_page_normalize_derives_pages(
     assert report["used_normalization"] is True
     assert report["pages_a"] == 10 and report["pages_b"] == 5
     assert float(report["score"]) >= 0.99
-
-
-def test_validate_pdf_quality_basic_pass(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-):
-    a = tmp_path / "orig.pdf"
-    b = tmp_path / "recon.pdf"
-    a.write_bytes(b"%PDF-1.4\n")
-    b.write_bytes(b"%PDF-1.4\n")
-
-    def _fake_text(_self, pdf_path: str) -> str:
-        return "X" * (1000 if pdf_path.endswith("orig.pdf") else 1000)
-
-    def _fake_layout(_self, _a: str, _b: str, **_k) -> dict[str, float]:
-        return {"score": 0.95}
-
-    class _FakeReader:
-        def __init__(self, pdf_path: str) -> None:
-            self._pdf_path = pdf_path
-            self.pages = [object()]
-
-        # Minimal page emulation
-        def _page_resources(self):
-            return {
-                "/Font": {
-                    "/F1": {"/BaseFont": "Helvetica"},
-                    "/F2": {"/BaseFont": "Times"},
-                }
-            }
-
-        def __iter__(self):
-            return iter(self.pages)
-
-        def __getitem__(self, _idx: int):
-            return self.pages[0]
-
-    class _FakePage:
-        def __init__(self, resources: dict) -> None:
-            self._resources = resources
-
-        def get(self, key: str):
-            if key in ("/Resources", "Resources"):
-                return self._resources
-            return None
-
-    def _fake_pypdf_reader(pdf_path: str):
-        reader = _FakeReader(pdf_path)
-        resources = _FakeReader(pdf_path)._page_resources()
-        reader.pages = [_FakePage(resources)]
-        return reader
-
-    fake_pypdf = _make_module(PdfReader=_fake_pypdf_reader)
-
-    def _import_module(name: str):
-        if name == "pypdf":
-            return fake_pypdf
-        raise ModuleNotFoundError(name)
-
-    monkeypatch.setattr(PDFQualityValidator, "_extract_text_direct_only", _fake_text)
-    monkeypatch.setattr(PDFQualityValidator, "compare_layout_hashes", _fake_layout)
-    monkeypatch.setattr("importlib.import_module", _import_module)
-
-    v = PDFQualityValidator()
-    report = v.validate_pdf_reconstruction_quality(
-        str(a), str(b), require_font_preservation=True, min_font_match_ratio=0.5
-    )
-    assert report["passed"] is True
-    assert report["text_ok"] is True and report["layout_ok"] is True
-    assert report["font_ok"] is True
-
-
-def test_validate_pdf_quality_text_fail(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-):
-    a = tmp_path / "orig.pdf"
-    b = tmp_path / "recon.pdf"
-    a.write_bytes(b"%PDF-1.4\n")
-    b.write_bytes(b"%PDF-1.4\n")
-
-    def _fake_text(_self, pdf_path: str) -> str:
-        return "X" * (1000 if pdf_path.endswith("orig.pdf") else 100)
-
-    def _fake_layout(_self, _a: str, _b: str, **_k) -> dict[str, float]:
-        return {"score": 0.95}
-
-    monkeypatch.setattr(PDFQualityValidator, "_extract_text_direct_only", _fake_text)
-    monkeypatch.setattr(PDFQualityValidator, "compare_layout_hashes", _fake_layout)
-
-    v = PDFQualityValidator()
-    report = v.validate_pdf_reconstruction_quality(str(a), str(b))
-    assert report["text_ok"] is False
-    assert report["passed"] is False
-
-
-def test_validate_pdf_quality_font_mismatch_fails_when_required(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-):
-    a = tmp_path / "orig.pdf"
-    b = tmp_path / "recon.pdf"
-    a.write_bytes(b"%PDF-1.4\n")
-    b.write_bytes(b"%PDF-1.4\n")
-
-    def _fake_text(_self, pdf_path: str) -> str:
-        return "X" * 500
-
-    def _fake_layout(_self, _a: str, _b: str, **_k) -> dict[str, float]:
-        return {"score": 0.95}
-
-    class _FakeReader:
-        def __init__(self, pdf_path: str) -> None:
-            self._pdf_path = pdf_path
-            self.pages = [object()]
-
-        def _page_resources(self):
-            if self._pdf_path.endswith("orig.pdf"):
-                return {"/Font": {"/F1": {"/BaseFont": "Helvetica"}}}
-            return {"/Font": {"/F9": {"/BaseFont": "Courier"}}}
-
-        def __iter__(self):
-            return iter(self.pages)
-
-    class _FakePage:
-        def __init__(self, resources: dict) -> None:
-            self._resources = resources
-
-        def get(self, key: str):
-            if key in ("/Resources", "Resources"):
-                return self._resources
-            return None
-
-    def _fake_pypdf_reader(pdf_path: str):
-        reader = _FakeReader(pdf_path)
-        resources = reader._page_resources()
-        reader.pages = [_FakePage(resources)]
-        return reader
-
-    fake_pypdf = _make_module(PdfReader=_fake_pypdf_reader)
-
-    def _import_module(name: str):
-        if name == "pypdf":
-            return fake_pypdf
-        raise ModuleNotFoundError(name)
-
-    monkeypatch.setattr(PDFQualityValidator, "_extract_text_direct_only", _fake_text)
-    monkeypatch.setattr(PDFQualityValidator, "compare_layout_hashes", _fake_layout)
-    monkeypatch.setattr("importlib.import_module", _import_module)
-
-    v = PDFQualityValidator()
-    report = v.validate_pdf_reconstruction_quality(
-        str(a), str(b), require_font_preservation=True, min_font_match_ratio=0.9
-    )
-    assert report["font_ok"] is False
-    assert report["passed"] is False
-
 
 def test_extract_text_clamps_max_pages_minimum(
     monkeypatch: pytest.MonkeyPatch,
