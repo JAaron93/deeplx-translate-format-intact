@@ -282,10 +282,7 @@ def test_warning_counts_not_affected_by_truncation(
     # Truncated warnings all look the same
     assert res.warnings.count("pypdf") >= 2
     # But counts are computed from full messages before truncation
-    keys = [
-        k for k in res.warning_counts
-        if k.startswith("pypdf extract page ")
-    ]
+    keys = [k for k in res.warning_counts if k.startswith("pypdf extract page ")]
     assert len(keys) == 2
     for k in keys:
         assert res.warning_counts[k] == 1
@@ -390,6 +387,7 @@ def test_compare_layout_hashes_page_normalize_derives_pages(
     assert report["used_normalization"] is True
     assert report["pages_a"] == 10 and report["pages_b"] == 5
     assert float(report["score"]) >= 0.99
+
 
 def test_extract_text_clamps_max_pages_minimum(
     monkeypatch: pytest.MonkeyPatch,

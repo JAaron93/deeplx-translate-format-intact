@@ -593,7 +593,9 @@ class PDFQualityValidator:
                             name = None
                             try:
                                 if hasattr(font_obj, "get"):
-                                    name = font_obj.get("/BaseFont") or font_obj.get("BaseFont")
+                                    name = font_obj.get("/BaseFont") or font_obj.get(
+                                        "BaseFont"
+                                    )
                             except (ValueError, RuntimeError, TypeError):
                                 name = None
                             if not name:

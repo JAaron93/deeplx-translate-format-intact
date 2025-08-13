@@ -54,5 +54,3 @@ def test_handle_encrypted_pdf_not_recoverable():
     resp = s.handle(EncryptedPdfError(), context={"path": "y.pdf"})
     assert resp.error_code == "DOLPHIN_014"
     assert resp.recoverable is False
-
-

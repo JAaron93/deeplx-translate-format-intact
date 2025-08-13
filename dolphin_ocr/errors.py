@@ -1,10 +1,10 @@
 """Standardized error codes and exception classes for Dolphin OCR system."""
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, ClassVar
 import logging
 import time
+from dataclasses import dataclass
+from typing import Any, ClassVar
 
 # Known sensitive keys that should be redacted when serializing error context
 _SENSITIVE_KEYS = {
@@ -87,9 +87,7 @@ class DolphinError(Exception):
         - context: Optional structured context to aid debugging.
         """
         if not self.error_code:
-            raise ValueError(
-                f"Error code not defined for {self.__class__.__name__}"
-            )
+            raise ValueError(f"Error code not defined for {self.__class__.__name__}")
         resolved_message = get_error_message(self.error_code, message)
         super().__init__(resolved_message)
         self.context = context.copy() if context else {}
@@ -209,9 +207,7 @@ class ErrorHandlingStrategy:
     def __init__(self, logger: logging.Logger | None = None) -> None:
         self.logger = logger or logging.getLogger("dolphin_ocr.errors")
 
-    def _log(
-        self, code: str, message: str, context: dict[str, Any] | None
-    ) -> None:
+    def _log(self, code: str, message: str, context: dict[str, Any] | None) -> None:
         payload = {
             "ts": int(time.time()),
             "error_code": code,
