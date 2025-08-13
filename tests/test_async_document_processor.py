@@ -19,18 +19,20 @@ class FakeOCR:
         for _ in images:
             text_blocks = []
             for i in range(self.blocks_per_page):
-                text_blocks.append({
-                    "text": f"t{i}",
-                    "bbox": [10.0, 10.0, 100.0, 20.0],
-                    "font_info": {
-                        "family": "Helvetica",
-                        "size": 12,
-                        "weight": "normal",
-                        "style": "normal",
-                        "color": (0, 0, 0),
-                    },
-                    "confidence": 0.9,
-                })
+                text_blocks.append(
+                    {
+                        "text": f"t{i}",
+                        "bbox": [10.0, 10.0, 100.0, 20.0],
+                        "font_info": {
+                            "family": "Helvetica",
+                            "size": 12,
+                            "weight": "normal",
+                            "style": "normal",
+                            "color": (0, 0, 0),
+                        },
+                        "confidence": 0.9,
+                    }
+                )
             pages.append({"text_blocks": text_blocks})
         return {"pages": pages}
 
@@ -39,33 +41,41 @@ class FakeTranslator:
     def __init__(self) -> None:
         self.calls: list[int] = []
 
-    def translate_document_batch(self, *, text_blocks: list[TextBlock], source_lang: str, target_lang: str) -> list[TranslationResult]:
+    def translate_document_batch(
+        self, *, text_blocks: list[TextBlock], source_lang: str, target_lang: str
+    ) -> list[TranslationResult]:
         self.calls.append(len(text_blocks))
         results: list[TranslationResult] = []
         for b in text_blocks:
             strat = LayoutStrategy(type=StrategyType.NONE, font_scale=1.0, wrap_lines=1)
-            results.append(TranslationResult(
-                source_text=b.text,
-                raw_translation=b.text + "_tx",
-                adjusted_text=b.text + "_tx",
-                strategy=strat,
-                analysis=None,  # type: ignore[arg-type]
-                adjusted_font=b.layout.font,
-                adjusted_bbox=b.layout.bbox,
-                quality_score=1.0,
-                ocr_confidence=b.layout.ocr_confidence,
-                translation_confidence=0.9,
-            ))
+            results.append(
+                TranslationResult(
+                    source_text=b.text,
+                    raw_translation=b.text + "_tx",
+                    adjusted_text=b.text + "_tx",
+                    strategy=strat,
+                    analysis=None,  # type: ignore[arg-type]
+                    adjusted_font=b.layout.font,
+                    adjusted_bbox=b.layout.bbox,
+                    quality_score=1.0,
+                    ocr_confidence=b.layout.ocr_confidence,
+                    translation_confidence=0.9,
+                )
+            )
         return results
 
 
 class DummyReconstructor:
-    def reconstruct_pdf_document(self, *, translated_layout, original_file_path: str, output_path: str) -> None:
+    def reconstruct_pdf_document(
+        self, *, translated_layout, original_file_path: str, output_path: str
+    ) -> None:
         return None
 
 
 def _patch_converters(monkeypatch: pytest.MonkeyPatch, pages: int = 3) -> None:
-    def fake_convert(pdf_path: str, dpi: int, fmt: str, poppler: str | None) -> list[bytes]:
+    def fake_convert(
+        pdf_path: str, dpi: int, fmt: str, poppler: str | None
+    ) -> list[bytes]:
         return [b"img"] * pages
 
     def fake_optimize(img: bytes, fmt: str) -> bytes:
@@ -92,7 +102,9 @@ async def test_async_translation_batching(monkeypatch: pytest.MonkeyPatch) -> No
         max_concurrent_requests=2,
     )
 
-    req = adp.AsyncDocumentRequest(file_path="/tmp/in.pdf", source_language="en", target_language="de")
+    req = adp.AsyncDocumentRequest(
+        file_path="/tmp/in.pdf", source_language="en", target_language="de"
+    )
 
     layout = await proc.process_document(req)
     assert len(layout.pages) == 4
@@ -126,7 +138,9 @@ async def test_token_bucket_is_used(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(adp._TokenBucket, "acquire", fake_acquire, raising=True)
 
-    req = adp.AsyncDocumentRequest(file_path="/tmp/in.pdf", source_language="en", target_language="de")
+    req = adp.AsyncDocumentRequest(
+        file_path="/tmp/in.pdf", source_language="en", target_language="de"
+    )
     await proc.process_document(req)
     assert calls["count"] == 1
 
@@ -161,10 +175,10 @@ async def test_concurrency_cap(monkeypatch: pytest.MonkeyPatch) -> None:
                 active -= 1
 
     async def run_one(idx: int) -> None:
-        req = adp.AsyncDocumentRequest(file_path=f"/tmp/in_{idx}.pdf", source_language="en", target_language="de")
+        req = adp.AsyncDocumentRequest(
+            file_path=f"/tmp/in_{idx}.pdf", source_language="en", target_language="de"
+        )
         await proc.process_document(req, on_progress=on_progress)  # type: ignore[arg-type]
 
     await asyncio.gather(*(run_one(i) for i in range(6)))
     assert max_active <= 2
-
-

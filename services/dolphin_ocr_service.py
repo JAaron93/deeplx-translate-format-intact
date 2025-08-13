@@ -300,7 +300,9 @@ class DolphinOCRService:
         return "ok"
 
     # -------------------- Async API (optional) --------------------
-    async def process_document_images_async(self, images: list[bytes]) -> dict[str, Any]:
+    async def process_document_images_async(
+        self, images: list[bytes]
+    ) -> dict[str, Any]:
         """Async wrapper around the OCR request.
 
         This default implementation uses a thread to avoid blocking when the

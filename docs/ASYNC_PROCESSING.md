@@ -50,5 +50,3 @@ This document outlines the asynchronous processing path used by the project.
   for services that benefit from concurrency. It avoids CPU starvation by
   offloading heavy work to a small process pool while keeping IO operations on
   the event loop.
-
-
