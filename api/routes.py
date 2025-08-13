@@ -5,7 +5,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 
@@ -13,12 +20,13 @@ from core.state_manager import state, translation_jobs
 from core.translation_handler import (
     document_processor,
     file_handler,
-    file_validator,
     language_detector,
     neologism_detector,
     process_advanced_translation_job,
     user_choice_manager,
 )
+from dolphin_ocr.errors import get_error_message
+from utils import pdf_validator
 from models.neologism_models import (
     ConfidenceFactors,
     DetectedNeologism,
@@ -64,7 +72,9 @@ async def root() -> Dict[str, Any]:
 @app_router.get("/philosophy", response_class=HTMLResponse)
 async def philosophy_interface(request: Request) -> HTMLResponse:
     """Philosophy-enhanced translation interface."""
-    return templates.TemplateResponse("philosophy_interface.html", {"request": request})
+    return templates.TemplateResponse(
+        "philosophy_interface.html", {"request": request}
+    )
 
 
 # Philosophy API Endpoints
@@ -127,7 +137,7 @@ async def get_detected_neologisms(_session_id: Optional[str] = None):
     """Get detected neologisms for the current session.
 
     Args:
-        _session_id: Session identifier (reserved for future session-based functionality)
+        _session_id: Session identifier (reserved for future use)
     """
     try:
         # Return neologisms from state
@@ -152,20 +162,20 @@ async def get_philosophy_progress():
     """Get current philosophy processing progress."""
     try:
         total_neologisms = 0
-        if state.neologism_analysis and isinstance(state.neologism_analysis, dict):
+        if state.neologism_analysis and isinstance(
+            state.neologism_analysis, dict
+        ):
             detected = state.neologism_analysis.get("detected_neologisms", [])
             if isinstance(detected, list):
                 total_neologisms = len(detected)
 
         processed_neologisms = 0
         if isinstance(state.user_choices, list):
-            processed_neologisms = len(
-                [
-                    choice
-                    for choice in state.user_choices
-                    if isinstance(choice, dict) and choice.get("processed", False)
-                ]
-            )
+            processed_neologisms = len([
+                choice
+                for choice in state.user_choices
+                if isinstance(choice, dict) and choice.get("processed", False)
+            ])
         return {
             "total_neologisms": total_neologisms,
             "processed_neologisms": processed_neologisms,
@@ -194,7 +204,7 @@ async def export_user_choices(export_data: Dict[str, Any]):
                 file_path,
                 media_type="application/json",
                 filename=(
-                    f"philosophy-choices-"
+                    "philosophy-choices-"
                     f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
                 ),
             )
@@ -220,7 +230,9 @@ async def import_user_choices(import_data: Dict[str, Any]):
             )
 
         # Use the new dictionary-accepting method
-        count = user_choice_manager.import_choices_from_dict(choices, session_id)
+        count = user_choice_manager.import_choices_from_dict(
+            choices, session_id
+        )
 
         return {
             "success": True,
@@ -253,20 +265,41 @@ async def get_terminology():
 async def upload_file(file: UploadFile = File(...)):  # noqa: B008
     """Enhanced upload endpoint with advanced processing."""
     try:
-        # Validate file
-        validation_result = file_validator.validate_upload_file(file)
-        if not validation_result["valid"]:
-            raise HTTPException(status_code=400, detail=validation_result["error"])
-
-        # Save file
+        # Save file first so validators can inspect header and structure
         file_path = file_handler.save_upload_file(file)
+
+        # Basic format validation
+        fmt = pdf_validator.validate_pdf_extension_and_header(file_path)
+        if not fmt.ok:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error_code": "DOLPHIN_005",
+                    "message": "Only PDF format supported",
+                },
+            )
+
+        # Encryption check
+        enc = pdf_validator.detect_pdf_encryption(file_path)
+        if enc.is_encrypted:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error_code": "DOLPHIN_014",
+                    "message": get_error_message("DOLPHIN_014"),
+                },
+            )
 
         # Process with advanced extraction
         content = document_processor.extract_content(file_path)
 
         # Detect language using the utility function
-        sample_text = extract_text_sample_for_language_detection(content)
-        detected_lang = language_detector.detect_language_from_text(sample_text)
+        sample_text = extract_text_sample_for_language_detection(
+            content
+        )
+        detected_lang = language_detector.detect_language_from_text(
+            sample_text
+        )
 
         # Clean metadata access pattern
         metadata = content.get("metadata")
@@ -291,7 +324,11 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
 
     except Exception as e:
         logger.error(f"Enhanced upload error: {e!s}")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        # Standardized fallback error
+        raise HTTPException(
+            status_code=500,
+            detail={"error_code": "DOLPHIN_002", "message": str(e)},
+        ) from e
 
 
 @api_router.post("/translate")
@@ -330,7 +367,11 @@ async def translate_document(
             target_language,
         )
 
-        return {"job_id": job_id, "status": "started", "type": "advanced"}
+        return {
+            "job_id": job_id,
+            "status": "started",
+            "type": "advanced",
+        }
 
     except Exception as e:
         logger.error(f"Enhanced translation start error: {e!s}")
@@ -353,12 +394,18 @@ async def download_result(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
 
     job = translation_jobs[job_id]
-    if job["status"] != "completed" or not job["output_file"]:
-        raise HTTPException(status_code=400, detail="Translation not completed")
+    if (job["status"] != "completed") or (not job["output_file"]):
+        raise HTTPException(
+            status_code=400,
+            detail="Translation not completed",
+        )
 
     return FileResponse(
         job["output_file"],
         media_type="application/octet-stream",
         filename=Path(job["output_file"]).name,
-        headers={"X-Processing-Type": "advanced", "X-Format-Preserved": "true"},
+        headers={
+            "X-Processing-Type": "advanced",
+            "X-Format-Preserved": "true",
+        },
     )
