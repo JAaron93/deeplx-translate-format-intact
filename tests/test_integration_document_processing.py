@@ -124,9 +124,7 @@ def test_complete_document_processing_workflow(tmp_path):
         file_path=str(src_pdf),
         source_language="en",
         target_language="de",
-        options=ProcessingOptions(
-            dpi=300, output_path=str(tmp_path / "out.pdf")
-        ),
+        options=ProcessingOptions(dpi=300, output_path=str(tmp_path / "out.pdf")),
     )
 
     result = processor.process_document(req)

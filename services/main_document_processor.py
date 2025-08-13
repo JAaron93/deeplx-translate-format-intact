@@ -28,7 +28,6 @@ from services.pdf_document_reconstructor import (
     TranslatedPage,
 )
 
-
 # ----------------------------- Request/Result -----------------------------
 
 
@@ -143,8 +142,7 @@ class DocumentProcessor:
         images = self._converter.convert_pdf_to_images(request.file_path)
         # Optional light optimization per image (safe, pure-python)
         optimized: list[bytes] = [
-            self._converter.optimize_image_for_ocr(img)
-            for img in images
+            self._converter.optimize_image_for_ocr(img) for img in images
         ]
         convert_ms = (time.perf_counter() - start_convert) * 1000.0
         _emit("converted", pages=len(optimized))
@@ -182,9 +180,7 @@ class DocumentProcessor:
         translation_ms = (time.perf_counter() - start_tx) * 1000.0
         _emit("translated", count=len(translations))
         if self._monitor is not None:
-            self._monitor.record_operation(
-                "translate", translation_ms, success=True
-            )
+            self._monitor.record_operation("translate", translation_ms, success=True)
 
         # Map translations back to pages and build TranslatedLayout
         pages: list[TranslatedPage] = []
@@ -324,5 +320,3 @@ class DocumentProcessor:
 def _default_output_path(input_path: str) -> str:
     p = Path(input_path)
     return str(p.with_name(f"{p.stem}.translated.pdf"))
-
-

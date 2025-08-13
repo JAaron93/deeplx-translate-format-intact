@@ -28,13 +28,9 @@ class MonitoringService:
     ) -> None:
         self.window_seconds = window_seconds
         self.logger = logger or logging.getLogger("dolphin_ocr.monitoring")
-        self._events: Deque[
-            tuple[float, str, bool, float, str | None]
-        ] = deque()
+        self._events: Deque[tuple[float, str, bool, float, str | None]] = deque()
         self._op_stats: dict[str, OpStats] = defaultdict(OpStats)
-        self._op_latencies: dict[str, Deque[tuple[float, float]]] = (
-            defaultdict(deque)
-        )
+        self._op_latencies: dict[str, Deque[tuple[float, float]]] = defaultdict(deque)
 
     # --------------------------- Recording ---------------------------
     def record_operation(
@@ -121,8 +117,4 @@ class MonitoringService:
         ws = window_seconds or self.window_seconds
         current_time = time.time() if now is None else now
         cutoff = current_time - ws
-        return [
-            lat
-            for ts, lat in self._op_latencies[operation]
-            if ts >= cutoff
-        ]
+        return [lat for ts, lat in self._op_latencies[operation] if ts >= cutoff]
