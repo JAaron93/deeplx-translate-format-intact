@@ -30,63 +30,28 @@ class MonitoringService:
         self.logger = logger or logging.getLogger("dolphin_ocr.monitoring")
         self._events: Deque[
             tuple[float, str, bool, float, str | None]
-+import threading
+        ] = deque()
+        self._op_stats: dict[str, OpStats] = defaultdict(OpStats)
+        self._op_latencies: dict[str, Deque[tuple[float, float]]] = (
+            defaultdict(deque)
+        )
 
- class MonitoringService:
-     """Lightweight performance and error monitoring.
+    # --------------------------- Recording ---------------------------
+    def record_operation(
+        self,
+        operation: str,
+        duration_ms: float,
+        *,
+        success: bool,
+        error_code: str | None = None,
+    ) -> None:
+        now = time.time()
+        self._events.append((now, operation, success, duration_ms, error_code))
+        self._prune(now)
 
-     Tracks operation metrics and keeps a rolling window of recent events to
-     compute error rates and percentile latencies. Uses standard logging.
-     """
-
-     def __init__(
-         self, window_seconds: int = 300, logger: logging.Logger | None = None
-     ) -> None:
-         self.window_seconds = window_seconds
-         self.logger = logger or logging.getLogger("dolphin_ocr.monitoring")
-+        self._lock = threading.Lock()
-         self._events: Deque[
-             Tuple[float, str, bool, float, str | None]
-         ] = deque()
-         self._op_stats: Dict[str, OpStats] = defaultdict(OpStats)
-         self._op_latencies: Dict[str, Deque[Tuple[float, float]]] = defaultdict(deque)
-
-     # --------------------------- Recording ---------------------------
-     def record_operation(
-         self,
-         operation: str,
-         duration_ms: float,
-         *,
-         success: bool,
-         error_code: str | None = None,
-     ) -> None:
--        now = time.time()
--        self._events.append((now, operation, success, duration_ms, error_code))
--        self._prune(now)
--
--        stats = self._op_stats[operation]
--        stats.count += 1
--        stats.total_ms += float(duration_ms)
--        if success:
--            stats.success += 1
--
--        lat_q = self._op_latencies[operation]
--        lat_q.append((now, float(duration_ms)))
--        self._prune_latencies(operation, now)
-+        with self._lock:
-+            now = time.time()
-+            self._events.append((now, operation, success, duration_ms, error_code))
-+            self._prune(now)
-+
-+            stats = self._op_stats[operation]
-+            stats.count += 1
-+            stats.total_ms += float(duration_ms)
-+            if success:
-+                stats.success += 1
-+
-+            lat_q = self._op_latencies[operation]
-+            lat_q.append((now, float(duration_ms)))
-+            self._prune_latencies(operation, now)
+        stats = self._op_stats[operation]
+        stats.count += 1
+        stats.total_ms += float(duration_ms)
         if success:
             stats.success += 1
 
@@ -111,21 +76,17 @@ class MonitoringService:
         self, operation: str, *, window_seconds: int | None = None
     ) -> float:
         now = time.time()
+        samples = self._latencies_in_window(operation, window_seconds, now=now)
+        if not samples:
+            return 0.0
+        values = sorted(samples)
+        idx = int(0.95 * (len(values) - 1))
+        return float(values[idx])
+
     def get_summary(self) -> dict[str, object]:
         out: dict[str, object] = {}
-        try:
-            for op, st in self._op_stats.items():
-                avg = 0.0 if st.count == 0 else st.total_ms / float(st.count)
-                out[op] = {
-                    "count": st.count,
-                    "success": st.success,
-                    "avg_ms": float(avg),
-                }
-            out["error_rate"] = float(self.get_error_rate())
-        except Exception as e:
-            self.logger.warning(f"Error generating summary: {e}")
-            out["error"] = str(e)
-        return out
+        for op, st in self._op_stats.items():
+            avg = 0.0 if st.count == 0 else st.total_ms / float(st.count)
             out[op] = {
                 "count": st.count,
                 "success": st.success,
