@@ -56,7 +56,9 @@ class AsyncDocumentRequest:
     file_path: str
     source_language: str
     target_language: str
-    options: AsyncProcessingOptions = field(default_factory=AsyncProcessingOptions)
+    options: AsyncProcessingOptions = field(
+        default_factory=AsyncProcessingOptions
+    )
 
 
 class _TokenBucket:
@@ -149,7 +151,9 @@ class AsyncDocumentProcessor:
         self._translator = translation_service
         self._reconstructor = reconstructor
 
-        self._req_sema = asyncio.Semaphore(max(1, int(max_concurrent_requests)))
+        self._req_sema = asyncio.Semaphore(
+            max(1, int(max_concurrent_requests))
+        )
         self._tg_limit = max(1, int(translation_concurrency))
         self._batch_size = max(1, int(translation_batch_size))
         self._ocr_bucket = _TokenBucket(ocr_rate_capacity, ocr_rate_per_sec)
@@ -198,9 +202,18 @@ class AsyncDocumentProcessor:
                 )
                 optimized.append(opt)
 
-            # 2) OCR (rate-limited, native async)
+            # 2) OCR (rate-limited)
             await self._ocr_bucket.acquire()
-            ocr_result = await self._ocr.process_document_images_async(optimized)
+            # Support both async and sync OCR service implementations
+            ocr_async = getattr(
+                self._ocr, "process_document_images_async", None
+            )
+            if callable(ocr_async):
+                ocr_result = await ocr_async(optimized)  # type: ignore[misc]
+            else:
+                ocr_result = await asyncio.to_thread(
+                    self._ocr.process_document_images, optimized
+                )
             if on_progress:
                 on_progress("ocr", {"pages": len(optimized)})
 
@@ -237,7 +250,7 @@ class AsyncDocumentProcessor:
             sema = asyncio.Semaphore(self._tg_limit)
             async with asyncio.TaskGroup() as tg:  # Python 3.11+
                 for i in range(0, len(all_blocks), self._batch_size):
-                    batch = all_blocks[i : i + self._batch_size]
+                    batch = all_blocks[i: i + self._batch_size]
                     tg.create_task(_bounded_worker(i, batch, sema))
 
             if on_progress:
@@ -250,9 +263,10 @@ class AsyncDocumentProcessor:
                 elems: list[TranslatedElement] = []
                 for _ in page_blocks:
                     t = translations[ti]
-                    assert (
-                        t is not None
-                    ), f"Translation at index {ti} is None"  # for type-checkers
+                    if t is None:
+                        raise RuntimeError(
+                            f"Translation at index {ti} is None"
+                        )
                     elems.append(
                         TranslatedElement(
                             original_text=t.source_text,
@@ -307,13 +321,17 @@ class AsyncDocumentProcessor:
         pages = result.get("pages", []) if isinstance(result, dict) else []
         for page in pages:
             page_blocks: list[TextBlock] = []
-            blocks = page.get("text_blocks", []) if isinstance(page, dict) else []
+            blocks = (
+                page.get("text_blocks", []) if isinstance(page, dict) else []
+            )
             for blk in blocks:
                 text = str(blk.get("text", ""))
                 bbox = blk.get("bbox", [0.0, 0.0, 100.0, 20.0])
                 font = blk.get("font_info", {})
                 color_data = font.get("color", (0, 0, 0))
-                if isinstance(color_data, (list, tuple)) and (len(color_data) >= 3):
+                if isinstance(color_data, (list, tuple)) and (
+                    len(color_data) >= 3
+                ):
                     color = tuple(color_data[:3])
                 else:
                     color = (0, 0, 0)
