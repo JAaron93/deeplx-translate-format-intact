@@ -33,15 +33,9 @@ class PDFQualityValidator:
     DEFAULT_OVERALL_TIMEOUT_S = float(
         os.getenv("PDF_QUALITY_OVERALL_TIMEOUT_SECONDS", "60")
     )
-    DEFAULT_OCR_TIMEOUT_S = float(
-        os.getenv("PDF_QUALITY_OCR_TIMEOUT_SECONDS", "5")
-    )
-    DEFAULT_PDFMINER_CHUNK = int(
-        os.getenv("PDF_QUALITY_PDFMINER_CHUNK_SIZE", "16")
-    )
-    DEFAULT_OCR_BATCH_PAGES = int(
-        os.getenv("PDF_QUALITY_OCR_BATCH_PAGES", "8")
-    )
+    DEFAULT_OCR_TIMEOUT_S = float(os.getenv("PDF_QUALITY_OCR_TIMEOUT_SECONDS", "5"))
+    DEFAULT_PDFMINER_CHUNK = int(os.getenv("PDF_QUALITY_PDFMINER_CHUNK_SIZE", "16"))
+    DEFAULT_OCR_BATCH_PAGES = int(os.getenv("PDF_QUALITY_OCR_BATCH_PAGES", "8"))
     DEFAULT_PDF_DPI = int(os.getenv("PDF_DPI", "300"))
     DEFAULT_TESS_LANG = os.getenv("TESSERACT_LANG", "eng")
     DEFAULT_POPPLER_PATH = os.getenv("POPPLER_PATH")
@@ -59,9 +53,7 @@ class PDFQualityValidator:
             counts[w] = counts.get(w, 0) + 1
         return counts
 
-    def _elapsed_exceeded(
-        self, start_ts: float, overall_timeout_s: float
-    ) -> bool:
+    def _elapsed_exceeded(self, start_ts: float, overall_timeout_s: float) -> bool:
         return time.time() - start_ts >= overall_timeout_s
 
     # ---------------------------- Extraction ----------------------------
@@ -510,7 +502,6 @@ class PDFQualityValidator:
         - Layout preservation via length similarity (optionally per-page)
         - Font preservation via overlap of font names if available
         """
-
         warnings: list[str] = []
 
         # Text preservation: compare normalized extracted texts
@@ -522,12 +513,8 @@ class PDFQualityValidator:
             b_text = ""
             warnings.append("text extraction failed for one or both PDFs")
 
-        a_text_norm = " ".join(
-            " ".join(line.split()) for line in a_text.splitlines()
-        )
-        b_text_norm = " ".join(
-            " ".join(line.split()) for line in b_text.splitlines()
-        )
+        a_text_norm = " ".join(" ".join(line.split()) for line in a_text.splitlines())
+        b_text_norm = " ".join(" ".join(line.split()) for line in b_text.splitlines())
         la = len(a_text_norm)
         lb = len(b_text_norm)
         denom = max(la, lb)
@@ -554,16 +541,12 @@ class PDFQualityValidator:
                         # Standard pypdf resources path
                         resources = None
                         if hasattr(page, "get"):
-                            resources = (
-                                page.get("/Resources") or page.get("Resources")
-                            )
+                            resources = page.get("/Resources") or page.get("Resources")
                         if resources is None:
                             resources = getattr(page, "resources", None)
                         fonts_dict = None
                         if resources is not None and hasattr(resources, "get"):
-                            fonts_dict = (
-                                resources.get("/Font") or resources.get("Font")
-                            )
+                            fonts_dict = resources.get("/Font") or resources.get("Font")
                         if fonts_dict is None:
                             fonts_dict = getattr(page, "fonts", None)
                         if isinstance(fonts_dict, dict):
@@ -571,10 +554,9 @@ class PDFQualityValidator:
                                 name = None
                                 try:
                                     if hasattr(font_obj, "get"):
-                                        name = (
-                                            font_obj.get("/BaseFont")
-                                            or font_obj.get("BaseFont")
-                                        )
+                                        name = font_obj.get(
+                                            "/BaseFont"
+                                        ) or font_obj.get("BaseFont")
                                 except (ValueError, RuntimeError, TypeError):
                                     name = None
                                 if not name:
@@ -599,8 +581,8 @@ class PDFQualityValidator:
             union = fonts_a.union(fonts_b)
             inter = fonts_a.intersection(fonts_b)
             font_overlap_ratio: float | None = (
-                len(inter) / float(len(union))
-            ) if union else None
+                (len(inter) / float(len(union))) if union else None
+            )
         else:
             font_overlap_ratio = None
 
@@ -619,11 +601,14 @@ class PDFQualityValidator:
             "text_ok": bool(text_ok),
             "layout_score": float(layout_score),
             "layout_ok": bool(layout_ok),
-            "font_overlap_ratio": (None if font_overlap_ratio is None else float(font_overlap_ratio)),
+            "font_overlap_ratio": (
+                None if font_overlap_ratio is None else float(font_overlap_ratio)
+            ),
             "font_ok": bool(font_ok),
             "used_page_normalization": bool(page_normalize_layout),
             "warnings": warnings,
         }
+
     def _extract_text_direct_only(self, pdf_path: str) -> str:
         """Fast direct extraction helper used by compare_layout_hashes.
 
