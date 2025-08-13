@@ -6,7 +6,7 @@ import os
 import subprocess
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Sequence
+from typing import Iterable, Iterator, Sequence, cast
 
 
 @dataclass(frozen=True)
@@ -33,9 +33,15 @@ class PDFQualityValidator:
     DEFAULT_OVERALL_TIMEOUT_S = float(
         os.getenv("PDF_QUALITY_OVERALL_TIMEOUT_SECONDS", "60")
     )
-    DEFAULT_OCR_TIMEOUT_S = float(os.getenv("PDF_QUALITY_OCR_TIMEOUT_SECONDS", "5"))
-    DEFAULT_PDFMINER_CHUNK = int(os.getenv("PDF_QUALITY_PDFMINER_CHUNK_SIZE", "16"))
-    DEFAULT_OCR_BATCH_PAGES = int(os.getenv("PDF_QUALITY_OCR_BATCH_PAGES", "8"))
+    DEFAULT_OCR_TIMEOUT_S = float(
+        os.getenv("PDF_QUALITY_OCR_TIMEOUT_SECONDS", "5")
+    )
+    DEFAULT_PDFMINER_CHUNK = int(
+        os.getenv("PDF_QUALITY_PDFMINER_CHUNK_SIZE", "16")
+    )
+    DEFAULT_OCR_BATCH_PAGES = int(
+        os.getenv("PDF_QUALITY_OCR_BATCH_PAGES", "8")
+    )
     DEFAULT_PDF_DPI = int(os.getenv("PDF_DPI", "300"))
     DEFAULT_TESS_LANG = os.getenv("TESSERACT_LANG", "eng")
     DEFAULT_POPPLER_PATH = os.getenv("POPPLER_PATH")
@@ -53,7 +59,9 @@ class PDFQualityValidator:
             counts[w] = counts.get(w, 0) + 1
         return counts
 
-    def _elapsed_exceeded(self, start_ts: float, overall_timeout_s: float) -> bool:
+    def _elapsed_exceeded(
+        self, start_ts: float, overall_timeout_s: float
+    ) -> bool:
         return time.time() - start_ts >= overall_timeout_s
 
     # ---------------------------- Extraction ----------------------------
@@ -484,6 +492,138 @@ class PDFQualityValidator:
         }
 
     # ---------------------------- Internals -----------------------------
+    def validate_pdf_reconstruction_quality(
+        self,
+        original_pdf: str,
+        reconstructed_pdf: str,
+        *,
+        min_text_length_score: float = 0.9,
+        min_layout_score: float = 0.7,
+        require_font_preservation: bool = False,
+        min_font_match_ratio: float = 0.8,
+        page_normalize_layout: bool = False,
+    ) -> dict[str, float | bool | None]:
+        """Basic PDF quality validation using lightweight heuristics.
+
+        Checks:
+        - Text preservation via length-based similarity on extracted text
+        - Layout preservation via length similarity (optionally per-page)
+        - Font preservation via overlap of font names if available
+        """
+
+        warnings: list[str] = []
+
+        # Text preservation: compare normalized extracted texts
+        try:
+            a_text = self._extract_text_direct_only(original_pdf)
+            b_text = self._extract_text_direct_only(reconstructed_pdf)
+        except (OSError, ValueError):
+            a_text = ""
+            b_text = ""
+            warnings.append("text extraction failed for one or both PDFs")
+
+        a_text_norm = " ".join(
+            " ".join(line.split()) for line in a_text.splitlines()
+        )
+        b_text_norm = " ".join(
+            " ".join(line.split()) for line in b_text.splitlines()
+        )
+        la = len(a_text_norm)
+        lb = len(b_text_norm)
+        denom = max(la, lb)
+        text_length_score = 1.0 if denom == 0 else 1.0 - (abs(la - lb) / float(denom))
+        text_ok = text_length_score >= float(min_text_length_score)
+
+        # Layout preservation: reuse compare_layout_hashes (length-based)
+        layout_report = self.compare_layout_hashes(
+            original_pdf,
+            reconstructed_pdf,
+            page_normalize=page_normalize_layout,
+        )
+        layout_score = cast(float, layout_report["score"])  # in [0, 1]
+        layout_ok = layout_score >= float(min_layout_score)
+
+        # Font preservation: attempt to collect font names from both PDFs
+        def _collect_fonts(pdf_path: str) -> set[str]:
+            try:
+                pypdf = importlib.import_module("pypdf")
+                reader = pypdf.PdfReader(pdf_path)
+                names: set[str] = set()
+                for page in list(reader.pages)[:50]:
+                    try:
+                        # Standard pypdf resources path
+                        resources = None
+                        if hasattr(page, "get"):
+                            resources = (
+                                page.get("/Resources") or page.get("Resources")
+                            )
+                        if resources is None:
+                            resources = getattr(page, "resources", None)
+                        fonts_dict = None
+                        if resources is not None and hasattr(resources, "get"):
+                            fonts_dict = (
+                                resources.get("/Font") or resources.get("Font")
+                            )
+                        if fonts_dict is None:
+                            fonts_dict = getattr(page, "fonts", None)
+                        if isinstance(fonts_dict, dict):
+                            for key, font_obj in fonts_dict.items():
+                                name = None
+                                try:
+                                    if hasattr(font_obj, "get"):
+                                        name = (
+                                            font_obj.get("/BaseFont")
+                                            or font_obj.get("BaseFont")
+                                        )
+                                except (ValueError, RuntimeError, TypeError):
+                                    name = None
+                                if not name:
+                                    name = str(key)
+                                if isinstance(name, bytes):
+                                    try:
+                                        name = name.decode("latin1", "ignore")
+                                    except (ValueError, RuntimeError, TypeError):
+                                        name = None
+                                if isinstance(name, str):
+                                    names.add(name.strip("/"))
+                    except (ValueError, RuntimeError, TypeError, OSError):
+                        continue
+                return names
+            except (ImportError, OSError, ValueError):
+                return set()
+
+        fonts_a = _collect_fonts(original_pdf)
+        fonts_b = _collect_fonts(reconstructed_pdf)
+
+        if fonts_a or fonts_b:
+            union = fonts_a.union(fonts_b)
+            inter = fonts_a.intersection(fonts_b)
+            font_overlap_ratio: float | None = (
+                len(inter) / float(len(union))
+            ) if union else None
+        else:
+            font_overlap_ratio = None
+
+        if font_overlap_ratio is None:
+            font_ok = not require_font_preservation
+            if require_font_preservation:
+                warnings.append("font preservation check skipped (unavailable)")
+        else:
+            font_ok = font_overlap_ratio >= float(min_font_match_ratio)
+
+        passed = text_ok and layout_ok and font_ok
+
+        return {
+            "passed": passed,
+            "text_length_score": float(text_length_score),
+            "text_ok": bool(text_ok),
+            "layout_score": float(layout_score),
+            "layout_ok": bool(layout_ok),
+            "font_overlap_ratio": (None if font_overlap_ratio is None else float(font_overlap_ratio)),
+            "font_ok": bool(font_ok),
+            "used_page_normalization": bool(page_normalize_layout),
+            "warnings": warnings,
+        }
     def _extract_text_direct_only(self, pdf_path: str) -> str:
         """Fast direct extraction helper used by compare_layout_hashes.
 
