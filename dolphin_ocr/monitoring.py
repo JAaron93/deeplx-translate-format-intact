@@ -34,11 +34,11 @@ class MonitoringService:
 
  class MonitoringService:
      """Lightweight performance and error monitoring.
- 
+
      Tracks operation metrics and keeps a rolling window of recent events to
      compute error rates and percentile latencies. Uses standard logging.
      """
- 
+
      def __init__(
          self, window_seconds: int = 300, logger: logging.Logger | None = None
      ) -> None:
@@ -50,7 +50,7 @@ class MonitoringService:
          ] = deque()
          self._op_stats: Dict[str, OpStats] = defaultdict(OpStats)
          self._op_latencies: Dict[str, Deque[Tuple[float, float]]] = defaultdict(deque)
- 
+
      # --------------------------- Recording ---------------------------
      def record_operation(
          self,
