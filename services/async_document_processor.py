@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Asynchronous document processing orchestrator.
 
 Implements an async pipeline that coordinates:
@@ -13,6 +11,7 @@ async alternative for higher throughput and responsive servers.
 """
 
 import asyncio
+import os
 import time
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
@@ -45,37 +44,63 @@ class AsyncProcessingOptions:
 
 @dataclass(frozen=True)
 class AsyncDocumentRequest:
+    """Request parameters for async processing.
+
+    Attributes:
+        file_path: Input PDF path on disk.
+        source_language: Source language code.
+        target_language: Target language code.
+        options: Pipeline options such as DPI and output path.
+    """
+
     file_path: str
     source_language: str
     target_language: str
-    options: AsyncProcessingOptions = field(default_factory=AsyncProcessingOptions)
+    options: AsyncProcessingOptions = field(
+        default_factory=AsyncProcessingOptions
+    )
 
 
 class _TokenBucket:
-    """Simple token-bucket rate limiter.
+    """Integer-based token bucket without busy-waiting.
 
-    Tokens are added over time at ``refill_rate`` per second up to
-    ``capacity``. ``acquire`` waits until a token is available.
+    Uses integer "micro-tokens" to avoid floating drift and computes the
+    exact sleep required when the bucket is empty.
     """
 
+    _SCALE = 1_000_000  # micro-tokens per token
+
     def __init__(self, capacity: int, refill_rate: float) -> None:
-        self.capacity = max(1, int(capacity))
-        self.refill_rate = float(refill_rate)
-        self._tokens = float(self.capacity)
+        self.capacity_tokens = max(1, int(capacity))
+        # convert to micro-token units
+        self.capacity_micro = self.capacity_tokens * self._SCALE
+        self.tokens_micro = self.capacity_micro
+        # refill rate in micro-tokens/second (at least 1 to progress)
+        rate = max(0.0, float(refill_rate))
+        self.refill_per_sec_micro = max(1, int(rate * self._SCALE))
         self._last = time.perf_counter()
         self._lock = asyncio.Lock()
 
     async def acquire(self) -> None:
         async with self._lock:
-            while self._tokens < 1.0:
+            while self.tokens_micro < self._SCALE:
                 now = time.perf_counter()
                 elapsed = now - self._last
-                refill = self._tokens + elapsed * self.refill_rate
-                self._tokens = min(float(self.capacity), refill)
-                self._last = now
-                if self._tokens < 1.0:
-                    await asyncio.sleep(0.01)
-            self._tokens -= 1.0
+                add = int(elapsed * self.refill_per_sec_micro)
+                if add:
+                    self.tokens_micro = min(
+                        self.capacity_micro, self.tokens_micro + add
+                    )
+                    self._last = now
+                    if self.tokens_micro >= self._SCALE:
+                        break
+                # compute precise sleep time for at least one token
+                deficit = self._SCALE - self.tokens_micro
+                wait = deficit / float(self.refill_per_sec_micro)
+                await asyncio.sleep(wait)
+                self._last = time.perf_counter()
+            # consume one token
+            self.tokens_micro -= self._SCALE
 
 
 def _convert_pdf_to_images_proc(
@@ -116,16 +141,29 @@ class AsyncDocumentProcessor:
         ocr_rate_per_sec: float = 1.0,
         process_pool: ProcessPoolExecutor | None = None,
     ) -> None:
+        """Initialize the async processor.
+
+        Parameters mirror the synchronous processor but add concurrency and
+        rate-limiting controls suitable for async execution.
+        """
         self._converter = converter
         self._ocr = ocr_service
         self._translator = translation_service
         self._reconstructor = reconstructor
 
-        self._req_sema = asyncio.Semaphore(max(1, int(max_concurrent_requests)))
+        self._req_sema = asyncio.Semaphore(
+            max(1, int(max_concurrent_requests))
+        )
         self._tg_limit = max(1, int(translation_concurrency))
         self._batch_size = max(1, int(translation_batch_size))
         self._ocr_bucket = _TokenBucket(ocr_rate_capacity, ocr_rate_per_sec)
-        self._pool = process_pool or ProcessPoolExecutor(max_workers=2)
+        if process_pool is not None:
+            self._pool = process_pool
+        else:
+            # Use a conservative default based on CPU count
+            cpu = os.cpu_count() or 2
+            workers = max(1, cpu - 1)
+            self._pool = ProcessPoolExecutor(max_workers=workers)
 
     async def process_document(
         self,
@@ -133,6 +171,7 @@ class AsyncDocumentProcessor:
         *,
         on_progress: Callable[[str, dict], None] | None = None,
     ) -> TranslatedLayout:
+        """Run the full async pipeline and return a TranslatedLayout."""
         async with self._req_sema:
             if on_progress:
                 on_progress("validated", {"path": request.file_path})
@@ -144,7 +183,7 @@ class AsyncDocumentProcessor:
                 self._pool,
                 _convert_pdf_to_images_proc,
                 request.file_path,
-                self._converter.dpi,
+                request.options.dpi,
                 self._converter.image_format,
                 self._converter.poppler_path,
             )
@@ -163,10 +202,10 @@ class AsyncDocumentProcessor:
                 )
                 optimized.append(opt)
 
-            # 2) OCR (rate-limited)
+            # 2) OCR (rate-limited, native async)
             await self._ocr_bucket.acquire()
-            ocr_result = await asyncio.to_thread(
-                self._ocr.process_document_images, optimized
+            ocr_result = await self._ocr.process_document_images_async(
+                optimized
             )
             if on_progress:
                 on_progress("ocr", {"pages": len(optimized)})
@@ -202,12 +241,10 @@ class AsyncDocumentProcessor:
                     await _translate_batch(start_index, batch)
 
             sema = asyncio.Semaphore(self._tg_limit)
-            start_idx = 0
             async with asyncio.TaskGroup() as tg:  # Python 3.11+
                 for i in range(0, len(all_blocks), self._batch_size):
-                    batch = all_blocks[i : i + self._batch_size]
+                    batch = all_blocks[i: i + self._batch_size]
                     tg.create_task(_bounded_worker(i, batch, sema))
-                    start_idx += len(batch)
 
             if on_progress:
                 on_progress("translated", {"count": len(all_blocks)})
@@ -219,7 +256,9 @@ class AsyncDocumentProcessor:
                 elems: list[TranslatedElement] = []
                 for _ in page_blocks:
                     t = translations[ti]
-                    assert t is not None  # for type-checkers
+                    assert t is not None, (
+                        f"Translation at index {ti} is None"
+                    )  # for type-checkers
                     elems.append(
                         TranslatedElement(
                             original_text=t.source_text,
@@ -252,9 +291,8 @@ class AsyncDocumentProcessor:
             layout = TranslatedLayout(pages=pages)
 
             # 6) Reconstruct (run blocking task off the loop)
-            output_path = (
-                request.options.output_path
-                or _default_output_path(request.file_path)
+            output_path = request.options.output_path or _default_output_path(
+                request.file_path
             )
             await asyncio.to_thread(
                 self._reconstructor.reconstruct_pdf_document,
@@ -270,16 +308,25 @@ class AsyncDocumentProcessor:
 
     # -------------------------- Helpers --------------------------
     def _parse_ocr_result(self, result: dict) -> list[list[TextBlock]]:
+        """Convert OCR service JSON into per-page lists of TextBlock."""
         pages_out: list[list[TextBlock]] = []
         pages = result.get("pages", []) if isinstance(result, dict) else []
         for page in pages:
             page_blocks: list[TextBlock] = []
-            blocks = page.get("text_blocks", []) if isinstance(page, dict) else []
+            blocks = (
+                page.get("text_blocks", []) if isinstance(page, dict) else []
+            )
             for blk in blocks:
                 text = str(blk.get("text", ""))
                 bbox = blk.get("bbox", [0.0, 0.0, 100.0, 20.0])
                 font = blk.get("font_info", {})
-                color = tuple(font.get("color", (0, 0, 0)))
+                color_data = font.get("color", (0, 0, 0))
+                if isinstance(color_data, (list, tuple)) and (
+                    len(color_data) >= 3
+                ):
+                    color = tuple(color_data[:3])
+                else:
+                    color = (0, 0, 0)
                 font_info = FontInfo(
                     family=str(font.get("family", "Helvetica")),
                     size=float(font.get("size", 12.0)),
@@ -289,10 +336,17 @@ class AsyncDocumentProcessor:
                 )
                 layout_ctx = LayoutContext(
                     bbox=BoundingBox(
-                        float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])
+                        float(bbox[0]),
+                        float(bbox[1]),
+                        float(bbox[2]),
+                        float(bbox[3]),
                     ),
                     font=font_info,
-                    ocr_confidence=(float(blk["confidence"]) if "confidence" in blk else None),
+                    ocr_confidence=(
+                        float(blk.get("confidence", 0.0))
+                        if "confidence" in blk
+                        else None
+                    ),
                 )
                 page_blocks.append(TextBlock(text=text, layout=layout_ctx))
             pages_out.append(page_blocks)
@@ -300,9 +354,10 @@ class AsyncDocumentProcessor:
 
 
 def _default_output_path(input_path: str) -> str:
+    """Return default output path for a translated PDF next to input."""
     p = Path(input_path)
     if not p.suffix:
-        raise ValueError(f"Input path must be a file with an extension: {input_path}")
+        raise ValueError(
+            "Input path must be a file with an extension: " f"{input_path}"
+        )
     return str(p.with_name(f"{p.stem}.translated.pdf"))
-
-

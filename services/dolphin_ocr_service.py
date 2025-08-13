@@ -299,6 +299,18 @@ class DolphinOCRService:
 
         return "ok"
 
+    # -------------------- Async API (optional) --------------------
+    async def process_document_images_async(self, images: list[bytes]) -> dict[str, Any]:
+        """Async wrapper around the OCR request.
+
+        This default implementation uses a thread to avoid blocking when the
+        httpx client is configured synchronously. If an async HTTP client is
+        available, replace this with a true non-blocking implementation.
+        """
+        import asyncio
+
+        return await asyncio.to_thread(self.process_document_images, images)
+
     def _parse_json(self, resp: httpx.Response, endpoint: str) -> dict[str, Any]:
         try:
             return resp.json()
