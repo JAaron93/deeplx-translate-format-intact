@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.routes import api_router, app_router
-from tests.test_utils import write_minimal_pdf, write_encrypted_pdf
+from tests.test_utils import write_encrypted_pdf, write_minimal_pdf
 
 
 def _write_min_pdf(p: Path) -> None:
@@ -71,9 +71,7 @@ def test_upload_accepts_valid_pdf(
         return {"type": "pdf", "metadata": {}}
 
     monkeypatch.setattr(file_handler, "save_upload_file", _save_upload_file)
-    monkeypatch.setattr(
-        document_processor, "extract_content", _extract_content
-    )
+    monkeypatch.setattr(document_processor, "extract_content", _extract_content)
 
     with pdf.open("rb") as fh:
         res = client.post(

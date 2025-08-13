@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pytest
 
 
@@ -46,9 +47,7 @@ def write_minimal_pdf(path: Path) -> None:
 
     xref_start = pos
     xref_header = b"xref\n0 5\n0000000000 65535 f \n"
-    xref_entries = b"".join(
-        f"{off:010d} 00000 n \n".encode() for off in offsets
-    )
+    xref_entries = b"".join(f"{off:010d} 00000 n \n".encode() for off in offsets)
     xref = xref_header + xref_entries
 
     trailer = (

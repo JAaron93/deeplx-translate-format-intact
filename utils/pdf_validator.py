@@ -258,9 +258,7 @@ def validate_pdf_structure(
         )
 
     ok = len(issues) == 0
-    return ValidationResult(
-        ok=ok, is_pdf=True, is_encrypted=False, issues=issues
-    )
+    return ValidationResult(ok=ok, is_pdf=True, is_encrypted=False, issues=issues)
 
 
 def validate_pdf(file_path: str) -> ValidationResult:
