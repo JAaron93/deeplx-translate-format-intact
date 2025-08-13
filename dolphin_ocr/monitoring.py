@@ -4,7 +4,8 @@ import logging
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from typing import Deque, Dict, Iterable, Tuple
+from typing import Deque, Iterable
+
 
 @dataclass
 class OpStats:
@@ -21,34 +22,71 @@ class MonitoringService:
     """
 
     def __init__(
-        self, window_seconds: int = 300, logger: logging.Logger | None = None
+        self,
+        window_seconds: int = 300,
+        logger: logging.Logger | None = None,
     ) -> None:
         self.window_seconds = window_seconds
         self.logger = logger or logging.getLogger("dolphin_ocr.monitoring")
         self._events: Deque[
-            Tuple[float, str, bool, float, str | None]
-        ] = deque()
-        self._op_stats: Dict[str, OpStats] = defaultdict(OpStats)
-        self._op_latencies: Dict[str, Deque[Tuple[float, float]]] = (
-            defaultdict(deque)
-        )
+            tuple[float, str, bool, float, str | None]
++import threading
 
-    # --------------------------- Recording ---------------------------
-    def record_operation(
-        self,
-        operation: str,
-        duration_ms: float,
-        *,
-        success: bool,
-        error_code: str | None = None,
-    ) -> None:
-        now = time.time()
-        self._events.append((now, operation, success, duration_ms, error_code))
-        self._prune(now)
-
-        stats = self._op_stats[operation]
-        stats.count += 1
-        stats.total_ms += float(duration_ms)
+ class MonitoringService:
+     """Lightweight performance and error monitoring.
+ 
+     Tracks operation metrics and keeps a rolling window of recent events to
+     compute error rates and percentile latencies. Uses standard logging.
+     """
+ 
+     def __init__(
+         self, window_seconds: int = 300, logger: logging.Logger | None = None
+     ) -> None:
+         self.window_seconds = window_seconds
+         self.logger = logger or logging.getLogger("dolphin_ocr.monitoring")
++        self._lock = threading.Lock()
+         self._events: Deque[
+             Tuple[float, str, bool, float, str | None]
+         ] = deque()
+         self._op_stats: Dict[str, OpStats] = defaultdict(OpStats)
+         self._op_latencies: Dict[str, Deque[Tuple[float, float]]] = defaultdict(deque)
+ 
+     # --------------------------- Recording ---------------------------
+     def record_operation(
+         self,
+         operation: str,
+         duration_ms: float,
+         *,
+         success: bool,
+         error_code: str | None = None,
+     ) -> None:
+-        now = time.time()
+-        self._events.append((now, operation, success, duration_ms, error_code))
+-        self._prune(now)
+-
+-        stats = self._op_stats[operation]
+-        stats.count += 1
+-        stats.total_ms += float(duration_ms)
+-        if success:
+-            stats.success += 1
+-
+-        lat_q = self._op_latencies[operation]
+-        lat_q.append((now, float(duration_ms)))
+-        self._prune_latencies(operation, now)
++        with self._lock:
++            now = time.time()
++            self._events.append((now, operation, success, duration_ms, error_code))
++            self._prune(now)
++
++            stats = self._op_stats[operation]
++            stats.count += 1
++            stats.total_ms += float(duration_ms)
++            if success:
++                stats.success += 1
++
++            lat_q = self._op_latencies[operation]
++            lat_q.append((now, float(duration_ms)))
++            self._prune_latencies(operation, now)
         if success:
             stats.success += 1
 
@@ -72,17 +110,22 @@ class MonitoringService:
     def get_p95_latency(
         self, operation: str, *, window_seconds: int | None = None
     ) -> float:
-        samples = self._latencies_in_window(operation, window_seconds)
-        if not samples:
-            return 0.0
-        values = sorted(samples)
-        idx = int(0.95 * (len(values) - 1))
-        return float(values[idx])
-
+        now = time.time()
     def get_summary(self) -> dict[str, object]:
         out: dict[str, object] = {}
-        for op, st in self._op_stats.items():
-            avg = 0.0 if st.count == 0 else st.total_ms / float(st.count)
+        try:
+            for op, st in self._op_stats.items():
+                avg = 0.0 if st.count == 0 else st.total_ms / float(st.count)
+                out[op] = {
+                    "count": st.count,
+                    "success": st.success,
+                    "avg_ms": float(avg),
+                }
+            out["error_rate"] = float(self.get_error_rate())
+        except Exception as e:
+            self.logger.warning(f"Error generating summary: {e}")
+            out["error"] = str(e)
+        return out
             out[op] = {
                 "count": st.count,
                 "success": st.success,
@@ -109,13 +152,16 @@ class MonitoringService:
             q.popleft()
 
     def _latencies_in_window(
-        self, operation: str, window_seconds: int | None
+        self,
+        operation: str,
+        window_seconds: int | None,
+        now: float | None = None,
     ) -> Iterable[float]:
         ws = window_seconds or self.window_seconds
-        cutoff = time.time() - ws
+        current_time = time.time() if now is None else now
+        cutoff = current_time - ws
         return [
             lat
             for ts, lat in self._op_latencies[operation]
             if ts >= cutoff
         ]
-
