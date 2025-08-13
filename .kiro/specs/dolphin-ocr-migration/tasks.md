@@ -81,14 +81,14 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Unit tests: encrypted PDFs, basic format validation, error handling
     - _Requirements: 6.1, 6.2, 6.9, 6.10_
 
-  - [-] 6.2 Implement PDF reconstruction with layout preservation
+  - [x] 6.2 Implement PDF reconstruction with layout preservation
     - Write reconstruct_pdf method using reportlab with translated layout integration
     - Implement font handling, text positioning, and multi-line text wrapping
     - Add color preservation and style application from original layout
     - Create unit tests for PDF reconstruction with various layout scenarios
     - _Requirements: 6.1, 6.2, 6.8_
 
-  - [ ] 6.3 Implement PDF quality validation helper methods
+  - [x] 6.3 Implement PDF quality validation helper methods
     - Create _extract_pdf_text helper method using hybrid approach combining pdfminer.six/pypdf direct extraction and Tesseract OCR fallback (language-configurable)
     - Stream and/or page-chunk OCR to avoid OOM on large PDFs; cap pages/time and expose timeouts
     - Optimize PDFMiner chunking to use iterator slicing instead of full-file iteration per chunk, preventing O(n²) page reading for large documents
@@ -100,7 +100,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Create unit tests for each helper method with various PDF types (text-based, image-based, hybrid)
     - _Requirements: 6.11, 6.12_
 
-  - [ ] 6.4 Add basic PDF quality validation
+  - [-] 6.4 Add basic PDF quality validation
     - Implement validate_pdf_reconstruction_quality method with simple quality checks
     - Add basic threshold checking for text accuracy, font preservation, and layout preservation
     - Create simple quality assessment: check if text is preserved, fonts are mostly correct, and layout is roughly maintained
