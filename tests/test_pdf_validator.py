@@ -1,35 +1,28 @@
-import pytest
 from pathlib import Path
+import pytest
 
 from utils.pdf_validator import (
+    detect_pdf_encryption,
     validate_pdf,
     validate_pdf_extension_and_header,
-    detect_pdf_encryption,
     validate_pdf_structure,
 )
+from tests.test_utils import write_minimal_pdf
 
 
 def _write_minimal_pdf(path: Path) -> None:
-    # Minimal valid-ish PDF with header, xref, trailer, EOF
-    content = (
-        b"%PDF-1.4\n"
-        b"1 0 obj<<>>endobj\n"
-        b"xref\n0 2\n0000000000 65535 f \n0000000010 00000 n \n"
-        b"trailer<< /Root 1 0 R >>\nstartxref\n9\n%%EOF\n"
-    )
-    path.write_bytes(content)
+    write_minimal_pdf(path)
 
 
 def _write_encrypted_pdf(path: Path) -> None:
-    import importlib.util
     import importlib
+    import importlib.util
 
     spec = importlib.util.find_spec("pypdf")
     if spec is None:  # pragma: no cover - dependency missing
         pytest.skip("pypdf not available")
     mod = importlib.import_module("pypdf")
-    PdfWriter = getattr(mod, "PdfWriter")
-    writer = PdfWriter()
+    writer = mod.PdfWriter()
     writer.add_blank_page(width=200, height=200)
     writer.encrypt("pwd")
     with path.open("wb") as fh:

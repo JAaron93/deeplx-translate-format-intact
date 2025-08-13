@@ -5,27 +5,15 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.routes import api_router, app_router
+from tests.test_utils import write_minimal_pdf, write_encrypted_pdf
 
 
 def _write_min_pdf(p: Path) -> None:
-    data = (
-        b"%PDF-1.4\n1 0 obj<<>>endobj\n"
-        b"xref\n0 2\n0000000000 65535 f \n0000000010 00000 n \n"
-        b"trailer<< /Root 1 0 R >>\nstartxref\n9\n%%EOF\n"
-    )
-    p.write_bytes(data)
+    write_minimal_pdf(p)
 
 
 def _write_encrypted_pdf(p: Path) -> None:
-    try:
-        from pypdf import PdfWriter
-    except Exception:  # pragma: no cover
-        pytest.skip("pypdf not available")
-    w = PdfWriter()
-    w.add_blank_page(width=200, height=200)
-    w.encrypt("pwd")
-    with p.open("wb") as fh:
-        w.write(fh)
+    write_encrypted_pdf(p)
 
 
 def _make_app() -> TestClient:
@@ -73,9 +61,9 @@ def test_upload_accepts_valid_pdf(
     _write_min_pdf(pdf)
 
     # Monkeypatch save to use our tmp file path passthrough
-    from core.translation_handler import file_handler, document_processor
+    from core.translation_handler import document_processor, file_handler
 
-    def _save_upload_file(file):
+    def _save_upload_file(_file):
         # emulate returning a saved path
         return str(pdf)
 

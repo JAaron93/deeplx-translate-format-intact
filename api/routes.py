@@ -26,7 +26,6 @@ from core.translation_handler import (
     user_choice_manager,
 )
 from dolphin_ocr.errors import get_error_message
-from utils import pdf_validator
 from models.neologism_models import (
     ConfidenceFactors,
     DetectedNeologism,
@@ -38,6 +37,7 @@ from models.user_choice_models import (
     ChoiceScope,
     ChoiceType,
 )
+from utils import pdf_validator
 from utils.language_utils import extract_text_sample_for_language_detection
 
 logger = logging.getLogger(__name__)
@@ -72,9 +72,7 @@ async def root() -> Dict[str, Any]:
 @app_router.get("/philosophy", response_class=HTMLResponse)
 async def philosophy_interface(request: Request) -> HTMLResponse:
     """Philosophy-enhanced translation interface."""
-    return templates.TemplateResponse(
-        "philosophy_interface.html", {"request": request}
-    )
+    return templates.TemplateResponse("philosophy_interface.html", {"request": request})
 
 
 # Philosophy API Endpoints
@@ -162,20 +160,20 @@ async def get_philosophy_progress():
     """Get current philosophy processing progress."""
     try:
         total_neologisms = 0
-        if state.neologism_analysis and isinstance(
-            state.neologism_analysis, dict
-        ):
+        if state.neologism_analysis and isinstance(state.neologism_analysis, dict):
             detected = state.neologism_analysis.get("detected_neologisms", [])
             if isinstance(detected, list):
                 total_neologisms = len(detected)
 
         processed_neologisms = 0
         if isinstance(state.user_choices, list):
-            processed_neologisms = len([
-                choice
-                for choice in state.user_choices
-                if isinstance(choice, dict) and choice.get("processed", False)
-            ])
+            processed_neologisms = len(
+                [
+                    choice
+                    for choice in state.user_choices
+                    if isinstance(choice, dict) and choice.get("processed", False)
+                ]
+            )
         return {
             "total_neologisms": total_neologisms,
             "processed_neologisms": processed_neologisms,
@@ -230,9 +228,7 @@ async def import_user_choices(import_data: Dict[str, Any]):
             )
 
         # Use the new dictionary-accepting method
-        count = user_choice_manager.import_choices_from_dict(
-            choices, session_id
-        )
+        count = user_choice_manager.import_choices_from_dict(choices, session_id)
 
         return {
             "success": True,
@@ -294,12 +290,8 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
         content = document_processor.extract_content(file_path)
 
         # Detect language using the utility function
-        sample_text = extract_text_sample_for_language_detection(
-            content
-        )
-        detected_lang = language_detector.detect_language_from_text(
-            sample_text
-        )
+        sample_text = extract_text_sample_for_language_detection(content)
+        detected_lang = language_detector.detect_language_from_text(sample_text)
 
         # Clean metadata access pattern
         metadata = content.get("metadata")

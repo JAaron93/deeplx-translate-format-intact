@@ -123,7 +123,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Write unit tests for monitoring functionality
     - _Requirements: 8.3, 8.4, 8.5_
 
- - [x] 8. Integrate complete document processing workflow
+- [x] 8. Integrate complete document processing workflow
   - [x] 8.1 Create main document processor orchestrating all services
     - Write DocumentProcessor class integrating all services (PDF converter, OCR, translation, reconstruction)
     - Implement process_document method with complete workflow orchestration
