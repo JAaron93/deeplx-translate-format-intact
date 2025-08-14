@@ -25,9 +25,7 @@ def _teardown_blocks(demo: gr.blocks.Blocks) -> None:
         demo.close()
 
 
-def test_ui_valid_pdf_upload(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_ui_valid_pdf_upload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     demo, url = _launch_blocks()
     try:
         # Simulate process_file_upload returning tuple of expected UI values
@@ -54,9 +52,7 @@ def test_ui_valid_pdf_upload(
         # View API to discover endpoints (ensure reachable)
         client.view_api()
         # Predict on upload endpoint; on_file_upload bound to file change
-        result = client.predict(
-            handle_file(str(pdf))
-        )
+        result = client.predict(handle_file(str(pdf)))
         # Expect preview text in first slot, upload status in second
         assert isinstance(result, (list, tuple))
         assert result[0] == "preview text"
@@ -65,9 +61,7 @@ def test_ui_valid_pdf_upload(
         _teardown_blocks(demo)
 
 
-def test_ui_non_pdf_validation(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_ui_non_pdf_validation(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     demo, url = _launch_blocks()
     try:
         from ui import gradio_interface as gi
@@ -86,9 +80,7 @@ def test_ui_non_pdf_validation(
         txt.write_text("hello")
 
         client = Client(url)
-        out = client.predict(
-            handle_file(str(txt))
-        )
+        out = client.predict(handle_file(str(txt)))
         # Second item is upload_status with the error code
         assert "DOLPHIN_005" in (out[1] or "")
     finally:
@@ -106,8 +98,7 @@ def test_ui_encrypted_pdf_validation(
             return {
                 "error_code": "DOLPHIN_014",
                 "message": (
-                    "Encrypted PDFs not supported - please provide "
-                    "unlocked PDF"
+                    "Encrypted PDFs not supported - please provide " "unlocked PDF"
                 ),
             }
 

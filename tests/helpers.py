@@ -1,5 +1,6 @@
-from pathlib import Path
 import importlib
+from pathlib import Path
+
 import pytest
 
 
@@ -47,9 +48,7 @@ def write_minimal_pdf(path: Path) -> None:
 
     xref_start = pos
     xref_header = b"xref\n0 5\n0000000000 65535 f \n"
-    xref_entries = b"".join(
-        f"{off:010d} 00000 n \n".encode() for off in offsets
-    )
+    xref_entries = b"".join(f"{off:010d} 00000 n \n".encode() for off in offsets)
     xref = xref_header + xref_entries
 
     trailer = (
@@ -69,7 +68,7 @@ def write_encrypted_pdf(path: Path) -> None:
     """
     try:
         mod = importlib.import_module("pypdf")
-        PdfWriter = getattr(mod, "PdfWriter")
+        PdfWriter = mod.PdfWriter
     except (ImportError, AttributeError):  # pragma: no cover - optional dep
         pytest.skip("pypdf not available")
     else:

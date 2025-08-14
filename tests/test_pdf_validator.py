@@ -11,10 +11,6 @@ from utils.pdf_validator import (
 )
 
 
-def _write_minimal_pdf(path: Path) -> None:
-    write_minimal_pdf(path)
-
-
 def _write_encrypted_pdf(path: Path) -> None:
     import importlib
     import importlib.util
@@ -32,7 +28,7 @@ def _write_encrypted_pdf(path: Path) -> None:
 
 def test_extension_and_header_valid_tmp(tmp_path: Path) -> None:
     pdf = tmp_path / "doc.pdf"
-    _write_minimal_pdf(pdf)
+    write_minimal_pdf(pdf)
     res = validate_pdf_extension_and_header(str(pdf))
     assert res.ok is True
     assert res.is_pdf is True
@@ -58,7 +54,7 @@ def test_detect_encryption_for_encrypted_pdf(tmp_path: Path) -> None:
 
 def test_validate_pdf_structure_minimal(tmp_path: Path) -> None:
     pdf = tmp_path / "doc.pdf"
-    _write_minimal_pdf(pdf)
+    write_minimal_pdf(pdf)
     res = validate_pdf_structure(str(pdf))
     assert res.ok is True
     assert res.is_pdf is True
@@ -66,7 +62,7 @@ def test_validate_pdf_structure_minimal(tmp_path: Path) -> None:
 
 def test_validate_pdf_end_to_end(tmp_path: Path) -> None:
     pdf = tmp_path / "doc.pdf"
-    _write_minimal_pdf(pdf)
+    write_minimal_pdf(pdf)
     res = validate_pdf(str(pdf))
     assert res.ok is True
     assert res.is_pdf is True

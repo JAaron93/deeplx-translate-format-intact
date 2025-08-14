@@ -22,6 +22,8 @@ class ConfidenceScorer:
         self,
         philosophical_indicators: Optional[set[str]] = None,
         german_morphological_patterns: Optional[dict[str, list[str]]] = None,
+        corpus_frequencies: Optional[dict[str, int]] = None,
+        corpus_total_tokens: Optional[int] = None,
     ):
         """Initialize the confidence scorer.
 
@@ -29,10 +31,20 @@ class ConfidenceScorer:
             philosophical_indicators: Set of philosophical indicator words
             german_morphological_patterns: German morphological patterns
                 dictionary
+            corpus_frequencies: Optional token frequency lookup for a
+                background corpus (keys are lowercase tokens, values are
+                counts)
+            corpus_total_tokens: Optional total token count of the corpus.
         """
         self.philosophical_indicators = philosophical_indicators or set()
         self.german_morphological_patterns = (
             german_morphological_patterns or self._load_default_patterns()
+        )
+        self._corpus_freq = corpus_frequencies or {}
+        self._corpus_total = (
+            corpus_total_tokens
+            if corpus_total_tokens is not None
+            else int(sum(self._corpus_freq.values()))
         )
 
         logger.info("ConfidenceScorer initialized")
@@ -85,8 +97,12 @@ class ConfidenceScorer:
 
         # Morphological factors
         factors.morphological_complexity = morphological.structural_complexity
-        factors.compound_structure_score = 0.8 if morphological.is_compound else 0.2
-        factors.morphological_productivity = morphological.morphological_productivity
+        factors.compound_structure_score = (
+            0.8 if morphological.is_compound else 0.2
+        )
+        factors.morphological_productivity = (
+            morphological.morphological_productivity
+        )
 
         # Context factors
         factors.context_density = philosophical.philosophical_density
@@ -100,22 +116,36 @@ class ConfidenceScorer:
         # Frequency factors (simplified - would need corpus analysis for full
         # implementation)
         factors.rarity_score = self._calculate_rarity_score(term)
-        # TODO: Implement corpus-based frequency analysis
-        factors.frequency_deviation = 0.6
+        # Corpus-based frequency deviation (with graceful fallback)
+        factors.frequency_deviation = self._calculate_frequency_deviation(
+            term,
+            morphological,
+        )
         factors.corpus_novelty = 0.8 if len(term) > 12 else 0.4
 
         # Pattern factors
-        factors.known_patterns = self._calculate_pattern_score(term, morphological)
-        factors.pattern_productivity = 0.7 if morphological.is_compound else 0.4
-        factors.structural_regularity = 0.8 if morphological.compound_pattern else 0.5
+        factors.known_patterns = self._calculate_pattern_score(
+            term,
+            morphological,
+        )
+        factors.pattern_productivity = (
+            0.7 if morphological.is_compound else 0.4
+        )
+        factors.structural_regularity = (
+            0.8 if morphological.compound_pattern else 0.5
+        )
 
         # Linguistic factors
-        factors.phonological_plausibility = self._calculate_phonological_plausibility(
-            term
+        factors.phonological_plausibility = (
+            self._calculate_phonological_plausibility(term)
         )
-        # TODO: Implement syntactic context analysis
-        factors.syntactic_integration = 0.7
-        factors.semantic_transparency = 0.6 if morphological.is_compound else 0.4
+        # Heuristic syntactic integration estimation
+        factors.syntactic_integration = (
+            self._estimate_syntactic_integration(term, morphological)
+        )
+        factors.semantic_transparency = (
+            0.6 if morphological.is_compound else 0.4
+        )
 
         return factors
 
@@ -138,6 +168,95 @@ class ConfidenceScorer:
                 break
 
         return min(1.0, length_score + compound_score + abstract_score)
+
+    # ---------------- Frequency and syntax helpers -----------------
+
+    def update_corpus_frequencies(
+        self, freq: dict[str, int], total_tokens: Optional[int] = None
+    ) -> None:
+        """Replace corpus frequency data used for frequency-based signals.
+
+        Args:
+            freq: Mapping of lowercase tokens to counts.
+            total_tokens: Optional explicit total token count. If omitted,
+                the sum of counts is used.
+        """
+        self._corpus_freq = freq
+        self._corpus_total = (
+            total_tokens
+            if total_tokens is not None
+            else int(sum(freq.values()))
+        )
+
+    def _relative_frequency(self, token: str) -> float:
+        """Return relative frequency of token from corpus (0.0-1.0).
+
+        Falls back to 0 when corpus is unavailable.
+        """
+        if not self._corpus_freq or self._corpus_total <= 0:
+            return 0.0
+        count = float(self._corpus_freq.get(token.lower(), 0))
+        return max(0.0, min(1.0, count / float(self._corpus_total)))
+
+    def _calculate_frequency_deviation(
+        self, term: str, morphological: MorphologicalAnalysis
+    ) -> float:
+        """Estimate frequency deviation using an optional corpus.
+
+        The idea: compare observed relative frequency with a simple baseline
+        expected frequency derived from morphological cues (compounds occur
+        less frequently than simple forms). We compute the absolute
+        log-scale difference and normalize to [0, 1].
+        """
+        rel = self._relative_frequency(term)
+        # Baseline expectation by morphology and length (very rough)
+        base = 5e-5  # default baseline for common words
+        if morphological.is_compound:
+            base *= 0.2  # compounds expected to be rarer
+        base *= max(0.25, 1.0 - (len(term) / 30.0))  # long words rarer
+
+        eps = 1e-12
+        # Log-ratio distance; larger distance => higher deviation
+        import math
+
+        distance = abs(math.log10((rel + eps) / (base + eps)))
+        # Normalize: distances > 6 treated as max deviation
+        score = min(1.0, distance / 6.0)
+        return float(max(0.0, score))
+
+    def _estimate_syntactic_integration(
+        self, term: str, morphological: MorphologicalAnalysis
+    ) -> float:
+        """Estimate syntactic integration without full parser context.
+
+        Heuristics for German:
+        - Noun-like capitalization and abstract noun suffixes improve score
+        - Valid compound/linking patterns improve score
+        - Digits/symbols or excessive punctuation reduce score
+        """
+        score = 0.5
+        # Noun capitalization (German)
+        if term[:1].isupper():
+            score += 0.15
+        # Abstract noun suffixes
+        if any(
+            term.lower().endswith(suf)
+            for suf in self.german_morphological_patterns["abstract_suffixes"]
+        ):
+            score += 0.1
+        # Compound/linking patterns
+        if morphological.is_compound or morphological.compound_pattern:
+            score += 0.1
+        # Penalize digits/symbols (less likely in standard lexical items)
+        if any(ch.isdigit() for ch in term) or any(
+            ch in {"_", "@", "#", "*"} for ch in term
+        ):
+            score -= 0.2
+        # Penalize excessive internal punctuation
+        hyphen_count = term.count("-")
+        if hyphen_count >= 2:
+            score -= 0.1
+        return max(0.0, min(1.0, score))
 
     def _is_compound_word(self, word: str) -> bool:
         """Check if word appears to be a German compound."""
@@ -183,7 +302,10 @@ class ConfidenceScorer:
 
         # Philosophical term patterns
         term_lower = term.lower()
-        if any(indicator in term_lower for indicator in self.philosophical_indicators):
+        if any(
+            indicator in term_lower
+            for indicator in self.philosophical_indicators
+        ):
             score += 0.4
 
         return min(1.0, score)
@@ -200,11 +322,17 @@ class ConfidenceScorer:
             score += 0.2  # Contains vowels
 
         # Check for problematic consonant clusters
-        if re.search(r"[bcdfghjklmnpqrstvwxyz]{4,}", term.lower()):
+        if re.search(
+            r"[bcdfghjklmnpqrstvwxyz]{4,}",
+            term.lower(),
+        ):
             score -= 0.3  # Too many consecutive consonants
 
         # Check for typical German sounds
-        if re.search(r"(?:sch|ch|th|pf|tz)", term.lower()):
+        if re.search(
+            r"(?:sch|ch|th|pf|tz)",
+            term.lower(),
+        ):
             score += 0.1  # Contains German sound patterns
 
         return max(0.0, min(1.0, score))
@@ -213,7 +341,9 @@ class ConfidenceScorer:
         """Calculate final confidence score from factors."""
         return factors.calculate_weighted_score()
 
-    def get_confidence_breakdown(self, factors: ConfidenceFactors) -> dict[str, float]:
+    def get_confidence_breakdown(
+        self, factors: ConfidenceFactors
+    ) -> dict[str, float]:
         """Get detailed breakdown of confidence calculation."""
         # Calculate individual category scores
         morphological_score = (
@@ -266,13 +396,20 @@ class ConfidenceScorer:
             adjusted -= 0.1  # Lower threshold for philosophical texts
 
         # Adjust based on philosophical density
-        philosophical_density = context_factors.get("philosophical_density", 0.0)
+        philosophical_density = context_factors.get(
+            "philosophical_density",
+            0.0,
+        )
         if philosophical_density > 0.5:
             # Lower threshold for high philosophical density
             adjusted -= 0.05
 
         # Adjust based on author context
-        known_authors = ["klages", "heidegger", "nietzsche"]
+        known_authors = [
+            "klages",
+            "heidegger",
+            "nietzsche",
+        ]
         if context_factors.get("author_context") in known_authors:
             # Lower threshold for known philosophical authors
             adjusted -= 0.05
@@ -307,9 +444,14 @@ class ConfidenceScorer:
         self.german_morphological_patterns.update(new_patterns)
         logger.info("Updated morphological patterns")
 
-    def update_philosophical_indicators(self, new_indicators: set[str]) -> None:
+    def update_philosophical_indicators(
+        self, new_indicators: set[str]
+    ) -> None:
         """Update philosophical indicators."""
         self.philosophical_indicators.update(new_indicators)
         logger.info(
-            f"Updated philosophical indicators with {len(new_indicators)} new terms"
+            (
+                "Updated philosophical indicators with "
+                f"{len(new_indicators)} new terms"
+            )
         )

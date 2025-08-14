@@ -3,7 +3,6 @@ import json
 import logging
 from pathlib import Path
 
-
 import gradio as gr
 
 from core.translation_handler import (
@@ -14,7 +13,7 @@ from core.translation_handler import (
 )
 
 
-def _render_metrics(metrics_dict: dict) -> str:
+def render_metrics(metrics_dict: dict) -> str:
     """Render metrics dictionary into a human-readable string.
 
     Recognizes common keys like OCR confidence, layout scores, and
@@ -66,6 +65,11 @@ def on_file_upload(
             progress(0.05, desc="Validating file")
         result = process_file_upload(file)
     except Exception as exc:  # Fallback for unexpected client/server issues
+        logging.error(
+            "Unexpected error during file upload: %s",
+            exc,
+            exc_info=True,
+        )
         msg = f"Upload failed: {exc}"
         return "", msg, "", "", "", ""
 
@@ -86,15 +90,16 @@ def on_file_upload(
 
     # If server returned a structured non-error dict, try to map keys
     if isinstance(result, dict):
-        preview = result.get("preview") or ""
+        result_dict = result  # help type-checkers
+        preview = result_dict.get("preview") or ""
         upload_status = (
-            result.get("status") or result.get("upload_status") or ""
+            result_dict.get("status") or result_dict.get("upload_status") or ""
         )
-        detected_language = result.get("detected_language") or ""
-        preprocessing = result.get("preprocessing") or ""
-        info_obj = result.get("info") or result.get("processing_info") or {}
-        progress_obj = result.get("progress") or {}
-        metrics_obj = result.get("metrics") or (
+        detected_language = result_dict.get("detected_language") or ""
+        preprocessing = result_dict.get("preprocessing") or ""
+        info_obj = result_dict.get("info") or result_dict.get("processing_info") or {}
+        progress_obj = result_dict.get("progress") or {}
+        metrics_obj = result_dict.get("metrics") or (
             info_obj.get("metrics") if isinstance(info_obj, dict) else None
         )
         # Render progress into a short line, if present
@@ -119,7 +124,7 @@ def on_file_upload(
                 info_obj = prog_line
         metrics_str = ""
         if isinstance(metrics_obj, dict):
-            metrics_str = _render_metrics(metrics_obj)
+            metrics_str = render_metrics(metrics_obj)
         with contextlib.suppress(Exception):
             progress(1.0)
         return (
@@ -142,7 +147,7 @@ def on_file_upload(
         try:
             info = vals[4]
             if isinstance(info, dict) and "metrics" in info:
-                metrics = _render_metrics(info["metrics"])
+                metrics = render_metrics(info["metrics"])
             # Also surface any basic progress field into a short note
             if isinstance(info, dict) and "progress" in info:
                 _p = info.get("progress")
@@ -185,9 +190,11 @@ def start_translation_with_progress(
         progress = gr.Progress(track_tqdm=False)
     with contextlib.suppress(Exception):
         progress(0.05, desc="Starting translation")
-    result = start_translation(
-        target_language, pages_to_translate, philosophy_mode
-    )
+        result = start_translation(
+            target_language,
+            pages_to_translate,
+            philosophy_mode,
+        )
     with contextlib.suppress(Exception):
         progress(0.2, desc="Submitted to backend")
     return result
@@ -308,9 +315,7 @@ def create_gradio_interface() -> gr.Blocks:
                     label="Dolphin OCR Analysis",
                     interactive=False,
                     lines=8,
-                    placeholder=(
-                        "Pre-processing will show Dolphin OCR analysis..."
-                    ),
+                    placeholder=("Pre-processing will show Dolphin OCR analysis..."),
                     elem_classes=["info-panel"],
                 )
 
@@ -362,9 +367,7 @@ def create_gradio_interface() -> gr.Blocks:
 
                 # Philosophy mode toggle
                 philosophy_mode = gr.Checkbox(
-                    label=(
-                        "Enable Philosophy Mode (Neologism Detection)"
-                    ),
+                    label=("Enable Philosophy Mode (Neologism Detection)"),
                     value=False,
                 )
                 # Translation Controls
