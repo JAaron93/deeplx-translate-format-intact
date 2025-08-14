@@ -175,15 +175,24 @@ class PhilosophyTranslationExamples:
 
         # Progress callback function
         def progress_callback(progress: PhilosophyTranslationProgress):
-            print(
-                f"Progress: {progress.overall_progress:.1f}% - Stage: {progress.current_stage}"
+            logger.info(
+                "Progress: %.1f%% - Stage: %s",
+                progress.overall_progress,
+                progress.current_stage,
             )
-            print(f"  Text Processing: {progress.text_processing_progress}%")
-            print(f"  Neologism Detection: {progress.neologism_detection_progress}%")
-            print(
-                f"  User Choice Application: {progress.user_choice_application_progress}%"
+            logger.info(
+                "  Text Processing: %s%%",
+                progress.text_processing_progress,
             )
-            print(f"  Translation: {progress.translation_progress}%")
+            logger.info(
+                "  Neologism Detection: %s%%",
+                progress.neologism_detection_progress,
+            )
+            logger.info(
+                "  User Choice Application: %s%%",
+                progress.user_choice_application_progress,
+            )
+            logger.info("  Translation: %s%%", progress.translation_progress)
 
         # Long philosophical text for demonstration
         long_text = """
@@ -250,12 +259,20 @@ class PhilosophyDocumentExamples:
         try:
             # Progress callback for document processing
             def progress_callback(progress: PhilosophyProcessingProgress):
-                print(
-                    f"Document Processing: {progress.overall_progress:.1f}% - {progress.current_stage}"
+                logger.info(
+                    "Document Processing: %.1f%% - %s",
+                    progress.overall_progress,
+                    progress.current_stage,
                 )
-                print(f"  Pages: {progress.processed_pages}/{progress.total_pages}")
-                print(
-                    f"  Neologisms: {progress.processed_neologisms}/{progress.total_neologisms}"
+                logger.info(
+                    "  Pages: %s/%s",
+                    progress.processed_pages,
+                    progress.total_pages,
+                )
+                logger.info(
+                    "  Neologisms: %s/%s",
+                    progress.processed_neologisms,
+                    progress.total_neologisms,
                 )
 
             print("Processing document with philosophy awareness...")

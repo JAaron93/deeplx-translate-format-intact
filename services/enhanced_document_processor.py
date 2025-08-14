@@ -1,37 +1,25 @@
-"""Enhanced document processor with comprehensive formatting preservation.
-
-Integrates advanced PDF processing with other document formats.
-"""
+"""Enhanced PDF document processor (PDF-only)."""
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-try:
-    import fitz  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    fitz = None  # type: ignore
-try:
-    import mammoth  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    mammoth = None  # type: ignore
-try:
-    from docx import Document  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    Document = None  # type: ignore
+# Migrated off legacy PDF engine; uses pdf2image + Dolphin OCR (PDF-only)
 
-from .advanced_pdf_processor import AdvancedPDFProcessor
-from .dolphin_client import get_layout as get_dolphin_layout
+from .pdf_document_reconstructor import PDFDocumentReconstructor
+from dolphin_ocr.pdf_to_image import PDFToImageConverter
+from services.dolphin_ocr_service import DolphinOCRService
 
 logger = logging.getLogger(__name__)
 
 
-def validate_dolphin_layout(layout: dict[str, Any], expected_page_count: int) -> bool:
+def validate_dolphin_layout(
+    layout: dict[str, Any], expected_page_count: int
+) -> bool:
     """Validate the structure of the Dolphin layout data.
 
     Args:
@@ -55,8 +43,9 @@ def validate_dolphin_layout(layout: dict[str, Any], expected_page_count: int) ->
 
     if len(layout["pages"]) != expected_page_count:
         logger.warning(
-            "Dolphin layout page count mismatch. "
-            f"Expected {expected_page_count}, got {len(layout['pages'])}"
+            "Dolphin layout page count mismatch. Expected %s, got %s",
+            expected_page_count,
+            len(layout["pages"]),
         )
         return False
 
@@ -88,7 +77,7 @@ class DocumentMetadata:
 class EnhancedDocumentProcessor:
     """Enhanced document processor with comprehensive formatting preservation.
 
-    Supports PDF, DOCX, and TXT with advanced layout preservation for PDFs.
+    PDF-only with advanced layout preservation using Dolphin OCR.
     """
 
     def __init__(self, dpi: int = 300, preserve_images: bool = True) -> None:
@@ -100,19 +89,21 @@ class EnhancedDocumentProcessor:
         """
         self.dpi = dpi
         self.preserve_images = preserve_images
-        self.pdf_processor: AdvancedPDFProcessor = AdvancedPDFProcessor(
-            dpi=dpi, preserve_images=preserve_images
-        )
+        self.pdf_converter = PDFToImageConverter(dpi=dpi)
+        self.ocr = DolphinOCRService()
+        self.reconstructor = PDFDocumentReconstructor()
 
     def _generate_text_preview(self, text: str, max_chars: int = 1000) -> str:
         """Generate a text preview with ellipsis if needed.
 
         Args:
             text: The text to generate a preview for
-            max_chars: Maximum number of characters in the preview (default: 1000)
+            max_chars: Maximum number of characters in the preview
+                (default: 1000)
 
         Returns:
-            str: The text preview, truncated with ellipsis if longer than max_chars
+            str: The text preview, truncated with ellipsis if longer than
+            max_chars
         """
         if len(text) > max_chars:
             return text[:max_chars] + "..."
@@ -131,14 +122,16 @@ class EnhancedDocumentProcessor:
             raise FileNotFoundError(f"Document not found: {file_path}")
 
         file_ext = Path(file_path).suffix.lower()
-        logger.info(f"Processing document: {file_path} ({file_ext})")
+        logger.info(
+            "Processing document: %s (%s)",
+            file_path,
+            file_ext,
+        )
 
         if file_ext == ".pdf":
             return self._extract_pdf_content(file_path)
-        elif file_ext == ".docx":
-            return self._extract_docx_content(file_path)
-        elif file_ext == ".txt":
-            return self._extract_txt_content(file_path)
+        elif file_ext in {".docx", ".txt"}:
+            raise ValueError("Only PDF files are supported in this project")
         else:
             raise ValueError(f"Unsupported file format: {file_ext}")
 
@@ -148,44 +141,29 @@ class EnhancedDocumentProcessor:
 
         start_time = time.time()
 
-        # Extract complete layout information using internal processor
-        layouts = self.pdf_processor.extract_document_layout(pdf_path)
+        # Convert PDF to images and call Dolphin OCR
+        images = self.pdf_converter.convert_pdf_to_images(pdf_path)
+        dolphin_layout = self.ocr.process_document_images(images)
 
-        # Retrieve Dolphin layout for higher-fidelity page structure (optional)
-        try:
-            try:
-                # Try to get the current event loop
-                asyncio.get_running_loop()
-                # If we're in an async context, we need to run in a thread
-                import concurrent.futures
-
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, get_dolphin_layout(pdf_path))
-                    dolphin_layout = future.result()
-            except RuntimeError:
-                # No running loop, safe to use asyncio.run
-                dolphin_layout = asyncio.run(get_dolphin_layout(pdf_path))
-        except Exception as dl_err:
-            logger.warning(
-                "Failed to fetch Dolphin layout for %s: %s", pdf_path, dl_err
-            )
-            dolphin_layout = None
-        # Create backup of layout information
-        backup_path = self._get_backup_path(pdf_path)
-        self.pdf_processor.create_layout_backup(layouts, backup_path)
-
-        # Extract text for translation
-        text_by_page = self.pdf_processor.get_text_for_translation(layouts)
+        # Validate Dolphin layout structure (best-effort)
+        if not isinstance(dolphin_layout, dict):
+            dolphin_layout = {"pages": []}
+        # Build minimal text_by_page from Dolphin OCR
+        text_by_page: dict[int, list[str]] = {}
+        for i, page in enumerate(dolphin_layout.get("pages", [])):
+            blocks = page.get("text_blocks", [])
+            texts = [b.get("text", "") for b in blocks if isinstance(b, dict)]
+            text_by_page[i] = texts
 
         # Calculate metadata
-        total_text_elements = sum(len(layout.text_elements) for layout in layouts)
+        total_text_elements = sum(len(v) for v in text_by_page.values())
         file_size_mb = os.path.getsize(pdf_path) / (1024 * 1024)
         processing_time = time.time() - start_time
 
         metadata = DocumentMetadata(
             filename=Path(pdf_path).name,
             file_type="PDF",
-            total_pages=len(layouts),
+            total_pages=len(text_by_page),
             total_text_elements=total_text_elements,
             file_size_mb=file_size_mb,
             processing_time=processing_time,
@@ -193,123 +171,23 @@ class EnhancedDocumentProcessor:
         )
 
         # Validate dolphin_layout structure if present
-        if dolphin_layout and not validate_dolphin_layout(dolphin_layout, len(layouts)):
+        if dolphin_layout and not validate_dolphin_layout(
+            dolphin_layout,
+            len(text_by_page),
+        ):
             logger.warning("Invalid Dolphin layout structure, discarding")
             dolphin_layout = None
         return {
             "type": "pdf_advanced",
-            "layouts": layouts,
+            "layouts": [],
             "text_by_page": text_by_page,
             "metadata": metadata,
-            "backup_path": backup_path,
-            "preview": self.pdf_processor.generate_preview(layouts),
+            "backup_path": "",
+            "preview": "",
             "dolphin_layout": dolphin_layout,
         }
 
-    def _extract_docx_content(self, docx_path: str) -> dict[str, Any]:
-        """Extract content from DOCX file."""
-        import time
-
-        start_time = time.time()
-
-        try:
-            # Extract text using mammoth for better formatting preservation if available
-            text_content = ""
-            if mammoth is not None:
-                with open(docx_path, "rb") as docx_file:
-                    result = mammoth.extract_raw_text(docx_file)
-                    text_content = result.value or ""
-
-            # Also extract using python-docx for structure information if available
-            paragraphs = []
-            if Document is not None:
-                doc = Document(docx_path)
-                for para in doc.paragraphs:
-                    if para.text and para.text.strip():
-                        paragraphs.append(
-                            {
-                                "text": para.text,
-                                "style": para.style.name
-                                if getattr(para, "style", None)
-                                else "Normal",
-                            }
-                        )
-            else:
-                # Fallback: read as plain text if python-docx is unavailable
-                with open(docx_path, "rb") as f:
-                    raw = f.read().decode("utf-8", errors="ignore")
-                text_content = text_content or raw
-                paragraphs = [
-                    {"text": line, "style": "Normal"}
-                    for line in text_content.splitlines()
-                    if line.strip()
-                ]
-
-            file_size_mb = os.path.getsize(docx_path) / (1024 * 1024)
-            processing_time = time.time() - start_time
-
-            metadata = DocumentMetadata(
-                filename=Path(docx_path).name,
-                file_type="DOCX",
-                total_pages=1,  # DOCX doesn't have fixed pages
-                total_text_elements=len(paragraphs),
-                file_size_mb=file_size_mb,
-                processing_time=processing_time,
-            )
-
-            return {
-                "type": "docx",
-                "text_content": text_content,
-                "paragraphs": paragraphs,
-                "metadata": metadata,
-                "preview": self._generate_text_preview(text_content),
-            }
-
-        except Exception as e:
-            import traceback
-
-            error_details = traceback.format_exc()
-            logger.error(
-                f"Failed to process DOCX file '{Path(docx_path).name}'. Error: {e!s}\nTraceback:\n{error_details}"
-            )
-            raise
-
-    def _extract_txt_content(self, txt_path: str) -> dict[str, Any]:
-        """Extract content from TXT file."""
-        import time
-
-        start_time = time.time()
-
-        try:
-            with open(txt_path, encoding="utf-8") as f:
-                text_content = f.read()
-
-            # Split into lines for processing
-            lines = [line for line in text_content.split("\n") if line.strip()]
-
-            file_size_mb = os.path.getsize(txt_path) / (1024 * 1024)
-            processing_time = time.time() - start_time
-
-            metadata = DocumentMetadata(
-                filename=Path(txt_path).name,
-                file_type="TXT",
-                total_pages=1,
-                total_text_elements=len(lines),
-                file_size_mb=file_size_mb,
-                processing_time=processing_time,
-            )
-
-            return {
-                "type": "txt",
-                "text_content": text_content,
-                "lines": lines,
-                "metadata": metadata,
-                "preview": self._generate_text_preview(text_content),
-            }
-
-        except Exception as e:
-            logger.error(f"Error processing TXT file: {e}")
-            raise
+    # TXT helpers removed (PDF-only)
 
     def create_translated_document(
         self,
@@ -327,14 +205,8 @@ class EnhancedDocumentProcessor:
             return self._create_translated_pdf(
                 original_content, translated_texts, output_path
             )
-        elif content_type == "docx":
-            return self._create_translated_docx(
-                original_content, translated_texts, output_path
-            )
-        elif content_type == "txt":
-            return self._create_translated_txt(
-                original_content, translated_texts, output_path
-            )
+        elif content_type in {"docx", "txt"}:
+            raise ValueError("Only PDF content is supported in this project")
         else:
             raise ValueError(f"Unsupported content type: {content_type}")
 
@@ -344,157 +216,93 @@ class EnhancedDocumentProcessor:
         translated_texts: dict[int, list[str]],
         output_path: str,
     ) -> str:
-        """Create translated PDF with preserved formatting."""
-        layouts = original_content["layouts"]
+        """Create translated PDF with preserved formatting.
 
-        # Use the advanced PDF processor to create the translated document
-        self.pdf_processor.create_translated_pdf(layouts, translated_texts, output_path)
+        Uses ``PDFDocumentReconstructor.reconstruct_pdf_document``.
+        Raises NotImplementedError if reconstruction backend is
+        unavailable in the environment.
+        """
+        # Build TranslatedLayout from the content we have
+        try:
+            from services.pdf_document_reconstructor import (
+                TranslatedElement,
+                TranslatedLayout,
+                TranslatedPage,
+                DocumentReconstructionError,
+            )
+        except ImportError as e:  # pragma: no cover
+            raise NotImplementedError(
+                "PDF reconstruction is not available: missing dependencies"
+            ) from e
 
-        logger.info(f"Translated PDF created: {output_path}")
-        return output_path
+        # Translate the minimal dolphin-derived structure into
+        # TranslatedLayout for the reconstructor.
+        pages: list[TranslatedPage] = []
+        for page_index, texts in sorted(original_content.get("text_by_page", {}).items()):
+            elements: list[TranslatedElement] = []
+            for i, original in enumerate(texts):
+                translated = translated_texts.get(page_index, [])
+                translated_text = translated[i] if i < len(translated) else original
+                # Minimal element with dummy bbox and font info from dolphin_ocr
+                from dolphin_ocr.layout import BoundingBox, FontInfo  # local import
 
-    def _create_translated_docx(
-        self,
-        original_content: dict[str, Any],
-        translated_texts: dict[int, list[str]],
-        output_path: str,
-    ) -> str:
-        """Create translated DOCX document."""
-        from docx import Document
+                elements.append(
+                    TranslatedElement(
+                        original_text=original,
+                        translated_text=translated_text,
+                        adjusted_text=None,
+                        bbox=BoundingBox(x=0.0, y=0.0, width=612.0, height=12.0),
+                        font_info=FontInfo(name="Helvetica", size=12.0),
+                    )
+                )
+            pages.append(
+                TranslatedPage(page_number=page_index, translated_elements=elements)
+            )
 
-        # Create new document
-        doc = Document()
+        layout = TranslatedLayout(pages=pages)
 
-        # Add translated paragraphs
-        page_texts = translated_texts.get(0, [])
-        original_paragraphs = original_content["paragraphs"]
+        reconstructor = self.reconstructor
+        try:
+            result = reconstructor.reconstruct_pdf_document(
+                translated_layout=layout,
+                original_file_path=original_content.get("metadata").filename
+                if original_content.get("metadata")
+                else original_content.get("file_path", ""),
+                output_path=output_path,
+            )
+        except (DocumentReconstructionError, OSError, ValueError) as e:
+            raise NotImplementedError(
+                f"PDF reconstruction failed or is unavailable: {e}"
+            ) from e
 
-        for i, para_info in enumerate(original_paragraphs):
-            # Use translated text if available
-            if i < len(page_texts) and page_texts[i].strip():
-                text = page_texts[i]
-            else:
-                text = para_info["text"]
+        if not result.success:
+            raise NotImplementedError("PDF reconstruction did not complete successfully")
 
-            # Add paragraph with original style
-            paragraph = doc.add_paragraph(text)
+        return result.output_path
 
-            # Try to preserve some formatting
-            if para_info["style"] != "Normal":
-                try:
-                    paragraph.style = para_info["style"]
-                except (KeyError, ValueError, AttributeError):
-                    pass  # Style might not exist in new document
-
-        # Save document
-        doc.save(output_path)
-
-        logger.info(f"Translated DOCX created: {output_path}")
-        return output_path
-
-    def _create_translated_txt(
-        self,
-        original_content: dict[str, Any],
-        translated_texts: dict[int, list[str]],
-        output_path: str,
-    ) -> str:
-        """Create translated TXT document."""
-        page_texts = translated_texts.get(0, [])
-        original_lines = original_content["lines"]
-
-        translated_lines = []
-        for i, original_line in enumerate(original_lines):
-            # Use translated text if available
-            if i < len(page_texts) and page_texts[i].strip():
-                translated_lines.append(page_texts[i])
-            else:
-                translated_lines.append(original_line)
-
-        # Write translated content
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(translated_lines))
-
-        logger.info(f"Translated TXT created: {output_path}")
-        return output_path
+    # TXT output helpers removed (PDF-only)
 
     def convert_format(self, input_path: str, target_format: str) -> str:
-        """Convert document to different format."""
+        """Convert document format (PDF-only).
+
+        - If ``target_format`` is not PDF, raise ``ValueError``.
+        - If input is already a PDF and target is PDF, return the original path.
+        - Non-PDF inputs are rejected.
+        """
         input_ext = Path(input_path).suffix.lower()
         target_ext = f".{target_format.lower()}"
 
-        if input_ext == target_ext:
+        if target_ext != ".pdf":
+            raise ValueError("Only PDF output is supported in this project")
+
+        if input_ext == ".pdf":
             return input_path
 
-        output_path = input_path.replace(input_ext, target_ext)
+        raise ValueError("Only PDF inputs are supported in this project")
 
-        # Simple format conversion (can be enhanced)
-        if input_ext == ".pdf" and target_ext == ".txt":
-            return self._pdf_to_txt(input_path, output_path)
-        elif input_ext == ".docx" and target_ext == ".txt":
-            return self._docx_to_txt(input_path, output_path)
-        elif input_ext == ".txt" and target_ext == ".pdf":
-            return self._txt_to_pdf(input_path, output_path)
-        else:
-            logger.warning(
-                f"Format conversion not supported: {input_ext} -> {target_ext}"
-            )
-            return input_path
+    # PDF->TXT conversion removed (PDF-only)
 
-    def _pdf_to_txt(self, pdf_path: str, txt_path: str) -> str:
-        """Convert PDF to TXT."""
-        doc = fitz.open(pdf_path)
-        text_content = ""
-
-        for page in doc:
-            text_content += page.get_text() + "\n\n"
-
-        doc.close()
-
-        with open(txt_path, "w", encoding="utf-8") as f:
-            f.write(text_content)
-
-        return txt_path
-
-    def _docx_to_txt(self, docx_path: str, txt_path: str) -> str:
-        """Convert DOCX to TXT."""
-        doc = Document(docx_path)
-        text_content = ""
-
-        for para in doc.paragraphs:
-            text_content += para.text + "\n"
-
-        with open(txt_path, "w", encoding="utf-8") as f:
-            f.write(text_content)
-
-        return txt_path
-
-    def _txt_to_pdf(self, txt_path: str, pdf_path: str) -> str:
-        """Convert TXT to PDF."""
-        with open(txt_path, encoding="utf-8") as f:
-            text_content = f.read()
-
-        doc = fitz.open()
-        # Split text into lines and handle pagination
-        lines = text_content.split("\n")
-        page = doc.new_page()
-        y_position = 72
-        line_height = 14
-        page_height = page.rect.height - 72  # Bottom margin
-
-        for line in lines:
-            if y_position + line_height > page_height:
-                page = doc.new_page()
-                y_position = 72
-
-            page.insert_text(
-                (72, y_position), line, fontname="helv", fontsize=12, color=(0, 0, 0)
-            )
-            y_position += line_height
-
-        doc.save(pdf_path)
-        doc.close()
-
-        return pdf_path
+    # DOCX/TXT conversion helpers removed (PDF-only)
 
     def generate_preview(self, file_path: str, max_chars: int = 1000) -> str:
         """Generate a preview of the document content."""
@@ -503,20 +311,18 @@ class EnhancedDocumentProcessor:
 
             if content["type"] == "pdf_advanced":
                 return content["preview"]
-            else:
-                preview_text = content.get("preview", content.get("text_content", ""))
-                if len(preview_text) > max_chars:
-                    return preview_text[:max_chars] + "..."
-                return preview_text
+            preview_text = content.get(
+                "preview",
+                content.get("text_content", ""),
+            )
+            if len(preview_text) > max_chars:
+                return preview_text[:max_chars] + "..."
+            return preview_text
 
         except Exception as e:
-            logger.error(f"Error generating preview: {e}")
+            logger.error("Error generating preview: %s", e)
             return f"Error generating preview: {e!s}"
 
     def _get_backup_path(self, original_path: str) -> str:
         """Generate backup path for layout information."""
-        backup_dir = os.path.join(os.path.dirname(original_path), ".layout_backups")
-        os.makedirs(backup_dir, exist_ok=True)
-
-        filename = Path(original_path).stem
-        return os.path.join(backup_dir, f"{filename}_layout.json")
+        return ""

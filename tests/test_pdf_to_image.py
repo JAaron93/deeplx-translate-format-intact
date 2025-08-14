@@ -2,6 +2,14 @@ import sys
 import types
 
 import pytest
+from shutil import which
+
+# Skip this module if Poppler's pdfinfo is not available on PATH
+if which("pdfinfo") is None:  # pragma: no cover - environment dependent
+    pytest.skip(
+        "Poppler 'pdfinfo' not installed; skipping PDF->image tests",
+        allow_module_level=True,
+    )
 
 from dolphin_ocr.errors import EncryptedPdfError, InvalidDocumentFormatError
 from dolphin_ocr.pdf_to_image import PDFToImageConverter

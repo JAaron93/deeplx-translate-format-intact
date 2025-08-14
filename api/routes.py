@@ -272,6 +272,8 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
                 detail={
                     "error_code": "DOLPHIN_005",
                     "message": "Only PDF format supported",
+                    "timestamp": datetime.now().isoformat(),
+                    "context": {"path": Path(file_path).name},
                 },
             )
 
@@ -283,6 +285,8 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
                 detail={
                     "error_code": "DOLPHIN_014",
                     "message": get_error_message("DOLPHIN_014"),
+                    "timestamp": datetime.now().isoformat(),
+                    "context": {"path": Path(file_path).name},
                 },
             )
 
@@ -314,13 +318,18 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
             "metadata": metadata_dict,
         }
 
+    except HTTPException:
+        # Allow previously constructed HTTP errors to pass through
+        raise
     except Exception as e:
-        logger.error(f"Enhanced upload error: {e!s}")
-        # Standardized fallback error
-        raise HTTPException(
-            status_code=500,
-            detail={"error_code": "DOLPHIN_002", "message": str(e)},
-        ) from e
+        logger.error("Enhanced upload error: %s", e)
+        return {
+            "detail": {
+                "error_code": "DOLPHIN_002",
+                "message": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
+        }, 500
 
 
 @api_router.post("/translate")

@@ -100,8 +100,7 @@ Download with Format Options
 ### Requirements
 - Python 3.8+
 - **aiohttp** (for parallel translation capabilities)
-- **PyMuPDF** (for PDF processing)
-- **python-docx** (for DOCX support)
+- **pdf2image** and **pypdf** (for PDF workflows)
 - **requests** (for HTTP requests)
 - **gradio** (for web interface)
 - **Valid Lingo API key** (required for translation functionality)
@@ -132,6 +131,17 @@ Download with Format Options
 - `tests/test_parallel_translation.py` - Comprehensive parallel translation tests
 - `examples/parallel_translation_demo.py` - Working demonstration of parallel capabilities
 - `simple_test_runner.py` - Basic functionality tests
+
+#### UI testing notes
+
+- **GRADIO_SCHEMA_PATCH**: Set to a truthy value ("1", "true", "yes", "on") to enable a test-only monkeypatch that tolerates boolean JSON Schema fragments emitted by some `gradio_client` versions. This keeps tests resilient without pinning Gradio. Defaults to enabled in CI.
+- **GRADIO_SHARE**: In headless/CI environments, set `GRADIO_SHARE=true` to stabilize Gradio UI tests by using a share URL when localhost is inaccessible.
+
+Example:
+
+```bash
+GRADIO_SCHEMA_PATCH=true GRADIO_SHARE=true pytest -q tests/test_ui_gradio.py
+```
 
 ## 🔧 Configuration
 
@@ -268,7 +278,7 @@ result = await service.translate_text("Hello", "en", "de")
 batch_result = await service.translate_batch(texts, "en", "de")
 ```
 
-## 🎯 Advantages Over PyMuPDF-Only Approach
+## 🎯 Advantages Over the Previous PDF Approach
 
 1. **Superior Formatting Preservation**
    - Image-text overlay technique maintains exact visual layout
@@ -299,9 +309,9 @@ The system provides detailed processing metrics:
 - Memory usage monitoring
 - Translation progress and success rates
 
-## 🔄 Migration from PyMuPDF
+## 🔄 Migration to Dolphin OCR
 
-The old PyMuPDF-based implementation has been moved to `app_old_pymupdf.py` for reference. The new implementation:
+The old PDF engine implementation has been removed. The new implementation:
 
 - ✅ Replaces basic text extraction with advanced layout analysis
 - ✅ Implements image-text overlay for better formatting preservation
@@ -312,8 +322,7 @@ The old PyMuPDF-based implementation has been moved to `app_old_pymupdf.py` for 
 ## 🚨 Important Notes
 
 ### PDF Processing
-- The system still uses PyMuPDF but with an enhanced approach
-- Image-text overlay technique requires more memory but provides superior results
+- High-quality OCR via Dolphin OCR with pdf2image-backed rendering
 - Processing time may be longer due to high-resolution rendering
 - Layout backups are automatically created for complex documents
 

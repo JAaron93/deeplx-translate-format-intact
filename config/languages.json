@@ -16,5 +16,5 @@
     "Swedish",
     "Norwegian"
   ],
-  "supported_formats": ["PDF", "DOCX", "TXT"]
+  "supported_formats": ["PDF"]
 }

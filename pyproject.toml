@@ -30,7 +30,7 @@ dependencies = [
     "pydantic>=2.11.0",
     "pydantic_core>=2.33.0",
     "Pygments>=2.19.0",
-    "PyMuPDF>=1.26.0",
+    # Legacy PDF engine removed: Dolphin OCR + pdf2image are used instead
 ]
 
 # append the test/lint extras to the existing dev list above

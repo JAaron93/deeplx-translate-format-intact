@@ -82,7 +82,10 @@ class ConfidenceScorer:
                 counts)
             corpus_total_tokens: Optional total token count of the corpus.
         """
-        self.philosophical_indicators = philosophical_indicators or set()
+        # Normalize indicators to lowercase to enable case-insensitive checks
+        self.philosophical_indicators = {
+            s.lower() for s in (philosophical_indicators or set())
+        }
         self.german_morphological_patterns = (
             german_morphological_patterns or self._load_default_patterns()
         )
@@ -485,7 +488,9 @@ class ConfidenceScorer:
 
     def update_philosophical_indicators(self, new_indicators: set[str]) -> None:
         """Update philosophical indicators."""
-        self.philosophical_indicators.update(new_indicators)
+        # Normalize to lowercase on ingestion to keep comparisons
+        # case-insensitive throughout the scorer
+        self.philosophical_indicators.update({s.lower() for s in new_indicators})
         logger.info(
             "Updated philosophical indicators with %d new terms",
             len(new_indicators),

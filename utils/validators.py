@@ -165,7 +165,7 @@ class FileValidator:
                     "Swedish",
                     "Norwegian",
                 ],
-                "supported_formats": ["PDF", "DOCX", "TXT"],
+                "supported_formats": ["PDF"],
             }
 
     def validate_language(self, language: str) -> dict[str, Any]:
@@ -220,7 +220,7 @@ class FileValidator:
             uppercase internally for comparison against supported formats.
         """
         config = self._load_language_config()
-        supported_formats = config.get("supported_formats", ["PDF", "DOCX", "TXT"])
+        supported_formats = config.get("supported_formats", ["PDF"])
 
         if not format_type:
             return {"valid": False, "error": "No output format selected"}

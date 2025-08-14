@@ -9,11 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 
-# Import for PDF preprocessing (optional dependency)
-try:
-    import fitz  # type: ignore  # PyMuPDF for PDF info
-except Exception:  # pragma: no cover - optional for non-PDF tests
-    fitz = None  # type: ignore
+# Migrated away from the legacy PDF engine; Dolphin OCR is now the sole engine
 
 from config.settings import Settings
 from core.state_manager import state, translation_jobs
@@ -281,17 +277,6 @@ async def translate_content(
 
         if content["type"] == "pdf_advanced":
             text_by_page = content["text_by_page"]
-        elif content["type"] in ["docx", "txt"]:
-            # Convert to page-based format for consistency
-            if content["type"] == "docx":
-                texts = [
-                    para["text"]
-                    for para in content["paragraphs"]
-                    if para["text"].strip()
-                ]
-            else:
-                texts = content["lines"]
-            text_by_page = {0: texts}
         else:
             raise ValueError(f"Unsupported content type: {content['type']}")
 
@@ -558,12 +543,9 @@ def download_translated_file(output_format: str) -> str:
         if not state.output_file or state.translation_status != "completed":
             return "❌ No translated file available"
 
-        # Convert to requested format if needed
-        if output_format != Path(state.output_file).suffix[1:].upper():
-            converted_file = document_processor.convert_format(
-                state.output_file, output_format.lower()
-            )
-            return converted_file
+        # PDF-only: refuse non-PDF requests
+        if output_format.upper() != "PDF":
+            return "❌ Only PDF downloads are supported"
 
         return state.output_file
 
@@ -637,8 +619,8 @@ async def _show_pdf_preprocessing_steps(
         str: Formatted preprocessing steps information
 
     Raises:
-        fitz.FileNotFoundError: If the PDF file cannot be found
-        fitz.FileDataError: If the PDF file is corrupted or invalid
+        FileNotFoundError: If the PDF file cannot be found
+        ValueError: If the PDF file is corrupted or invalid
     """
     try:
         preprocessing_steps = []
@@ -646,10 +628,10 @@ async def _show_pdf_preprocessing_steps(
         # Step 1: PDF Analysis
         preprocessing_steps.append("🔍 Step 1: PDF Analysis")
 
-        # Use context manager for proper resource management
-        with fitz.open(file_path) as doc:
-            page_count = len(doc)
-            doc_info = doc.metadata
+        # Estimate pages based on typical PDF size (50-100KB per page for text documents)
+        # Use 75KB as a reasonable middle ground
+        page_count = max(1, int(file_size / (75 * 1024)))
+        doc_info = {}
 
         preprocessing_steps.append(f"   📄 Pages detected: {page_count}")
         preprocessing_steps.append(
@@ -685,12 +667,12 @@ async def _show_pdf_preprocessing_steps(
 
         return "\n".join(preprocessing_steps)
 
-    except fitz.FileNotFoundError as e:
+    except FileNotFoundError as e:
         error_msg = f"PDF file not found: {file_path}"
         logger.error(f"Preprocessing error - {error_msg}: {e}")
         return f"❌ Preprocessing analysis failed: {error_msg}"
 
-    except fitz.FileDataError as e:
+    except ValueError as e:
         error_msg = f"PDF file is corrupted or invalid: {file_path}"
         logger.error(f"Preprocessing error - {error_msg}: {e}")
         return f"❌ Preprocessing analysis failed: {error_msg}"

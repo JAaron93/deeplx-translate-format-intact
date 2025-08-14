@@ -16,7 +16,7 @@ class StubPhilosophyService:
         """
         self.behavior = behavior
 
-    async def translate_text_with_neologism_handling(
+    async def translate_text_with_neologism_handling_async(
         self,
         *,
         text: str,

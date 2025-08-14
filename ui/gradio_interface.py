@@ -396,7 +396,7 @@ def create_gradio_interface() -> gr.Blocks:
                 with gr.Row():
                     output_format = gr.Dropdown(
                         label="Output Format",
-                        choices=["PDF", "DOCX", "TXT"],
+                        choices=["PDF"],
                         value="PDF",
                     )
 

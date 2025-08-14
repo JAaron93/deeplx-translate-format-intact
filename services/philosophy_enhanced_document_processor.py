@@ -482,7 +482,7 @@ class PhilosophyEnhancedDocumentProcessor:
             if "text_by_page" in content:
                 for page_text in content["text_by_page"].values():
                     all_text += page_text + "\n\n"
-        elif content.get("type") == "docx" or content.get("type") == "txt":
+        elif content.get("type") in {"docx", "txt"}:
             all_text = content.get("text_content", "")
         elif "pages" in content:
             for page in content["pages"]:
