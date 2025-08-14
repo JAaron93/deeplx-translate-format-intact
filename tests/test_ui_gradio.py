@@ -10,59 +10,6 @@ from tests.helpers import write_encrypted_pdf
 from ui.gradio_interface import create_gradio_interface
 
 
-@pytest.fixture(autouse=True)
-def _patch_gradio_schema(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Optionally patch gradio client schema parsing to tolerate boolean
-    sub-schemas.
-
-    Controlled by env var GRADIO_SCHEMA_PATCH. Truthy values ("1", "true",
-    "yes", "on") enable the patch. In CI, the patch is enabled by default.
-    Some versions of gradio_client may emit boolean JSON Schema fragments
-    (True/False) for additionalProperties, which can break the parser.
-    When enabled, this fixture makes the parser robust for test runs.
-    """
-    enabled = os.environ.get("GRADIO_SCHEMA_PATCH", "").lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
-    if not enabled and os.environ.get("CI", "").lower() == "true":
-        enabled = True
-    if not enabled:
-        return
-    try:
-        from gradio_client import utils as gc_utils  # type: ignore
-    except Exception:
-        return
-
-    if hasattr(gc_utils, "_json_schema_to_python_type"):
-        _orig_inner = gc_utils._json_schema_to_python_type  # type: ignore[attr-defined]
-
-        def _safe_inner(schema, defs=None):  # type: ignore[override]
-            if isinstance(schema, bool):
-                return "Any" if schema else "None"
-            try:
-                return _orig_inner(schema, defs)
-            except Exception:
-                return "Any"
-
-        monkeypatch.setattr(gc_utils, "_json_schema_to_python_type", _safe_inner)
-
-    if hasattr(gc_utils, "json_schema_to_python_type"):
-        _orig_outer = gc_utils.json_schema_to_python_type
-
-        def _safe_outer(schema, *args, **kwargs):  # type: ignore[override]
-            if isinstance(schema, bool):
-                return "Any" if schema else "None"
-            try:
-                return _orig_outer(schema, *args, **kwargs)
-            except Exception:
-                return "Any"
-
-        monkeypatch.setattr(gc_utils, "json_schema_to_python_type", _safe_outer)
-
-
 def _launch_blocks() -> tuple[gr.blocks.Blocks, str]:
     # In CI/headless environments localhost may not be reachable; prefer share
     if os.environ.get("CI", "").lower() == "true":
@@ -75,7 +22,7 @@ def _launch_blocks() -> tuple[gr.blocks.Blocks, str]:
     # Prefer share_url if provided, otherwise local_url
     url = share_url or local_url or ""
     if not url:
-        pytest.skip("No reachable Gradio URL (neither share nor local).")
+        raise RuntimeError("No reachable Gradio URL (neither share nor local).")
     return demo, url
 
 
@@ -131,7 +78,6 @@ def test_ui_valid_pdf_upload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
 def test_ui_non_pdf_validation(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # Harden against gradio_client schema changes for this test
     os.environ.setdefault("GRADIO_SCHEMA_PATCH", "true")
-    _patch_gradio_schema(monkeypatch)
     demo, url = _launch_blocks()
     try:
         from ui import gradio_interface as gi

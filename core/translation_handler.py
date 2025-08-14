@@ -214,7 +214,6 @@ async def start_translation(
         state.error_message = ""
         state.philosophy_mode = philosophy_mode
         # Gradio sliders may return float; cast safely to int
-        # Gradio sliders may return float; cast safely to int
         try:
             state.max_pages = int(max_pages) if max_pages else 0
         except (TypeError, ValueError) as e:
@@ -419,8 +418,6 @@ async def _translate_page_texts_concurrently(
                 len(text or ""),
             )
             return idx, text
-            return idx, text
-
     tasks = [_translate_one(i, t) for i, t in enumerate(page_texts)]
     try:
         results = await asyncio.gather(*tasks)

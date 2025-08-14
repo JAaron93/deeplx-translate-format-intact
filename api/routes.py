@@ -322,23 +322,15 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
         # Allow previously constructed HTTP errors to pass through
         raise
     except Exception as e:
-        except Exception as e:
-            logger.error("Enhanced upload error: %s", e)
--           return {
--               "detail": {
--                   "error_code": "DOLPHIN_002",
--                   "message": str(e),
--                   "timestamp": datetime.now().isoformat(),
--               }
--           }, 500
-+           raise HTTPException(
-+               status_code=500,
-+               detail={
-+                   "error_code": "DOLPHIN_002",
-+                   "message": str(e),
-+                   "timestamp": datetime.now().isoformat(),
-+               }
-+           ) from e
+        logger.error("Enhanced upload error: %s", e)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error_code": "DOLPHIN_002",
+                "message": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }
+        ) from e
 
 
 @api_router.post("/translate")

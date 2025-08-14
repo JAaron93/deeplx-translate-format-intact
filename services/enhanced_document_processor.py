@@ -144,7 +144,7 @@ class EnhancedDocumentProcessor:
         images = self.pdf_converter.convert_pdf_to_images(pdf_path)
         try:
             dolphin_layout = self.ocr.process_document_images(images)
-        except Exception as e:  # Keep extraction resilient to OCR failures
+        except (OSError, RuntimeError, ValueError) as e:  # Keep extraction resilient to OCR failures
             logger.error("OCR processing failed for %s: %s", pdf_path, e, exc_info=True)
             # Graceful degradation: continue with empty layout
             dolphin_layout = {"pages": []}
@@ -254,7 +254,7 @@ class EnhancedDocumentProcessor:
 
                 # Defaults
                 bbox = BoundingBox(x=0.0, y=0.0, width=612.0, height=12.0)
-                font_info = FontInfo(name="Helvetica", size=12.0)
+                font_info = FontInfo(family="Helvetica", size=12.0)
 
                 # Try to use dolphin_layout data if available
                 try:
@@ -359,7 +359,10 @@ class EnhancedDocumentProcessor:
             content = self.extract_content(file_path)
 
             if content.get("type") == "pdf_advanced":
-                return content.get("preview")
+                preview = content.get("preview")
+                if preview:
+                    return preview
+                # Fall through to try other content fields
 
             preview_text = content.get(
                 "preview",

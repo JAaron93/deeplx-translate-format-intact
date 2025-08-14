@@ -212,7 +212,7 @@ class LanguageDetector:
         # Fallback to simple heuristics
         return self._simple_language_detection(sample_text)
 
-    def _extract_sample_text(self, file_path: str, _max_chars: int = 2000) -> str:
+    def _extract_sample_text(self, file_path: str) -> str:
         """Extract sample text for language detection from PDF files.
 
         The project is PDF-only. For ``.pdf`` files, language detection
@@ -221,9 +221,6 @@ class LanguageDetector:
 
         Args:
             file_path: Path to the document file to extract text from
-            _max_chars: Reserved for future extensibility. Intentionally
-                unused in the current PDF-only pipeline because OCR text is
-                produced upstream and this function returns an empty string.
 
         Returns:
             str: Extracted text sample or empty string if unsupported or if
