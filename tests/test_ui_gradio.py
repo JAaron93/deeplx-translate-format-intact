@@ -46,6 +46,7 @@ def test_ui_valid_pdf_upload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
 
         # Exercise the API using gradio_client
         from gradio_client import Client, handle_file
+
         from tests.helpers import write_minimal_pdf
 
         pdf = tmp_path / "ok.pdf"

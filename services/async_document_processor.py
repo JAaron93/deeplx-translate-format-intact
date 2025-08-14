@@ -56,9 +56,7 @@ class AsyncDocumentRequest:
     file_path: str
     source_language: str
     target_language: str
-    options: AsyncProcessingOptions = field(
-        default_factory=AsyncProcessingOptions
-    )
+    options: AsyncProcessingOptions = field(default_factory=AsyncProcessingOptions)
 
 
 class _TokenBucket:
@@ -272,7 +270,7 @@ class AsyncDocumentProcessor:
             sema = asyncio.Semaphore(self._tg_limit)
             async with asyncio.TaskGroup() as tg:  # Python 3.11+
                 for i in range(0, len(all_blocks), self._batch_size):
-                    batch = all_blocks[i:i + self._batch_size]
+                    batch = all_blocks[i : i + self._batch_size]
                     tg.create_task(_bounded_worker(i, batch, sema))
 
             if on_progress:
@@ -289,9 +287,7 @@ class AsyncDocumentProcessor:
                 for _ in page_blocks:
                     t = translations[ti]
                     if t is None:
-                        raise RuntimeError(
-                            f"Translation at index {ti} is None"
-                        )
+                        raise RuntimeError(f"Translation at index {ti} is None")
                     elems.append(
                         TranslatedElement(
                             original_text=t.source_text,
@@ -344,23 +340,16 @@ class AsyncDocumentProcessor:
     def _parse_ocr_result(self, result: dict) -> list[list[TextBlock]]:
         """Convert OCR service JSON into per-page lists of TextBlock."""
         pages_out: list[list[TextBlock]] = []
-        pages = (
-            result.get("pages", []) if isinstance(result, dict) else []
-        )
+        pages = result.get("pages", []) if isinstance(result, dict) else []
         for page in pages:
             page_blocks: list[TextBlock] = []
-            blocks = (
-                page.get("text_blocks", []) if isinstance(page, dict) else []
-            )
+            blocks = page.get("text_blocks", []) if isinstance(page, dict) else []
             for blk in blocks:
                 text = str(blk.get("text", ""))
                 bbox = blk.get("bbox", [0.0, 0.0, 100.0, 20.0])
                 font = blk.get("font_info", {})
                 color_data = font.get("color", (0, 0, 0))
-                if (
-                    isinstance(color_data, (list, tuple))
-                    and (len(color_data) >= 3)
-                ):
+                if isinstance(color_data, (list, tuple)) and (len(color_data) >= 3):
                     color = tuple(color_data[:3])
                 else:
                     color = (0, 0, 0)

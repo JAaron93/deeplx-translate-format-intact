@@ -1,4 +1,24 @@
-"""Confidence Scoring Engine for neologism detection confidence calculation."""
+"""Confidence Scoring Engine for neologism detection confidence calculation.
+
+This module uses a set of baseline constants to estimate frequency- and
+morphology-driven signals. The constants below are plugged into the
+baseline formula used by ``_calculate_baseline_frequency`` and, in turn,
+``_calculate_frequency_deviation``:
+
+    base = DEFAULT_BASELINE_FREQ
+    if is_compound:
+        base *= COMPOUND_FREQ_FACTOR
+    base *= max(LENGTH_PENALTY_MIN, 1.0 - len(term) / LENGTH_NORM_FACTOR)
+
+Assumptions:
+- Frequencies are relative proportions in the 0.0-1.0 range
+- Compounds are typically rarer than simple forms
+- Extremely long words should not be penalized without bound; clamp the
+  penalty with a minimum factor
+
+Tuning notes: Update the constants below rather than changing the
+functions so downstream calculations remain consistent and easy to test.
+"""
 
 from __future__ import annotations
 
@@ -19,14 +39,29 @@ logger = logging.getLogger(__name__)
 class ConfidenceScorer:
     """Handles confidence scoring for neologism detection."""
 
-    # Baseline frequency constants (relative frequencies 0.0–1.0)
-    # Expected baseline relative frequency for common words
+    # Baseline frequency constants
+    # DEFAULT_BASELINE_FREQ: relative frequency 0.0-1.0
+    # - Meaning: expected baseline relative frequency for common words
+    # - Example: 5e-5 ~ 50 occurrences per million tokens
+    # - Rationale: conservative default when no corpus is available
     DEFAULT_BASELINE_FREQ: float = 5e-5
-    # Compounds are expected to be ~5x rarer than simple forms
+
+    # COMPOUND_FREQ_FACTOR: unitless multiplicative factor 0.0-1.0
+    # - Meaning: compounds are rarer than simple forms
+    # - Example: 0.2 means compounds are about 5x rarer
+    # - Rationale: heuristic based on typical German compounding frequency
     COMPOUND_FREQ_FACTOR: float = 0.2
-    # Minimum factor applied for very long words (do not reduce below this)
+
+    # LENGTH_PENALTY_MIN: unitless multiplicative floor 0.0-1.0
+    # - Meaning: minimum penalty factor for long words
+    # - Example: never reduce baseline below 25% due to length alone
+    # - Rationale: prevents unbounded penalization of very long words
     LENGTH_PENALTY_MIN: float = 0.25
-    # Length normalization scale for long-word rarity effect
+
+    # LENGTH_NORM_FACTOR: length in characters
+    # - Meaning: normalization scale for long-word penalty
+    # - Example: words longer than ~30 chars hit the max length penalty
+    # - Rationale: keeps length effect moderate and interpretable
     LENGTH_NORM_FACTOR: float = 30.0
 
     def __init__(
@@ -208,7 +243,23 @@ class ConfidenceScorer:
         if not self._corpus_freq or self._corpus_total <= 0:
             return 0.0
         count = float(self._corpus_freq.get(token.lower(), 0))
-        return count / float(self._corpus_total)
+        return count / self._corpus_total
+
+    def _calculate_baseline_frequency(
+        self, term: str, morphological: MorphologicalAnalysis
+    ) -> float:
+        """Calculate expected baseline frequency based on morphology.
+
+        Returns a baseline relative frequency in the range [0.0, 1.0].
+        """
+        base = self.DEFAULT_BASELINE_FREQ
+        if morphological.is_compound:
+            base *= self.COMPOUND_FREQ_FACTOR
+        base *= max(
+            self.LENGTH_PENALTY_MIN,
+            1.0 - (len(term) / self.LENGTH_NORM_FACTOR),
+        )
+        return base
 
     def _calculate_frequency_deviation(
         self, term: str, morphological: MorphologicalAnalysis
@@ -222,13 +273,7 @@ class ConfidenceScorer:
         """
         rel = self._relative_frequency(term)
         # Baseline expectation by morphology and length (very rough)
-        base = self.DEFAULT_BASELINE_FREQ
-        if morphological.is_compound:
-            base *= self.COMPOUND_FREQ_FACTOR
-        base *= max(
-            self.LENGTH_PENALTY_MIN,
-            1.0 - (len(term) / self.LENGTH_NORM_FACTOR),
-        )
+        base = self._calculate_baseline_frequency(term, morphological)
 
         eps = 1e-12
         # Log-ratio distance; larger distance => higher deviation
