@@ -149,9 +149,21 @@ class AsyncDocumentProcessor:
         self._translator = translation_service
         self._reconstructor = reconstructor
 
-        self._req_sema = asyncio.Semaphore(max(1, int(max_concurrent_requests)))
-        self._tg_limit = max(1, int(translation_concurrency))
-        self._batch_size = max(1, int(translation_batch_size))
+        # Validate concurrency and rate parameters early for clearer errors
+        if int(max_concurrent_requests) <= 0:
+            raise ValueError("max_concurrent_requests must be >= 1")
+        if int(translation_concurrency) <= 0:
+            raise ValueError("translation_concurrency must be >= 1")
+        if int(translation_batch_size) <= 0:
+            raise ValueError("translation_batch_size must be >= 1")
+        if int(ocr_rate_capacity) <= 0:
+            raise ValueError("ocr_rate_capacity must be >= 1")
+        if float(ocr_rate_per_sec) <= 0:
+            raise ValueError("ocr_rate_per_sec must be > 0")
+
+        self._req_sema = asyncio.Semaphore(int(max_concurrent_requests))
+        self._tg_limit = int(translation_concurrency)
+        self._batch_size = int(translation_batch_size)
         self._ocr_bucket = _TokenBucket(ocr_rate_capacity, ocr_rate_per_sec)
         if process_pool is not None:
             self._pool = process_pool

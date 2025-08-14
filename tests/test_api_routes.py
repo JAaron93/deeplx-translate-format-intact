@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from api.routes import api_router, app_router
-from tests.test_utils import write_encrypted_pdf, write_minimal_pdf
+from tests.helpers import write_encrypted_pdf, write_minimal_pdf
 
 
 def _write_min_pdf(p: Path) -> None:
@@ -34,7 +34,22 @@ def test_upload_rejects_non_pdf(tmp_path: Path) -> None:
         )
     assert res.status_code == 400
     body = res.json()
-    assert body["detail"]["error_code"] == "DOLPHIN_005"
+    # Validate structured error payload
+    assert isinstance(body, dict)
+    assert "detail" in body
+    detail = body["detail"]
+    assert isinstance(detail, dict)
+    assert detail.get("error_code") == "DOLPHIN_005"
+    message = detail.get("message", "")
+    assert isinstance(message, str) and message
+    assert "Only PDF format" in message
+    # Optional fields if present
+    timestamp = detail.get("timestamp")
+    if timestamp is not None:
+        assert isinstance(timestamp, str)
+    context = detail.get("context")
+    if context is not None:
+        assert isinstance(context, dict)
 
 
 def test_upload_rejects_encrypted_pdf(tmp_path: Path) -> None:
@@ -44,9 +59,7 @@ def test_upload_rejects_encrypted_pdf(tmp_path: Path) -> None:
     with enc.open("rb") as fh:
         res = client.post(
             "/api/upload",
-            files={
-                "file": ("enc.pdf", fh, "application/pdf"),
-            },
+            files={"file": ("enc.pdf", fh, "application/pdf")},
         )
     assert res.status_code == 400
     body = res.json()
@@ -71,7 +84,11 @@ def test_upload_accepts_valid_pdf(
         return {"type": "pdf", "metadata": {}}
 
     monkeypatch.setattr(file_handler, "save_upload_file", _save_upload_file)
-    monkeypatch.setattr(document_processor, "extract_content", _extract_content)
+    monkeypatch.setattr(
+        document_processor,
+        "extract_content",
+        _extract_content,
+    )
 
     with pdf.open("rb") as fh:
         res = client.post(

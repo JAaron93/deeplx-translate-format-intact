@@ -140,7 +140,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
       - Add basic rate-limiting aligned with OCR provider
     - _Requirements: 4.5, 4.6, 4.7_
 
-- [-] 9. Update API endpoints and user interface integration
+- [x] 9. Update API endpoints and user interface integration
   - [x] 9.1 Implement basic PDF validation utilities
     - Create utils/pdf_validator.py with basic PDF validation functions
     - Implement basic file extension and header validation for PDF format
@@ -160,7 +160,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Create API integration tests validating new workflow endpoints with valid and invalid file uploads
     - _Requirements: 1.1, 1.2, 1.5, 6.1, 6.2_
 
-  - [-] 9.3 Update Gradio interface with basic validation and server integration
+  - [x] 9.3 Update Gradio interface with basic validation and server integration
     - Modify ui/gradio_interface.py to integrate with new PDF document processing workflow
     - Add progress indicators and basic quality metrics display for OCR processing
     - Implement basic client-side file upload validation for user experience (file extension checks)
@@ -169,14 +169,14 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Create UI integration tests for PDF document upload, validation, and processing workflow
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 6.1, 6.2_
 
-- [ ] 10. Create test suite with reproducible test documents
-  - [ ] 10.1 Set up simple test documents
+- [-] 10. Create test suite with reproducible test documents
+  - [x] 10.1 Set up simple test documents
     - Use the three test PDFs from assets directory: simple text (11 pages), complex layout (single page with embedded image), scanned book (149 pages)
     - Create basic test functions that can process these three documents and check if they work
     - Add simple validation: can the translated PDFs be opened and do they contain text
     - _Requirements: 10.1, 10.2, 10.3_
 
-  - [ ] 10.2 Build basic integration tests
+  - [-] 10.2 Build basic integration tests
     - Write simple integration tests that process the three test documents end-to-end
     - Check that each test document can be translated without crashing
     - Verify that translated PDFs can be opened and contain reasonable text

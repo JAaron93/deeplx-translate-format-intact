@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.test_utils import write_minimal_pdf
+from tests.helpers import write_minimal_pdf
 from utils.pdf_validator import (
     detect_pdf_encryption,
     validate_pdf,
