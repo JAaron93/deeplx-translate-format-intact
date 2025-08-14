@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import re
 from typing import Any, Optional
 
@@ -17,6 +18,16 @@ logger = logging.getLogger(__name__)
 
 class ConfidenceScorer:
     """Handles confidence scoring for neologism detection."""
+
+    # Baseline frequency constants (relative frequencies 0.0–1.0)
+    # Expected baseline relative frequency for common words
+    DEFAULT_BASELINE_FREQ: float = 5e-5
+    # Compounds are expected to be ~5x rarer than simple forms
+    COMPOUND_FREQ_FACTOR: float = 0.2
+    # Minimum factor applied for very long words (do not reduce below this)
+    LENGTH_PENALTY_MIN: float = 0.25
+    # Length normalization scale for long-word rarity effect
+    LENGTH_NORM_FACTOR: float = 30.0
 
     def __init__(
         self,
@@ -140,8 +151,9 @@ class ConfidenceScorer:
             self._calculate_phonological_plausibility(term)
         )
         # Heuristic syntactic integration estimation
-        factors.syntactic_integration = (
-            self._estimate_syntactic_integration(term, morphological)
+        factors.syntactic_integration = self._estimate_syntactic_integration(
+            term,
+            morphological,
         )
         factors.semantic_transparency = (
             0.6 if morphological.is_compound else 0.4
@@ -196,7 +208,7 @@ class ConfidenceScorer:
         if not self._corpus_freq or self._corpus_total <= 0:
             return 0.0
         count = float(self._corpus_freq.get(token.lower(), 0))
-        return max(0.0, min(1.0, count / float(self._corpus_total)))
+        return count / float(self._corpus_total)
 
     def _calculate_frequency_deviation(
         self, term: str, morphological: MorphologicalAnalysis
@@ -210,15 +222,16 @@ class ConfidenceScorer:
         """
         rel = self._relative_frequency(term)
         # Baseline expectation by morphology and length (very rough)
-        base = 5e-5  # default baseline for common words
+        base = self.DEFAULT_BASELINE_FREQ
         if morphological.is_compound:
-            base *= 0.2  # compounds expected to be rarer
-        base *= max(0.25, 1.0 - (len(term) / 30.0))  # long words rarer
+            base *= self.COMPOUND_FREQ_FACTOR
+        base *= max(
+            self.LENGTH_PENALTY_MIN,
+            1.0 - (len(term) / self.LENGTH_NORM_FACTOR),
+        )
 
         eps = 1e-12
         # Log-ratio distance; larger distance => higher deviation
-        import math
-
         distance = abs(math.log10((rel + eps) / (base + eps)))
         # Normalize: distances > 6 treated as max deviation
         score = min(1.0, distance / 6.0)
@@ -248,9 +261,7 @@ class ConfidenceScorer:
         if morphological.is_compound or morphological.compound_pattern:
             score += 0.1
         # Penalize digits/symbols (less likely in standard lexical items)
-        if any(ch.isdigit() for ch in term) or any(
-            ch in {"_", "@", "#", "*"} for ch in term
-        ):
+        if re.search(r"[\d_@#*]", term):
             score -= 0.2
         # Penalize excessive internal punctuation
         hyphen_count = term.count("-")
@@ -450,8 +461,6 @@ class ConfidenceScorer:
         """Update philosophical indicators."""
         self.philosophical_indicators.update(new_indicators)
         logger.info(
-            (
-                "Updated philosophical indicators with "
-                f"{len(new_indicators)} new terms"
-            )
+            "Updated philosophical indicators with %d new terms",
+            len(new_indicators),
         )

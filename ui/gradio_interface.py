@@ -81,9 +81,7 @@ def on_file_upload(
         if code == "DOLPHIN_005":
             friendly = "Only PDF format supported"
         elif code == "DOLPHIN_014":
-            friendly = (
-                "Encrypted PDFs not supported - please provide unlocked PDF"
-            )
+            friendly = "Encrypted PDFs not supported - please provide unlocked PDF"
         with contextlib.suppress(Exception):
             progress(1.0)
         return "", f"{code}: {friendly}", "", "", "", ""

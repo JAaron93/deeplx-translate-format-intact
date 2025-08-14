@@ -1,3 +1,4 @@
-"""Shared test package for helpers and fixtures."""
+"""Test package for the philosophy-enhanced translation system.
 
-"""Test package for the philosophy-enhanced translation system."""
+Includes shared helpers and fixtures for testing.
+"""

@@ -56,7 +56,9 @@ class AsyncDocumentRequest:
     file_path: str
     source_language: str
     target_language: str
-    options: AsyncProcessingOptions = field(default_factory=AsyncProcessingOptions)
+    options: AsyncProcessingOptions = field(
+        default_factory=AsyncProcessingOptions
+    )
 
 
 class _TokenBucket:
@@ -150,21 +152,30 @@ class AsyncDocumentProcessor:
         self._reconstructor = reconstructor
 
         # Validate concurrency and rate parameters early for clearer errors
-        if int(max_concurrent_requests) <= 0:
+        validated_req_max = int(max_concurrent_requests)
+        validated_trans_conc = int(translation_concurrency)
+        validated_batch_size = int(translation_batch_size)
+        validated_ocr_capacity = int(ocr_rate_capacity)
+        validated_ocr_rate = float(ocr_rate_per_sec)
+
+        if validated_req_max <= 0:
             raise ValueError("max_concurrent_requests must be >= 1")
-        if int(translation_concurrency) <= 0:
+        if validated_trans_conc <= 0:
             raise ValueError("translation_concurrency must be >= 1")
-        if int(translation_batch_size) <= 0:
+        if validated_batch_size <= 0:
             raise ValueError("translation_batch_size must be >= 1")
-        if int(ocr_rate_capacity) <= 0:
+        if validated_ocr_capacity <= 0:
             raise ValueError("ocr_rate_capacity must be >= 1")
-        if float(ocr_rate_per_sec) <= 0:
+        if validated_ocr_rate <= 0:
             raise ValueError("ocr_rate_per_sec must be > 0")
 
-        self._req_sema = asyncio.Semaphore(int(max_concurrent_requests))
-        self._tg_limit = int(translation_concurrency)
-        self._batch_size = int(translation_batch_size)
-        self._ocr_bucket = _TokenBucket(ocr_rate_capacity, ocr_rate_per_sec)
+        self._req_sema = asyncio.Semaphore(validated_req_max)
+        self._tg_limit = validated_trans_conc
+        self._batch_size = validated_batch_size
+        self._ocr_bucket = _TokenBucket(
+            validated_ocr_capacity,
+            validated_ocr_rate,
+        )
         if process_pool is not None:
             self._pool = process_pool
         else:
@@ -213,12 +224,17 @@ class AsyncDocumentProcessor:
             # 2) OCR (rate-limited)
             await self._ocr_bucket.acquire()
             # Support both async and sync OCR service implementations
-            ocr_async = getattr(self._ocr, "process_document_images_async", None)
+            ocr_async = getattr(
+                self._ocr,
+                "process_document_images_async",
+                None,
+            )
             if callable(ocr_async):
                 ocr_result = await ocr_async(optimized)  # type: ignore[misc]
             else:
                 ocr_result = await asyncio.to_thread(
-                    self._ocr.process_document_images, optimized
+                    self._ocr.process_document_images,
+                    optimized,
                 )
             if on_progress:
                 on_progress("ocr", {"pages": len(optimized)})
@@ -256,11 +272,14 @@ class AsyncDocumentProcessor:
             sema = asyncio.Semaphore(self._tg_limit)
             async with asyncio.TaskGroup() as tg:  # Python 3.11+
                 for i in range(0, len(all_blocks), self._batch_size):
-                    batch = all_blocks[i : i + self._batch_size]
+                    batch = all_blocks[i:i + self._batch_size]
                     tg.create_task(_bounded_worker(i, batch, sema))
 
             if on_progress:
-                on_progress("translated", {"count": len(all_blocks)})
+                on_progress(
+                    "translated",
+                    {"count": len(all_blocks)},
+                )
 
             # 5) Map back to pages and build TranslatedLayout
             pages: list[TranslatedPage] = []
@@ -270,7 +289,9 @@ class AsyncDocumentProcessor:
                 for _ in page_blocks:
                     t = translations[ti]
                     if t is None:
-                        raise RuntimeError(f"Translation at index {ti} is None")
+                        raise RuntimeError(
+                            f"Translation at index {ti} is None"
+                        )
                     elems.append(
                         TranslatedElement(
                             original_text=t.source_text,
@@ -296,7 +317,8 @@ class AsyncDocumentProcessor:
                     ti += 1
                 pages.append(
                     TranslatedPage(
-                        page_number=len(pages) + 1, translated_elements=elems
+                        page_number=len(pages) + 1,
+                        translated_elements=elems,
                     )
                 )
 
@@ -322,16 +344,23 @@ class AsyncDocumentProcessor:
     def _parse_ocr_result(self, result: dict) -> list[list[TextBlock]]:
         """Convert OCR service JSON into per-page lists of TextBlock."""
         pages_out: list[list[TextBlock]] = []
-        pages = result.get("pages", []) if isinstance(result, dict) else []
+        pages = (
+            result.get("pages", []) if isinstance(result, dict) else []
+        )
         for page in pages:
             page_blocks: list[TextBlock] = []
-            blocks = page.get("text_blocks", []) if isinstance(page, dict) else []
+            blocks = (
+                page.get("text_blocks", []) if isinstance(page, dict) else []
+            )
             for blk in blocks:
                 text = str(blk.get("text", ""))
                 bbox = blk.get("bbox", [0.0, 0.0, 100.0, 20.0])
                 font = blk.get("font_info", {})
                 color_data = font.get("color", (0, 0, 0))
-                if isinstance(color_data, (list, tuple)) and (len(color_data) >= 3):
+                if (
+                    isinstance(color_data, (list, tuple))
+                    and (len(color_data) >= 3)
+                ):
                     color = tuple(color_data[:3])
                 else:
                     color = (0, 0, 0)

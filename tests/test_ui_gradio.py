@@ -1,4 +1,4 @@
-import contextlib
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -12,17 +12,19 @@ from ui.gradio_interface import create_gradio_interface
 def _launch_blocks() -> tuple[gr.blocks.Blocks, str]:
     demo = create_gradio_interface()
     # Launch in headless mode; returns (app, local_url, share_url)
-    _, local_url, _ = demo.launch(
-        prevent_thread_lock=True,
-        show_api=False,
-    )
+    _, local_url, _ = demo.launch(prevent_thread_lock=True, show_api=False)
     return demo, local_url
 
 
 def _teardown_blocks(demo: gr.blocks.Blocks) -> None:
-    # defensive cleanup (no overly broad except during normal runtime)
-    with contextlib.suppress(Exception):
+    # Defensive cleanup: suppress only expected shutdown errors
+    try:
         demo.close()
+    except (RuntimeError, OSError, AttributeError):
+        pass
+    except Exception as err:  # pragma: no cover
+        logging.error("Unexpected error while closing Blocks: %s", err, exc_info=True)
+        raise
 
 
 def test_ui_valid_pdf_upload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -44,9 +46,10 @@ def test_ui_valid_pdf_upload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
 
         # Exercise the API using gradio_client
         from gradio_client import Client, handle_file
+        from tests.helpers import write_minimal_pdf
 
         pdf = tmp_path / "ok.pdf"
-        pdf.write_bytes(b"%PDF-1.4\n%%EOF\n")
+        write_minimal_pdf(pdf)
 
         client = Client(url)
         # View API to discover endpoints (ensure reachable)
