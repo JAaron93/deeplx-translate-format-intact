@@ -641,9 +641,7 @@ async def _show_pdf_preprocessing_steps(
                 page_count = max(1, len(pages_obj))
                 doc_info = getattr(reader, "metadata", {}) or {}
         except Exception as err:
-            logger.warning(
-                "pypdf page-count failed (%s); using size heuristic", err
-            )
+            logger.warning("pypdf page-count failed (%s); using size heuristic", err)
             page_count = max(1, int(file_size / (75 * 1024)))
             doc_info = {}
 

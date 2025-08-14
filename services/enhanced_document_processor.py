@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from dolphin_ocr.pdf_to_image import PDFToImageConverter
 from dolphin_ocr.layout import BoundingBox, FontInfo
+from dolphin_ocr.pdf_to_image import PDFToImageConverter
 from services.dolphin_ocr_service import DolphinOCRService
 
 # Migrated off legacy PDF engine; uses pdf2image + Dolphin OCR (PDF-only)
@@ -145,9 +145,7 @@ class EnhancedDocumentProcessor:
         try:
             dolphin_layout = self.ocr.process_document_images(images)
         except Exception as e:  # Keep extraction resilient to OCR failures
-            logger.error(
-                "OCR processing failed for %s: %s", pdf_path, e, exc_info=True
-            )
+            logger.error("OCR processing failed for %s: %s", pdf_path, e, exc_info=True)
             # Graceful degradation: continue with empty layout
             dolphin_layout = {"pages": []}
 
@@ -252,9 +250,7 @@ class EnhancedDocumentProcessor:
             elements: list[TranslatedElement] = []
             for i, original in enumerate(texts):
                 translated = translated_texts.get(page_index, [])
-                translated_text = (
-                    translated[i] if i < len(translated) else original
-                )
+                translated_text = translated[i] if i < len(translated) else original
 
                 # Defaults
                 bbox = BoundingBox(x=0.0, y=0.0, width=612.0, height=12.0)
@@ -262,9 +258,8 @@ class EnhancedDocumentProcessor:
 
                 # Try to use dolphin_layout data if available
                 try:
-                    if (
-                        isinstance(dolphin_layout, dict)
-                        and page_index < len(dolphin_layout.get("pages", []))
+                    if isinstance(dolphin_layout, dict) and page_index < len(
+                        dolphin_layout.get("pages", [])
                     ):
                         page_data = dolphin_layout["pages"][page_index]
                         blocks = page_data.get("text_blocks", [])
@@ -280,7 +275,8 @@ class EnhancedDocumentProcessor:
                                         x=float(bbox_data[0]),
                                         y=float(bbox_data[1]),
                                         width=float(bbox_data[2]) - float(bbox_data[0]),
-                                        height=float(bbox_data[3]) - float(bbox_data[1]),
+                                        height=float(bbox_data[3])
+                                        - float(bbox_data[1]),
                                     )
                                 font_data = block.get("font_info", {})
                                 if isinstance(font_data, dict):

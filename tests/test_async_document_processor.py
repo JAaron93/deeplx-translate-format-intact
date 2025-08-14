@@ -24,6 +24,7 @@ class FakeConverters:
     def optimize(self, img: bytes, fmt: str) -> bytes:
         return img
 
+
 class FakeOCR:
     def __init__(self, blocks_per_page: int = 4) -> None:
         self.blocks_per_page = blocks_per_page
