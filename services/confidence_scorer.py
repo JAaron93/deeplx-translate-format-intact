@@ -143,12 +143,8 @@ class ConfidenceScorer:
 
         # Morphological factors
         factors.morphological_complexity = morphological.structural_complexity
-        factors.compound_structure_score = (
-            0.8 if morphological.is_compound else 0.2
-        )
-        factors.morphological_productivity = (
-            morphological.morphological_productivity
-        )
+        factors.compound_structure_score = 0.8 if morphological.is_compound else 0.2
+        factors.morphological_productivity = morphological.morphological_productivity
 
         # Context factors
         factors.context_density = philosophical.philosophical_density
@@ -174,25 +170,19 @@ class ConfidenceScorer:
             term,
             morphological,
         )
-        factors.pattern_productivity = (
-            0.7 if morphological.is_compound else 0.4
-        )
-        factors.structural_regularity = (
-            0.8 if morphological.compound_pattern else 0.5
-        )
+        factors.pattern_productivity = 0.7 if morphological.is_compound else 0.4
+        factors.structural_regularity = 0.8 if morphological.compound_pattern else 0.5
 
         # Linguistic factors
-        factors.phonological_plausibility = (
-            self._calculate_phonological_plausibility(term)
+        factors.phonological_plausibility = self._calculate_phonological_plausibility(
+            term
         )
         # Heuristic syntactic integration estimation
         factors.syntactic_integration = self._estimate_syntactic_integration(
             term,
             morphological,
         )
-        factors.semantic_transparency = (
-            0.6 if morphological.is_compound else 0.4
-        )
+        factors.semantic_transparency = 0.6 if morphological.is_compound else 0.4
 
         return factors
 
@@ -230,9 +220,7 @@ class ConfidenceScorer:
         """
         self._corpus_freq = freq
         self._corpus_total = (
-            total_tokens
-            if total_tokens is not None
-            else int(sum(freq.values()))
+            total_tokens if total_tokens is not None else int(sum(freq.values()))
         )
 
     def _relative_frequency(self, token: str) -> float:
@@ -358,10 +346,7 @@ class ConfidenceScorer:
 
         # Philosophical term patterns
         term_lower = term.lower()
-        if any(
-            indicator in term_lower
-            for indicator in self.philosophical_indicators
-        ):
+        if any(indicator in term_lower for indicator in self.philosophical_indicators):
             score += 0.4
 
         return min(1.0, score)
@@ -397,9 +382,7 @@ class ConfidenceScorer:
         """Calculate final confidence score from factors."""
         return factors.calculate_weighted_score()
 
-    def get_confidence_breakdown(
-        self, factors: ConfidenceFactors
-    ) -> dict[str, float]:
+    def get_confidence_breakdown(self, factors: ConfidenceFactors) -> dict[str, float]:
         """Get detailed breakdown of confidence calculation."""
         # Calculate individual category scores
         morphological_score = (
@@ -500,9 +483,7 @@ class ConfidenceScorer:
         self.german_morphological_patterns.update(new_patterns)
         logger.info("Updated morphological patterns")
 
-    def update_philosophical_indicators(
-        self, new_indicators: set[str]
-    ) -> None:
+    def update_philosophical_indicators(self, new_indicators: set[str]) -> None:
         """Update philosophical indicators."""
         self.philosophical_indicators.update(new_indicators)
         logger.info(
