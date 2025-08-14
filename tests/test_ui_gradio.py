@@ -10,9 +10,6 @@ from tests.helpers import write_encrypted_pdf
 from ui.gradio_interface import create_gradio_interface
 
 
-import pytest
-
-
 @pytest.fixture(autouse=True)
 def _patch_gradio_schema(monkeypatch: pytest.MonkeyPatch) -> None:
     """Optionally patch gradio client schema parsing to tolerate boolean
@@ -64,6 +61,7 @@ def _patch_gradio_schema(monkeypatch: pytest.MonkeyPatch) -> None:
                 return "Any"
 
         monkeypatch.setattr(gc_utils, "json_schema_to_python_type", _safe_outer)
+
 
 def _launch_blocks() -> tuple[gr.blocks.Blocks, str]:
     # In CI/headless environments localhost may not be reachable; prefer share
@@ -142,6 +140,7 @@ def test_ui_non_pdf_validation(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
         monkeypatch.setattr(gi, "process_file_upload", fake_process)
 
         from gradio_client import Client, handle_file
+
         from tests.helpers import write_minimal_pdf
 
         # Use a .pdf to bypass client-side file-type gate and rely on mock semantics

@@ -1,8 +1,8 @@
 import sys
 import types
+from shutil import which
 
 import pytest
-from shutil import which
 
 # Skip this module if Poppler's pdfinfo is not available on PATH
 if which("pdfinfo") is None:  # pragma: no cover - environment dependent

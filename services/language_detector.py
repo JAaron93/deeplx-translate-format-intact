@@ -53,6 +53,7 @@ class LanguagePattern(TypedDict):
         word_weight: Weight applied to word matches in scoring.
         char_weight: Weight applied to character matches in scoring.
     """
+
     words: list[str]
     chars: list[str]
     word_weight: float
@@ -173,9 +174,7 @@ class LanguageDetector:
             try:
                 langdetect_mod = importlib.import_module("langdetect")
                 detect_func = getattr(langdetect_mod, "detect", None)
-                exc_mod = importlib.import_module(
-                    "langdetect.lang_detect_exception"
-                )
+                exc_mod = importlib.import_module("langdetect.lang_detect_exception")
                 FallbackLangDetectException = type(  # noqa: N806
                     "FallbackLangDetectException", (RuntimeError,), {}
                 )
@@ -202,9 +201,7 @@ class LanguageDetector:
         # Fallback to simple heuristics
         return self._simple_language_detection(sample_text)
 
-    def _extract_sample_text(
-        self, file_path: str, _max_chars: int = 2000
-    ) -> str:
+    def _extract_sample_text(self, file_path: str, _max_chars: int = 2000) -> str:
         """Extract sample text for language detection from PDF files.
 
         The project is PDF-only. For ``.pdf`` files, language detection
@@ -224,9 +221,7 @@ class LanguageDetector:
 
             if file_ext == ".pdf":
                 # OCR-first pipeline: PDF text must be pre-extracted upstream
-                logger.info(
-                    "PDF text extraction requires upstream OCR processing"
-                )
+                logger.info("PDF text extraction requires upstream OCR processing")
                 return ""
 
             return ""
@@ -317,9 +312,7 @@ class LanguageDetector:
             try:
                 langdetect_mod = importlib.import_module("langdetect")
                 detect_func = getattr(langdetect_mod, "detect", None)
-                exc_mod = importlib.import_module(
-                    "langdetect.lang_detect_exception"
-                )
+                exc_mod = importlib.import_module("langdetect.lang_detect_exception")
                 FallbackLangDetectException = type(  # noqa: N806
                     "FallbackLangDetectException", (RuntimeError,), {}
                 )

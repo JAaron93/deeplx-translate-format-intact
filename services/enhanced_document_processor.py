@@ -8,18 +8,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Migrated off legacy PDF engine; uses pdf2image + Dolphin OCR (PDF-only)
-
-from .pdf_document_reconstructor import PDFDocumentReconstructor
 from dolphin_ocr.pdf_to_image import PDFToImageConverter
 from services.dolphin_ocr_service import DolphinOCRService
+
+# Migrated off legacy PDF engine; uses pdf2image + Dolphin OCR (PDF-only)
+from .pdf_document_reconstructor import PDFDocumentReconstructor
 
 logger = logging.getLogger(__name__)
 
 
-def validate_dolphin_layout(
-    layout: dict[str, Any], expected_page_count: int
-) -> bool:
+def validate_dolphin_layout(layout: dict[str, Any], expected_page_count: int) -> bool:
     """Validate the structure of the Dolphin layout data.
 
     Args:
@@ -225,10 +223,10 @@ class EnhancedDocumentProcessor:
         # Build TranslatedLayout from the content we have
         try:
             from services.pdf_document_reconstructor import (
+                DocumentReconstructionError,
                 TranslatedElement,
                 TranslatedLayout,
                 TranslatedPage,
-                DocumentReconstructionError,
             )
         except ImportError as e:  # pragma: no cover
             raise NotImplementedError(
@@ -238,7 +236,9 @@ class EnhancedDocumentProcessor:
         # Translate the minimal dolphin-derived structure into
         # TranslatedLayout for the reconstructor.
         pages: list[TranslatedPage] = []
-        for page_index, texts in sorted(original_content.get("text_by_page", {}).items()):
+        for page_index, texts in sorted(
+            original_content.get("text_by_page", {}).items()
+        ):
             elements: list[TranslatedElement] = []
             for i, original in enumerate(texts):
                 translated = translated_texts.get(page_index, [])
@@ -276,7 +276,9 @@ class EnhancedDocumentProcessor:
             ) from e
 
         if not result.success:
-            raise NotImplementedError("PDF reconstruction did not complete successfully")
+            raise NotImplementedError(
+                "PDF reconstruction did not complete successfully"
+            )
 
         return result.output_path
 

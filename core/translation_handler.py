@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 # Migrated away from the legacy PDF engine; Dolphin OCR is now the sole engine
-
 from config.settings import Settings
 from core.state_manager import state, translation_jobs
 from services.enhanced_document_processor import EnhancedDocumentProcessor
