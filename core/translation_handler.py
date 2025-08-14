@@ -9,7 +9,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 
-# Migrated away from the legacy PDF engine; Dolphin OCR is now the sole engine
+# Migration note: Replaced legacy PyMuPDF/fitz-based PDF engine with Dolphin OCR
+# for all PDF processing. Rationale: improved OCR accuracy, better layout
+# preservation via pdf2image rendering + reconstruction pipeline, and removal of
+# heavyweight/unstable PyMuPDF dependency. Scope: non-docs code no longer imports
+# or references PyMuPDF/fitz; PDF handling is now PDF-only using Dolphin OCR.
 from config.settings import Settings
 from core.state_manager import state, translation_jobs
 from services.enhanced_document_processor import EnhancedDocumentProcessor
@@ -627,10 +631,21 @@ async def _show_pdf_preprocessing_steps(
         # Step 1: PDF Analysis
         preprocessing_steps.append("🔍 Step 1: PDF Analysis")
 
-        # Estimate pages based on typical PDF size (50-100KB per page for text documents)
-        # Use 75KB as a reasonable middle ground
-        page_count = max(1, int(file_size / (75 * 1024)))
-        doc_info = {}
+        # Prefer an exact page count via pypdf; fall back to size heuristic
+        try:
+            from pypdf import PdfReader  # type: ignore
+
+            with open(file_path, "rb") as pdf_file:
+                reader = PdfReader(pdf_file)
+                pages_obj = getattr(reader, "pages", [])
+                page_count = max(1, len(pages_obj))
+                doc_info = getattr(reader, "metadata", {}) or {}
+        except Exception as err:
+            logger.warning(
+                "pypdf page-count failed (%s); using size heuristic", err
+            )
+            page_count = max(1, int(file_size / (75 * 1024)))
+            doc_info = {}
 
         preprocessing_steps.append(f"   📄 Pages detected: {page_count}")
         preprocessing_steps.append(

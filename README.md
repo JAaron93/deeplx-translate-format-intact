@@ -100,7 +100,7 @@ Download with Format Options
 ### Requirements
 - Python 3.8+
 - **aiohttp** (for parallel translation capabilities)
-- **pdf2image** and **pypdf** (for PDF workflows)
+- **pypdf** (for PDF workflows; pdf2image is provided by Dolphin OCR as noted in the architecture section)
 - **requests** (for HTTP requests)
 - **gradio** (for web interface)
 - **Valid Lingo API key** (required for translation functionality)
@@ -134,10 +134,19 @@ Download with Format Options
 
 #### UI testing notes
 
-- **GRADIO_SCHEMA_PATCH**: Set to a truthy value ("1", "true", "yes", "on") to enable a test-only monkeypatch that tolerates boolean JSON Schema fragments emitted by some `gradio_client` versions. This keeps tests resilient without pinning Gradio. Defaults to enabled in CI.
-- **GRADIO_SHARE**: In headless/CI environments, set `GRADIO_SHARE=true` to stabilize Gradio UI tests by using a share URL when localhost is inaccessible.
+- **GRADIO_SCHEMA_PATCH**
+  - **Purpose**: Enables a test-only monkeypatch that tolerates boolean JSON Schema fragments emitted by some `gradio_client` versions. Prevents failures in API schema parsing without pinning Gradio.
+  - **Accepted truthy values**: `"1"`, `"true"`, `"yes"`, `"on"` (case-insensitive).
+  - **When to set**: Only during tests. Automatically enabled in CI by default; set locally if you encounter schema parsing errors.
+  - **Default**: Off locally; On in CI.
 
-Example:
+- **GRADIO_SHARE**
+  - **Purpose**: Forces use of a public share URL when localhost isn't reachable (e.g., headless/CI). Stabilizes Gradio UI tests that use `gradio_client`.
+  - **Accepted truthy values**: `"1"`, `"true"`, `"yes"`, `"on"` or explicitly `"true"`.
+  - **When to set**: Headless environments or CI where `http://127.0.0.1` cannot be accessed.
+  - **Default**: Off locally; typically On in CI via test helpers.
+
+Example command:
 
 ```bash
 GRADIO_SCHEMA_PATCH=true GRADIO_SHARE=true pytest -q tests/test_ui_gradio.py
@@ -311,13 +320,58 @@ The system provides detailed processing metrics:
 
 ## 🔄 Migration to Dolphin OCR
 
-The old PDF engine implementation has been removed. The new implementation:
+The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin OCR + pdf2image.
 
+### Breaking changes
+- Old PyMuPDF/fitz engine removed (no `fitz` imports; APIs relying on it are gone)
+- DOCX/TXT processing dropped; project is PDF-only
+- Some config flags changed/removed (see below)
+- API/CLI behavior now returns 400 for invalid/encrypted PDFs with codes `DOLPHIN_005`/`DOLPHIN_014`
+
+### Required upgrade steps
+1) Install dependencies (pypdf is required; pdf2image is already used by the stack):
+   ```bash
+   pip install -r requirements.txt
+   ```
+2) Replace legacy config keys:
+   - Remove: `USE_PYMUPDF`, `PDF_TEXT_EXTRACTION_MODE`, `DOCX_ENABLED`, `TXT_ENABLED`
+   - Use: `PDF_DPI` (default 300), `PRESERVE_IMAGES` (default True)
+3) Update imports and processors:
+   - Replace any custom `fitz` usage with `services.enhanced_document_processor.EnhancedDocumentProcessor`
+   - For OCR text, rely on Dolphin OCR via the processor; do not call PyMuPDF
+4) Validate PDFs server-side (FastAPI):
+   - Use `utils.pdf_validator.validate_pdf(file_path)` pre-upload, or rely on `/api/upload` which already enforces it
+
+### Data migration / reprocessing
+- Layout backups produced by the old engine are not used; regenerated PDFs will include layout overlays rebuilt via the reconstructor
+- If you stored legacy metadata, re-extract using `EnhancedDocumentProcessor.extract_content(file_path)` to populate new metrics (page count, element counts)
+
+### Compatibility notes
+- Supported Python: 3.8+ (tested with 3.13)
+- Optional: `pypdf` for PDF parsing and page counting; required by this repo
+- Plugins depending on `fitz` must be removed or rewritten
+- Rollback: check out a pre-migration tag that still uses PyMuPDF/fitz; note that tests and routes will differ
+
+### Examples and automation
+- See `tests/test_integration_document_processing.py` for end-to-end usage of the new processor
+- See `tests/test_ui_gradio.py` for UI interaction patterns and server validation behavior
+- A simple reprocessing script example:
+  ```bash
+  python - <<'PY'
+  from services.enhanced_document_processor import EnhancedDocumentProcessor
+  import sys
+  p = EnhancedDocumentProcessor(dpi=300)
+  for path in sys.argv[1:]:
+      content = p.extract_content(path)
+      print(path, content.get('metadata'))
+  PY
+  ```
+
+### Summary
 - ✅ Replaces basic text extraction with advanced layout analysis
-- ✅ Implements image-text overlay for better formatting preservation
+- ✅ Implements image-text overlay for formatting preservation
 - ✅ Adds comprehensive metadata extraction
-- ✅ Provides detailed processing information
-- ✅ Includes layout backup and recovery mechanisms
+- ✅ Standardizes validation with clear error codes (400s for client errors)
 
 ## 🚨 Important Notes
 

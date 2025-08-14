@@ -74,6 +74,8 @@ def _launch_blocks() -> tuple[gr.blocks.Blocks, str]:
     )
     # Prefer share_url if provided, otherwise local_url
     url = share_url or local_url or ""
+    if not url:
+        pytest.skip("No reachable Gradio URL (neither share nor local).")
     return demo, url
 
 
@@ -127,6 +129,9 @@ def test_ui_valid_pdf_upload(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
 
 
 def test_ui_non_pdf_validation(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    # Harden against gradio_client schema changes for this test
+    os.environ.setdefault("GRADIO_SCHEMA_PATCH", "true")
+    _patch_gradio_schema(monkeypatch)
     demo, url = _launch_blocks()
     try:
         from ui import gradio_interface as gi
@@ -141,14 +146,13 @@ def test_ui_non_pdf_validation(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
 
         from gradio_client import Client, handle_file
 
-        from tests.helpers import write_minimal_pdf
-
-        # Use a .pdf to bypass client-side file-type gate and rely on mock semantics
-        pdf = tmp_path / "note_as_pdf.pdf"
-        write_minimal_pdf(pdf)
+        # Create a .pdf filename with non-PDF content to pass UI filter
+        # while still exercising server-side rejection semantics
+        fake_pdf = tmp_path / "note.pdf"
+        fake_pdf.write_bytes(b"This is not a PDF")
 
         client = Client(url)
-        out = client.predict(handle_file(str(pdf)), api_name="/on_file_upload")
+        out = client.predict(handle_file(str(fake_pdf)), api_name="/on_file_upload")
         # Second item is upload_status with the error code
         assert "DOLPHIN_005" in (out[1] or "")
     finally:

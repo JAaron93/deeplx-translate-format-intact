@@ -9,19 +9,20 @@ import services.async_document_processor as adp
 from dolphin_ocr.layout import LayoutStrategy, StrategyType
 from services.layout_aware_translation_service import TextBlock, TranslationResult
 
-# Module-level fakes to avoid pickling issues with ProcessPoolExecutor
-_FAKE_CONVERT_PAGES = 1
 
+class FakeConverters:
+    """Create per-test fakes; avoid global mutation and enable DI via monkeypatch."""
 
-def _fake_convert(
-    pdf_path: str, dpi: int, fmt: str, poppler: str | None
-) -> list[bytes]:
-    return [b"img"] * _FAKE_CONVERT_PAGES
+    def __init__(self, pages: int = 1) -> None:
+        self.pages = pages
 
+    def convert(
+        self, pdf_path: str, dpi: int, fmt: str, poppler: str | None
+    ) -> list[bytes]:
+        return [b"img"] * self.pages
 
-def _fake_optimize(img: bytes, fmt: str) -> bytes:
-    return img
-
+    def optimize(self, img: bytes, fmt: str) -> bytes:
+        return img
 
 class FakeOCR:
     def __init__(self, blocks_per_page: int = 4) -> None:
@@ -86,10 +87,9 @@ class DummyReconstructor:
 
 
 def _patch_converters(monkeypatch: pytest.MonkeyPatch, pages: int = 3) -> None:
-    global _FAKE_CONVERT_PAGES
-    _FAKE_CONVERT_PAGES = pages
-    monkeypatch.setattr(adp, "_convert_pdf_to_images_proc", _fake_convert)
-    monkeypatch.setattr(adp, "_optimize_image_proc", _fake_optimize)
+    fake = FakeConverters(pages=pages)
+    monkeypatch.setattr(adp, "_convert_pdf_to_images_proc", fake.convert)
+    monkeypatch.setattr(adp, "_optimize_image_proc", fake.optimize)
 
 
 @pytest.mark.asyncio

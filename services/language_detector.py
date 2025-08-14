@@ -138,6 +138,36 @@ class LanguageDetector:
     def __init__(self) -> None:
         """Initialize detector with module-level language mappings."""
         self.language_map = LANGUAGE_MAP
+        # Caches for optional langdetect dependency
+        self._langdetect_initialized = False
+        self._langdetect_mod = None
+        self._langdetect_exception = None
+        self._detect_func = None
+
+    def _ensure_langdetect(self) -> None:
+        """Lazily import and cache langdetect modules/functions.
+
+        This avoids repeated dynamic imports on every call while
+        remaining resilient when the optional dependency is missing.
+        """
+        if self._langdetect_initialized:
+            return
+        self._langdetect_initialized = True
+        if not LANGDETECT_AVAILABLE:
+            return
+        try:
+            mod = importlib.import_module("langdetect")
+            exc_mod = importlib.import_module(
+                "langdetect.lang_detect_exception"
+            )
+            fallback_exc = type("FallbackLangDetectException", (RuntimeError,), {})
+            exc = getattr(exc_mod, "LangDetectException", fallback_exc)
+            detect_func = getattr(mod, "detect", None)
+            self._langdetect_mod = mod
+            self._langdetect_exception = exc
+            self._detect_func = detect_func
+        except (ModuleNotFoundError, ImportError, AttributeError) as err:
+            logger.debug("langdetect import failed: %s", err)
 
     def detect_language(self, file_path: str) -> str:
         """Detect the language of a document from its file path.
@@ -169,33 +199,16 @@ class LanguageDetector:
             return "Unknown"
 
         if LANGDETECT_AVAILABLE:
-            # Use langdetect library via dynamic import to avoid static
-            # import errors when optional dependency is missing.
-            try:
-                langdetect_mod = importlib.import_module("langdetect")
-                detect_func = getattr(langdetect_mod, "detect", None)
-                exc_mod = importlib.import_module("langdetect.lang_detect_exception")
-                FallbackLangDetectException = type(  # noqa: N806
-                    "FallbackLangDetectException", (RuntimeError,), {}
-                )
-                langdetect_exception = getattr(
-                    exc_mod, "LangDetectException", FallbackLangDetectException
-                )
-            except (ModuleNotFoundError, ImportError, AttributeError):
+            self._ensure_langdetect()
+            detect_func = self._detect_func
+            lang_exc = self._langdetect_exception
+            if detect_func is None or lang_exc is None:
                 return self._simple_language_detection(sample_text)
-
-            if detect_func is None:
-                return self._simple_language_detection(sample_text)
-
             try:
                 detected_code = detect_func(sample_text)
-            except (
-                langdetect_exception,
-                ValueError,
-            ) as e:  # type: ignore[misc]
+            except (lang_exc, ValueError) as e:  # type: ignore[misc]
                 logger.warning("Language detection error: %s", e)
                 return "Unknown"
-
             return self.language_map.get(detected_code, detected_code.upper())
 
         # Fallback to simple heuristics
@@ -210,7 +223,9 @@ class LanguageDetector:
 
         Args:
             file_path: Path to the document file to extract text from
-            max_chars: Maximum number of characters to extract
+            _max_chars: Reserved for future extensibility. Intentionally
+                unused in the current PDF-only pipeline because OCR text is
+                produced upstream and this function returns an empty string.
 
         Returns:
             str: Extracted text sample or empty string if unsupported or if
@@ -221,7 +236,15 @@ class LanguageDetector:
 
             if file_ext == ".pdf":
                 # OCR-first pipeline: PDF text must be pre-extracted upstream
-                logger.info("PDF text extraction requires upstream OCR processing")
+                # Provide explicit guidance for operators on where to look
+                logger.info(
+                    (
+                        "PDF text not available locally; expecting upstream OCR. "
+                        "Verify OCR service/pipeline (env: OCR_SERVICE/OCR_PIPELINE) "
+                        "is configured and producing text for: %s"
+                    ),
+                    file_path,
+                )
                 return ""
 
             return ""
@@ -308,32 +331,16 @@ class LanguageDetector:
             return "Unknown"
 
         if LANGDETECT_AVAILABLE:
-            # Use langdetect library via dynamic import
-            try:
-                langdetect_mod = importlib.import_module("langdetect")
-                detect_func = getattr(langdetect_mod, "detect", None)
-                exc_mod = importlib.import_module("langdetect.lang_detect_exception")
-                FallbackLangDetectException = type(  # noqa: N806
-                    "FallbackLangDetectException", (RuntimeError,), {}
-                )
-                langdetect_exception = getattr(
-                    exc_mod, "LangDetectException", FallbackLangDetectException
-                )
-            except (ModuleNotFoundError, ImportError, AttributeError):
+            self._ensure_langdetect()
+            detect_func = self._detect_func
+            lang_exc = self._langdetect_exception
+            if detect_func is None or lang_exc is None:
                 return self._simple_language_detection(text)
-
-            if detect_func is None:
-                return self._simple_language_detection(text)
-
             try:
                 detected_code = detect_func(text)
-            except (
-                langdetect_exception,
-                ValueError,
-            ) as e:  # type: ignore[misc]
+            except (lang_exc, ValueError) as e:  # type: ignore[misc]
                 logger.warning("Language detection error: %s", e)
                 return "Unknown"
-
             return self.language_map.get(detected_code, detected_code.upper())
 
         # Fallback to simple heuristics

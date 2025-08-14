@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from dolphin_ocr.pdf_to_image import PDFToImageConverter
+from dolphin_ocr.layout import BoundingBox, FontInfo
 from services.dolphin_ocr_service import DolphinOCRService
 
 # Migrated off legacy PDF engine; uses pdf2image + Dolphin OCR (PDF-only)
@@ -50,7 +51,7 @@ def validate_dolphin_layout(layout: dict[str, Any], expected_page_count: int) ->
     # Validate each page structure
     for i, page in enumerate(layout["pages"]):
         if not isinstance(page, dict):
-            logger.warning(f"Page {i} is not a dictionary")
+            logger.warning("Page %s is not a dictionary", i)
             return False
 
         # Add more specific validations here based on Dolphin's schema
@@ -141,7 +142,14 @@ class EnhancedDocumentProcessor:
 
         # Convert PDF to images and call Dolphin OCR
         images = self.pdf_converter.convert_pdf_to_images(pdf_path)
-        dolphin_layout = self.ocr.process_document_images(images)
+        try:
+            dolphin_layout = self.ocr.process_document_images(images)
+        except Exception as e:  # Keep extraction resilient to OCR failures
+            logger.error(
+                "OCR processing failed for %s: %s", pdf_path, e, exc_info=True
+            )
+            # Graceful degradation: continue with empty layout
+            dolphin_layout = {"pages": []}
 
         # Validate Dolphin layout structure (best-effort)
         if not isinstance(dolphin_layout, dict):
@@ -235,24 +243,62 @@ class EnhancedDocumentProcessor:
 
         # Translate the minimal dolphin-derived structure into
         # TranslatedLayout for the reconstructor.
+
         pages: list[TranslatedPage] = []
+        dolphin_layout = original_content.get("dolphin_layout")
         for page_index, texts in sorted(
             original_content.get("text_by_page", {}).items()
         ):
             elements: list[TranslatedElement] = []
             for i, original in enumerate(texts):
                 translated = translated_texts.get(page_index, [])
-                translated_text = translated[i] if i < len(translated) else original
-                # Minimal element with dummy bbox and font info from dolphin_ocr
-                from dolphin_ocr.layout import BoundingBox, FontInfo  # local import
+                translated_text = (
+                    translated[i] if i < len(translated) else original
+                )
+
+                # Defaults
+                bbox = BoundingBox(x=0.0, y=0.0, width=612.0, height=12.0)
+                font_info = FontInfo(name="Helvetica", size=12.0)
+
+                # Try to use dolphin_layout data if available
+                try:
+                    if (
+                        isinstance(dolphin_layout, dict)
+                        and page_index < len(dolphin_layout.get("pages", []))
+                    ):
+                        page_data = dolphin_layout["pages"][page_index]
+                        blocks = page_data.get("text_blocks", [])
+                        if i < len(blocks):
+                            block = blocks[i]
+                            if isinstance(block, dict):
+                                bbox_data = block.get("bbox")
+                                if (
+                                    isinstance(bbox_data, (list, tuple))
+                                    and len(bbox_data) >= 4
+                                ):
+                                    bbox = BoundingBox(
+                                        x=float(bbox_data[0]),
+                                        y=float(bbox_data[1]),
+                                        width=float(bbox_data[2]) - float(bbox_data[0]),
+                                        height=float(bbox_data[3]) - float(bbox_data[1]),
+                                    )
+                                font_data = block.get("font_info", {})
+                                if isinstance(font_data, dict):
+                                    font_info = FontInfo(
+                                        name=str(font_data.get("family", "Helvetica")),
+                                        size=float(font_data.get("size", 12.0)),
+                                    )
+                except Exception:
+                    # Best-effort only; fall back to defaults silently
+                    pass
 
                 elements.append(
                     TranslatedElement(
                         original_text=original,
                         translated_text=translated_text,
                         adjusted_text=None,
-                        bbox=BoundingBox(x=0.0, y=0.0, width=612.0, height=12.0),
-                        font_info=FontInfo(name="Helvetica", size=12.0),
+                        bbox=bbox,
+                        font_info=font_info,
                     )
                 )
             pages.append(
@@ -277,7 +323,7 @@ class EnhancedDocumentProcessor:
 
         if not result.success:
             raise NotImplementedError(
-                "PDF reconstruction did not complete successfully"
+                f"PDF reconstruction did not complete successfully. Warnings: {getattr(result, 'warnings', [])}"
             )
 
         return result.output_path
@@ -306,24 +352,42 @@ class EnhancedDocumentProcessor:
 
     # DOCX/TXT conversion helpers removed (PDF-only)
 
-    def generate_preview(self, file_path: str, max_chars: int = 1000) -> str:
-        """Generate a preview of the document content."""
+    def generate_preview(self, file_path: str, max_chars: int = 1000) -> str | None:
+        """Generate a preview of the document content.
+
+        Returns a short preview string when possible, None for expected
+        recoverable errors (e.g., missing file), and lets unexpected
+        exceptions bubble up after logging.
+        """
         try:
             content = self.extract_content(file_path)
 
-            if content["type"] == "pdf_advanced":
-                return content["preview"]
+            if content.get("type") == "pdf_advanced":
+                return content.get("preview")
+
             preview_text = content.get(
                 "preview",
                 content.get("text_content", ""),
             )
-            if len(preview_text) > max_chars:
+            if isinstance(preview_text, str) and len(preview_text) > max_chars:
                 return preview_text[:max_chars] + "..."
             return preview_text
 
-        except Exception as e:
-            logger.error("Error generating preview: %s", e)
-            return f"Error generating preview: {e!s}"
+        except FileNotFoundError as err:
+            logger.error("Preview failed - file not found: %s", err)
+            return None
+        except ValueError as err:
+            # Content extraction/validation errors
+            logger.error("Preview failed - invalid input: %s", err)
+            return None
+        except (OSError, RuntimeError) as err:
+            # I/O or library-level issues (e.g., parser problems)
+            logger.error("Preview failed due to I/O or parser error: %s", err)
+            return None
+        except Exception:
+            # Log unexpected exceptions with traceback and re-raise
+            logger.exception("Unexpected error while generating preview")
+            raise
 
     def _get_backup_path(self, original_path: str) -> str:
         """Generate backup path for layout information."""
