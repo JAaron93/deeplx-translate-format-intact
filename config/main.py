@@ -233,10 +233,8 @@ class Config:
             validation_passed = False
         elif len(cls.SOURCE_LANGUAGE) != 2:
             logger.error(
-
-                    f"SOURCE_LANGUAGE must be a 2-letter code, "
-                    f"got: {cls.SOURCE_LANGUAGE}"
-
+                f"SOURCE_LANGUAGE must be a 2-letter code, "
+                f"got: {cls.SOURCE_LANGUAGE}"
             )
             validation_passed = False
 

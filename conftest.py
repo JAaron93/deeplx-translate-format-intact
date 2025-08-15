@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import os
 
-from _pytest.config import Config  # type: ignore
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from _pytest.config import Config
 
 pytest_plugins: list[str] = ["pytest_asyncio"]
 
@@ -17,6 +20,3 @@ def pytest_configure(config: Config) -> None:
     # When focusing, remove coverage/time-consuming addopts
     if os.getenv("FOCUSED"):
         config.known_args_namespace.addopts = "-q"
-    # Silence unused-argument linters while keeping the canonical
-    # hook signature
-    del config

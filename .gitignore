@@ -46,7 +46,6 @@ pyvenv.cfg
 .coverage
 .coverage.*
 htmlcov/
-coverage/
 .mypy_cache/
 .dmypy.json
 dmypy.json
@@ -231,7 +230,6 @@ logs/*
 # Documentation and site build artifacts
 docs/_build/
 docs/.doctrees/
-doc/_build/
 site/
 _build/
 .sass-cache/
@@ -286,6 +284,7 @@ claude_context.md
 .cursor/
 .continue/
 .codeium/
+.specstory/
 
 # Jupyter Notebook
 .ipynb_checkpoints

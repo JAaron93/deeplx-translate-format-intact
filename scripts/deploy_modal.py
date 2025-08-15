@@ -205,17 +205,28 @@ def deploy_dolphin_service() -> bool:
             timeout=600,
         )
         if result.stdout:
-            print(result.stdout)
+            print("CLI Output:", result.stdout)
         if result.stderr:
-            print(result.stderr)
+            print("CLI Errors:", result.stderr)
         print("✅ Modal CLI deploy completed")
         return True
+    except subprocess.CalledProcessError as err:
     except subprocess.CalledProcessError as err:
         print("❌ Modal CLI deploy failed", file=sys.stderr)
         if err.stdout:
             print(err.stdout, file=sys.stderr)
         if err.stderr:
             print(err.stderr, file=sys.stderr)
+        return False
+    except subprocess.TimeoutExpired as err:
+        print("❌ Modal CLI deploy timed out after 600 seconds", file=sys.stderr)
+        if err.stdout:
+            print(err.stdout, file=sys.stderr)
+        if err.stderr:
+            print(err.stderr, file=sys.stderr)
+        return False
+    except Exception as err:
+        print(f"❌ Deployment error: {err}")
         return False
     except Exception as err:
         print(f"❌ Deployment error: {err}")

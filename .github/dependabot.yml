@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: "direct"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      dev-tools:
+        patterns:
+          - "pytest*"
+          - "mypy*"
+          - "ruff*"
+          - "pytest-asyncio*"
+          - "pytest-cov*"
+          - "pytest-xdist*"
+          - "pytest-rerunfailures*"
+    ignore:
+      - dependency-name: "gradio"
+        # UI stack updates are coordinated separately
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+

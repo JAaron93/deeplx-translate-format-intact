@@ -1,7 +1,7 @@
 """FastAPI route handlers for document translation API."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -83,11 +83,11 @@ async def philosophy_interface(request: Request) -> HTMLResponse:
 async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
     """Save a user choice for a neologism."""
     try:
-        # Extract choice data
-        term = choice_data.get("term")
-        choice = choice_data.get("choice")
-        custom_translation = choice_data.get("custom_translation", "")
-        notes = choice_data.get("notes", "")
+        # Extract choice data with conservative typing
+        term = str(choice_data.get("term", ""))
+        choice_value = str(choice_data.get("choice", "preserve"))
+        custom_translation = str(choice_data.get("custom_translation", ""))
+        notes = str(choice_data.get("notes", ""))
         session_id = choice_data.get("session_id")
 
         # Create a simple neologism representation
@@ -110,7 +110,10 @@ async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
             "custom": ChoiceType.CUSTOM_TRANSLATION,
         }
 
-        choice_type = choice_type_mapping.get(choice, ChoiceType.PRESERVE)
+        choice_type = choice_type_mapping.get(
+            choice_value,
+            ChoiceType.PRESERVE,
+        )
 
         # Save the choice
         user_choice = user_choice_manager.make_choice(
@@ -129,7 +132,7 @@ async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        logger.error(f"Error saving user choice: {e}")
+        logger.error("Error saving user choice: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -156,7 +159,7 @@ async def get_detected_neologisms(
         )
         return {"neologisms": neologisms, "total": total}
     except Exception as e:
-        logger.error(f"Error getting neologisms: {e}")
+        logger.error("Error getting neologisms: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -165,19 +168,19 @@ async def get_philosophy_progress() -> Dict[str, Any]:
     """Get current philosophy processing progress."""
     try:
         total_neologisms = 0
-        if state.neologism_analysis and isinstance(state.neologism_analysis, dict):
+        if state.neologism_analysis and isinstance(
+            state.neologism_analysis, dict
+        ):
             detected = state.neologism_analysis.get("detected_neologisms", [])
             if isinstance(detected, list):
                 total_neologisms = len(detected)
 
         processed_neologisms = 0
         if isinstance(state.user_choices, list):
-            processed_neologisms = len(
-                [
-                    choice
-                    for choice in state.user_choices
-                    if isinstance(choice, dict) and choice.get("processed", False)
-                ]
+            processed_neologisms = sum(
+                1
+                for choice in state.user_choices
+                if isinstance(choice, dict) and choice.get("processed", False)
             )
         return {
             "total_neologisms": total_neologisms,
@@ -187,7 +190,7 @@ async def get_philosophy_progress() -> Dict[str, Any]:
             "philosophy_mode": state.philosophy_mode,
         }
     except Exception as e:
-        logger.error(f"Error getting progress: {e}")
+        logger.error("Error getting progress: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -210,14 +213,15 @@ async def export_user_choices(
                 media_type="application/json",
                 filename=(
                     "philosophy-choices-"
-                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+                    ".json"
                 ),
             )
         else:
             raise HTTPException(status_code=500, detail="Export failed")
 
     except Exception as e:
-        logger.error(f"Error exporting choices: {e}")
+        logger.error("Error exporting choices: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -244,15 +248,15 @@ async def import_user_choices(import_data: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     except ValueError as e:
-        logger.error(f"Validation error importing choices: {e}")
+        logger.error("Validation error importing choices: %s", e)
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error importing choices: {e}")
+        logger.error("Error importing choices: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @api_router.get("/philosophy/terminology")
-async def get_terminology() -> Any:
+async def get_terminology() -> Dict[str, str]:
     """Get current terminology database."""
     try:
         # Get terminology from neologism detector
@@ -260,7 +264,7 @@ async def get_terminology() -> Any:
         return terminology
 
     except Exception as e:
-        logger.error(f"Error getting terminology: {e}")
+        logger.error("Error getting terminology: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -279,7 +283,7 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
                 detail={
                     "error_code": "DOLPHIN_005",
                     "message": "Only PDF format supported",
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "context": {"path": Path(file_path).name},
                 },
             )
@@ -292,7 +296,7 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
                 detail={
                     "error_code": "DOLPHIN_014",
                     "message": get_error_message("DOLPHIN_014"),
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "context": {"path": Path(file_path).name},
                 },
             )
@@ -335,7 +339,7 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
             detail={
                 "error_code": "DOLPHIN_002",
                 "message": get_error_message("DOLPHIN_002"),
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "filename": Path(file.filename).name
                 if getattr(file, "filename", None)
                 else None,
@@ -363,7 +367,7 @@ async def translate_document(
             "file_path": file_path,
             "source_language": source_language,
             "target_language": target_language,
-            "created_at": datetime.now(),
+            "created_at": datetime.now(timezone.utc),
             "output_file": None,
             "error": None,
             "processing_type": "advanced",

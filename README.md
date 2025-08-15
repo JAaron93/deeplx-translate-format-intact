@@ -5,6 +5,7 @@ Professional document translation with OCR capabilities and comprehensive format
 ## 🚀 Features
 
 ### Advanced PDF Processing
+
 - **Image-text overlay technique** for superior formatting preservation
 - **High-resolution rendering** (300 DPI) for precise text positioning
 - **Complete layout analysis** with text element extraction
@@ -12,9 +13,11 @@ Professional document translation with OCR capabilities and comprehensive format
 - **Comprehensive metadata extraction** including fonts, colors, and positioning
 
 ### Document Format Support
+
 - **PDF only**: Advanced processing with image-text overlay preservation
 
 ### Translation Features
+
 - **Lingo.dev API integration** for high-quality translation
 - **Parallel processing engine** for large-scale document translation
 - **Automatic language detection** with confidence scoring
@@ -23,6 +26,7 @@ Professional document translation with OCR capabilities and comprehensive format
 - **Progress tracking** with detailed status updates
 
 ### 🚀 **NEW: High-Performance Parallel Translation**
+
 - **5-10x faster processing** for large documents (up to 2,000 pages)
 - **Async HTTP requests** with configurable concurrency (up to 10 concurrent)
 - **Intelligent rate limiting** (5 requests/second default) to respect API limits
@@ -36,19 +40,13 @@ Professional document translation with OCR capabilities and comprehensive format
 
 ### Core Components
 
-1. **AdvancedPDFProcessor** (`services/advanced_pdf_processor.py`)
-   - High-resolution page rendering
-   - Precise text element extraction with positioning
-   - Image-text overlay reconstruction
-   - Layout backup and recovery
-
-2. **EnhancedDocumentProcessor** (`services/enhanced_document_processor.py`)
+1. **EnhancedDocumentProcessor** (`services/enhanced_document_processor.py`)
    - PDF-only document processing
    - PDF validation, rendering, and OCR orchestration
    - Layout-aware reconstruction utilities
    - Preview generation
 
-3. **Advanced Web Interface** (`app.py`)
+2. **Advanced Web Interface** (`app.py`)
    - Enhanced Gradio UI with processing details
    - Real-time progress tracking
    - Comprehensive status reporting
@@ -90,8 +88,9 @@ Download Translated PDF
    ```
 
 ### Requirements
-- Python 3.8+
-- Core libs: `pypdf`, `pdf2image>=3.1.0`, `Pillow>=10.0.0`, `reportlab>=4.0.0`
+
+- Python 3.11 or 3.12 recommended (3.8–3.12 supported). Python 3.13 support pending due to Pillow 10 wheels.
+- Core libs are pinned in `requirements.txt` (e.g., `pdf2image==3.1.0`, `Pillow==10.0.0`, `reportlab==4.0.0`, `pypdf`).
 - Client/Server: `fastapi`, `uvicorn`, `httpx`
 - UI: `gradio`
 - Testing: `pytest`, `pytest-cov`
@@ -100,26 +99,30 @@ Download Translated PDF
 ## 📁 Key Files
 
 ### Core Application
+
 - `app.py` - Main application with advanced Gradio interface
-- `services/advanced_pdf_processor.py` - Advanced PDF processing engine
 - `services/enhanced_document_processor.py` - PDF-only document handler
 
 ### Translation Services
+
 - `services/translation_service.py` - Base translation service with Lingo.dev integration
 - `services/enhanced_translation_service.py` - **NEW**: Drop-in replacement with parallel processing
 - `services/parallel_translation_service.py` - **NEW**: High-performance parallel translation engine
 
 ### Supporting Services
+
 - `services/language_detector.py` - Language detection utilities
 - `services/neologism_detector.py` - Philosophy-focused neologism detection
 - `services/user_choice_manager.py` - User choice management for translations
 
 ### Configuration & Utilities
+
 - `config.py` - Main configuration with parallel processing settings
 - `config/settings.py` - Additional configuration management
 - `utils/` - File handling and validation utilities
 
 ### Testing & Examples
+
 - `tests/test_parallel_translation.py` - Comprehensive parallel translation tests
 - `examples/parallel_translation_demo.py` - Working demonstration of parallel capabilities
 - `simple_test_runner.py` - Basic functionality tests
@@ -137,6 +140,9 @@ Download Translated PDF
   - **Accepted truthy values**: `"1"`, `"true"`, `"yes"`, `"on"` (case-insensitive).
   - **When to set**: Headless environments or CI where `http://127.0.0.1` cannot be accessed.
   - **Default**: Off locally; typically On in CI via test helpers.
+
+- **Pytest markers**
+  - Use `-m "not slow"` to skip slower-running integration tests.
 
 Example command:
 
@@ -346,7 +352,7 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 - If you stored legacy metadata, re-extract using `EnhancedDocumentProcessor.extract_content(file_path)` to populate new metrics (page count, element counts)
 
 ### Compatibility notes
-- Supported Python: 3.8+ (tested with 3.13)
+- Supported Python: 3.8–3.12 (3.11/3.12 recommended). Python 3.13 support pending due to Pillow 10 wheels.
 - Optional: `pypdf` for PDF parsing and page counting; required by this repo
 - Plugins depending on `fitz` must be removed or rewritten
 - Rollback: check out a pre-migration tag that still uses PyMuPDF/fitz; note that tests and routes will differ
@@ -392,6 +398,7 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 - Ensure ReportLab can locate fonts or embed fallbacks (e.g., register fonts explicitly when needed; see ReportLab font docs).
 
 Optional code snippet to illustrate explicit font registration in ReportLab:
+
 ```python
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -542,3 +549,7 @@ async def benchmark_translation():
 # Run your own benchmark
 asyncio.run(benchmark_translation())
 ```
+
+## 🤝 Contributing
+
+See `CONTRIBUTING.md` for development workflow, lint/type-check configurations, pytest markers, and automated dependency updates (Dependabot). This ensures local and CI runs use the same rules and remain reproducible.
