@@ -12,9 +12,7 @@ Professional document translation with OCR capabilities and comprehensive format
 - **Comprehensive metadata extraction** including fonts, colors, and positioning
 
 ### Document Format Support
-- **PDF**: Advanced processing with image-text overlay preservation
-- **DOCX**: Structure-aware processing with style preservation
-- **TXT**: Simple text processing with line-based translation
+- **PDF only**: Advanced processing with image-text overlay preservation
 
 ### Translation Features
 - **Lingo.dev API integration** for high-quality translation
@@ -45,9 +43,9 @@ Professional document translation with OCR capabilities and comprehensive format
    - Layout backup and recovery
 
 2. **EnhancedDocumentProcessor** (`services/enhanced_document_processor.py`)
-   - Multi-format document processing
-   - Content type detection and routing
-   - Format conversion capabilities
+   - PDF-only document processing
+   - PDF validation, rendering and OCR orchestration
+   - Layout-aware reconstruction utilities
    - Preview generation
 
 3. **Advanced Web Interface** (`app.py`)
@@ -59,25 +57,19 @@ Professional document translation with OCR capabilities and comprehensive format
 ### Processing Pipeline
 
 ```
-Document Upload
+Document Upload (PDF only)
     ↓
-Format Detection & Validation
+PDF Validation & Header Checks
     ↓
-Advanced Content Extraction
-    ├── PDF: Image rendering + text positioning
-    ├── DOCX: Structure analysis + style extraction
-    └── TXT: Line-based processing
+Content Extraction (pdf2image → Dolphin OCR)
     ↓
-Language Detection
+Language Detection / Heuristics
     ↓
 Element-by-Element Translation
     ↓
-Format Reconstruction
-    ├── PDF: Image background + text overlay
-    ├── DOCX: Style-preserved document
-    └── TXT: Translated text file
+PDF Reconstruction (image background + text overlay)
     ↓
-Download with Format Options
+Download Translated PDF
 ```
 
 ## 🛠️ Installation
@@ -99,11 +91,11 @@ Download with Format Options
 
 ### Requirements
 - Python 3.8+
-- **aiohttp** (for parallel translation capabilities)
-- **pypdf** (for PDF workflows; pdf2image is provided by Dolphin OCR as noted in the architecture section)
-- **requests** (for HTTP requests)
-- **gradio** (for web interface)
-- **Valid Lingo API key** (required for translation functionality)
+- Core libs: `pypdf`, `pdf2image>=3.1.0`, `Pillow>=10.0.0`, `reportlab>=4.0.0`
+- Client/Server: `fastapi`, `uvicorn`, `httpx`
+- UI: `gradio`
+- Testing: `pytest`, `pytest-cov`
+- Valid Lingo API key for translation functionality
 
 ## 📁 Key Files
 
@@ -142,7 +134,7 @@ Download with Format Options
 
 - **GRADIO_SHARE**
   - **Purpose**: Forces use of a public share URL when localhost isn't reachable (e.g., headless/CI). Stabilizes Gradio UI tests that use `gradio_client`.
-  - **Accepted truthy values**: `"1"`, `"true"`, `"yes"`, `"on"` or explicitly `"true"`.
+  - **Accepted truthy values**: `"1"`, `"true"`, `"yes"`, `"on"`.
   - **When to set**: Headless environments or CI where `http://127.0.0.1` cannot be accessed.
   - **Default**: Off locally; typically On in CI via test helpers.
 
@@ -155,13 +147,19 @@ GRADIO_SCHEMA_PATCH=true GRADIO_SHARE=true pytest -q tests/test_ui_gradio.py
 ## 🔧 Configuration
 
 ### PDF Processing Settings
-- `PDF_DPI`: Resolution for PDF rendering (default: 300)
-- `PRESERVE_IMAGES`: Whether to preserve embedded images (default: True)
-- `MEMORY_THRESHOLD_MB`: Memory usage threshold in MB (default: 500)
+- `PDF_DPI` (int): Resolution for PDF rendering; affects pdf2image conversion. Default: 300 DPI.
+- `PRESERVE_IMAGES` (bool): Preserve embedded images. Default: true.
+- `MEMORY_THRESHOLD_MB` (int): Memory threshold used by some validators. Default: 500.
+- `DOLPHIN_ENDPOINT` (str): HTTP endpoint for Dolphin OCR service (Modal/Spaces).
+- `HF_TOKEN` (str, optional): Hugging Face token for authenticated model pulls.
+- `MAX_CONCURRENT_REQUESTS` (int): Concurrency for translation.
+- `MAX_REQUESTS_PER_SECOND` (float): Token-bucket rate for translation requests.
+- `TRANSLATION_BATCH_SIZE` (int): Text batch size for translation.
 
 ### Translation API Configuration
 **Required:**
 - `LINGO_API_KEY`: Your Lingo.dev API key (required for translation functionality)
+- `DOLPHIN_ENDPOINT`: HTTP endpoint for the Dolphin OCR service (Modal/Spaces)
 
 ### 🚀 Parallel Translation Settings
 Configure these environment variables to optimize performance for your use case:
@@ -318,7 +316,7 @@ The system provides detailed processing metrics:
 - Memory usage monitoring
 - Translation progress and success rates
 
-## 🔄 Migration to Dolphin OCR
+## 🔄 Migration to Dolphin OCR (PDF-only)
 
 The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin OCR + pdf2image.
 
@@ -329,13 +327,14 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 - API/CLI behavior now returns 400 for invalid/encrypted PDFs with codes `DOLPHIN_005`/`DOLPHIN_014`
 
 ### Required upgrade steps
-1) Install dependencies (pypdf is required; pdf2image is already used by the stack):
+1) Install dependencies (PDF-only stack with minimum versions):
    ```bash
    pip install -r requirements.txt
+   # Ensure Poppler is installed and on PATH for pdf2image (see notes below)
    ```
 2) Replace legacy config keys:
    - Remove: `USE_PYMUPDF`, `PDF_TEXT_EXTRACTION_MODE`, `DOCX_ENABLED`, `TXT_ENABLED`
-   - Use: `PDF_DPI` (default 300), `PRESERVE_IMAGES` (default True)
+   - Use: `PDF_DPI`, `DOLPHIN_ENDPOINT`, translation concurrency/rate envs (see above)
 3) Update imports and processors:
    - Replace any custom `fitz` usage with `services.enhanced_document_processor.EnhancedDocumentProcessor`
    - For OCR text, rely on Dolphin OCR via the processor; do not call PyMuPDF
@@ -377,8 +376,18 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 
 ### PDF Processing
 - High-quality OCR via Dolphin OCR with pdf2image-backed rendering
+- System dependency: Poppler must be installed and discoverable in PATH for `pdf2image`.
+  - macOS (Homebrew): `brew install poppler`
+  - Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y poppler-utils`
+  - Windows: install Poppler and add `bin` to PATH (see pdf2image docs: https://github.com/Belval/pdf2image#installing-poppler)
 - Processing time may be longer due to high-resolution rendering
 - Layout backups are automatically created for complex documents
+
+### Fonts
+- For consistent rendering across environments, install common fonts (e.g., DejaVu, Noto).
+- macOS: common fonts are preinstalled; optionally install additional fonts via Homebrew casks.
+- Ubuntu/Debian: `sudo apt-get install -y fonts-dejavu fonts-liberation fonts-noto`
+- Ensure ReportLab can locate fonts or embed fallbacks (e.g., register fonts explicitly when needed).
 
 ### 🚀 Parallel Translation
 - **API Key Required**: Valid Lingo.dev API key is mandatory for translation functionality

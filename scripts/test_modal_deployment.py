@@ -156,6 +156,12 @@ def check_environment():
         "DOLPHIN_ENDPOINT",
         "LINGO_API_KEY",
     ]
+    # System dependencies checks: Poppler and fonts hints
+    print("🔎 Checking system dependencies (informational)...")
+    if sys.platform.startswith("linux") or sys.platform == "darwin":
+        poppler_hint = "Install 'poppler-utils' (Linux) or 'brew install poppler' (macOS) if pdf2image fails."
+        print(f"   • Poppler: required by pdf2image. {poppler_hint}")
+        print("   • Fonts: install DejaVu/Noto for consistent rendering.")
 
     missing_vars = []
     for var in required_vars:

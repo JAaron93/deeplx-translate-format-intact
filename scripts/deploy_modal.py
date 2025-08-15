@@ -11,6 +11,23 @@ import os
 import sys
 
 
+# Optional (non-fatal) environment variables recognized by deployment.
+# DOLPHIN_ENDPOINT can be provided here for convenience during validation,
+# but it is still validated as required in validate_environment_variables.
+OPTIONAL_ENV_VARS = [
+    "HF_TOKEN",  # HuggingFace token for model downloads
+    "PDF_DPI",
+    "MAX_CONCURRENT_REQUESTS",
+    "MAX_REQUESTS_PER_SECOND",
+    "TRANSLATION_BATCH_SIZE",
+    "TRANSLATION_MAX_RETRIES",
+    "TRANSLATION_REQUEST_TIMEOUT",
+    "GRADIO_SHARE",
+    "GRADIO_SCHEMA_PATCH",
+    "DOLPHIN_ENDPOINT",  # also checked as required; listed for reporting
+]
+
+
 def validate_environment_variables():
     """Validate environment variables and return validation results.
 
@@ -22,11 +39,10 @@ def validate_environment_variables():
         "MODAL_TOKEN_ID",
         "MODAL_TOKEN_SECRET",
         "LINGO_API_KEY",
+        "DOLPHIN_ENDPOINT",
     ]
 
-    optional_vars = [
-        "HF_TOKEN",  # HuggingFace token for model downloads
-    ]
+    optional_vars = OPTIONAL_ENV_VARS
 
     missing_required = []
     empty_required = []
@@ -132,8 +148,12 @@ def prepare_modal_secrets():
     print("   Run this command to create the secret:")
     secret_cmd = "modal secret create translation-api"
     for key in translation_secret_data:
-        secret_cmd += f" {key}=<your-{key.lower().replace('_', '-')}>"
+        # Quote placeholders to avoid shell interpretation issues when users
+        # substitute values containing special characters.
+        placeholder = "'<your-" + key.lower().replace("_", "-") + ">'"
+        secret_cmd += f" {key}={placeholder}"
     print(f"   {secret_cmd}")
+    print("   Note: quote your values or export them as env vars to avoid shell interpretation issues.")
 
     return True
 

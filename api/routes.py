@@ -327,9 +327,9 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
             status_code=500,
             detail={
                 "error_code": "DOLPHIN_002",
-                "message": str(e),
+                "message": get_error_message("DOLPHIN_002"),
                 "timestamp": datetime.now().isoformat(),
-                "filename": file.filename,
+                "filename": Path(file.filename).name,
             },
         ) from e
 
