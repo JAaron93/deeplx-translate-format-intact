@@ -13,9 +13,6 @@ import sys
 # Optional (non-fatal) environment variables recognized by deployment.
 # DOLPHIN_ENDPOINT can be provided here for convenience during validation,
 # but it is still validated as required in validate_environment_variables.
-# Optional (non-fatal) environment variables recognized by deployment.
-# DOLPHIN_ENDPOINT can be provided here for convenience during validation,
-# but it is still validated as required in validate_environment_variables.
 OPTIONAL_ENV_VARS = [
     "HF_TOKEN",  # HuggingFace token for model downloads
     "PDF_DPI",
@@ -27,6 +24,7 @@ OPTIONAL_ENV_VARS = [
     "GRADIO_SHARE",
     "GRADIO_SCHEMA_PATCH",
 ]
+
 
 def validate_environment_variables():
     """Validate environment variables and return validation results.
@@ -206,7 +204,7 @@ def main():
     print("\n✅ Deployment preparation complete!")
     print("\nNext steps:")
     print("1. Create the Modal secret:")
-    print("   modal secret create translation-api LINGO_API_KEY=\"your-key\"")
+    print('   modal secret create translation-api LINGO_API_KEY="your-key"')
     if os.getenv("HF_TOKEN"):
         print("   (HF_TOKEN will be included automatically)")
 

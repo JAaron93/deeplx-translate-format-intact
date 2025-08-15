@@ -392,11 +392,13 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 - Ensure ReportLab can locate fonts or embed fallbacks (e.g., register fonts explicitly when needed; see ReportLab font docs).
 
 Optional code snippet to illustrate explicit font registration in ReportLab:
+```python
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 pdfmetrics.registerFont(TTFont("DejaVuSans", "/path/to/DejaVuSans.ttf"))
 # Then set font by name "DejaVuSans" in your canvas/Paragraph styles
+```
 
 ReportLab font guide: https://www.reportlab.com/docs/reportlab-userguide.pdf (search for "TrueType fonts").
 

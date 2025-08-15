@@ -329,7 +329,9 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
                 "error_code": "DOLPHIN_002",
                 "message": get_error_message("DOLPHIN_002"),
                 "timestamp": datetime.now().isoformat(),
-                "filename": Path(file.filename).name if getattr(file, "filename", None) else None,
+                "filename": Path(file.filename).name
+                if getattr(file, "filename", None)
+                else None,
             },
         ) from e
 
