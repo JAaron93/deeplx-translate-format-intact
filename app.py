@@ -16,7 +16,6 @@ from api.routes import api_router, app_router
 
 # Import refactored components
 from ui.gradio_interface import create_gradio_interface
-import typing
 
 # Ensure required directories exist BEFORE configuring logging so file handlers
 # don't fail due to missing paths.

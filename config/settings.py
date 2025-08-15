@@ -213,7 +213,9 @@ def _parse_bool_env(env_var: str, default: str = "false") -> bool:
             )
             raise ValueError(f"Invalid boolean value for {env_var}: {value}")
     except AttributeError as e:
-        logger.error(f"Error parsing boolean environment variable {env_var}: {e}")
+        logger.error(
+            f"Error parsing boolean environment variable {env_var}: {e}"
+        )
         raise ValueError(f"Error parsing {env_var}: {e}") from e
 
 
@@ -221,7 +223,7 @@ class Settings:
     """Application settings with environment variable configuration."""
 
     # Translation API settings - Only Lingo.dev
-    LINGO_API_KEY: str = os.getenv("LINGO_API_KEY")
+    LINGO_API_KEY: str | None = os.getenv("LINGO_API_KEY")
 
     # Server configuration
     HOST: str = os.getenv("HOST", "127.0.0.1")
@@ -284,17 +286,17 @@ class Settings:
             except PermissionError as e:
                 logger.error(
                     f"Permission denied when creating directory '{normalized_path}': {e}. "
-                    f"Check file system permissions for the application."
+                    "Check file system permissions for the application."
                 )
                 raise
             except OSError as e:
                 logger.error(
                     f"OS error when creating directory '{normalized_path}': {e}. "
-                    f"Check path validity and available disk space."
+                    "Check path validity and available disk space."
                 )
                 raise
 
-    def get_available_translators(self) -> list:
+    def get_available_translators(self) -> list[str]:
         """Get list of available translation services."""
         available = []
 
@@ -377,29 +379,37 @@ class Settings:
 
         if self.MAX_FILE_SIZE_MB <= 0:
             logger.error(
-                f"Invalid MAX_FILE_SIZE_MB: {self.MAX_FILE_SIZE_MB}. Must be positive"
+                f"Invalid MAX_FILE_SIZE_MB: {self.MAX_FILE_SIZE_MB}. "
+                "Must be positive"
             )
             valid = False
 
         if self.PDF_DPI < 72 or self.PDF_DPI > 600:
-            logger.error(f"Invalid PDF_DPI: {self.PDF_DPI}. Recommended range: 72-600")
+            logger.error(
+                f"Invalid PDF_DPI: {self.PDF_DPI}. "
+                "Recommended range: 72-600"
+            )
             valid = False
 
         if self.MEMORY_THRESHOLD <= 0:
             logger.error(
-                f"Invalid MEMORY_THRESHOLD: {self.MEMORY_THRESHOLD}. Must be positive"
+                f"Invalid MEMORY_THRESHOLD: {self.MEMORY_THRESHOLD}. "
+                "Must be positive"
             )
             valid = False
 
         if self.TRANSLATION_DELAY < 0:
             logger.error(
-                f"Invalid TRANSLATION_DELAY: {self.TRANSLATION_DELAY}. Must be non-negative"
+                f"Invalid TRANSLATION_DELAY: {self.TRANSLATION_DELAY}. "
+                "Must be non-negative"
             )
             valid = False
 
         if self.translation_concurrency_limit < 1:
             logger.error(
-                f"Invalid translation_concurrency_limit: {self.translation_concurrency_limit}. Must be >= 1"
+                f"Invalid translation_concurrency_limit: "
+                f"{self.translation_concurrency_limit}. "
+                "Must be >= 1"
             )
             valid = False
 
@@ -441,5 +451,7 @@ class Settings:
             return True
 
         except (OSError, PermissionError) as e:
-            logger.error(f"Directory writability check failed for '{directory}': {e}")
+            logger.error(
+                f"Directory writability check failed for '{directory}': {e}"
+            )
             return False

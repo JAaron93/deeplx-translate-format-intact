@@ -228,9 +228,10 @@ logs/*.log
 logs/*
 !logs/.gitkeep
 
-# Documentation build artifacts
+# Documentation and site build artifacts
 docs/_build/
 docs/.doctrees/
+doc/_build/
 site/
 _build/
 .sass-cache/
@@ -320,15 +321,13 @@ celerybeat.pid
 *.cpp
 cython_debug/
 
-# Package control specific files
+# Package Control (Sublime)
 Package Control.cache/
 Package Control.ca-certs/
 Package Control.system-ca-bundle
-Package Control.cache/
 Package Control.ca-list
 Package Control.ca-bundle
 Package Control.merged-ca-bundle
-Package Control.ca-certs/
 
 # Translations
 *.mo
@@ -336,12 +335,6 @@ Package Control.ca-certs/
 
 # Scrapy
 .scrapy
-
-# Sphinx
-docs/_build/
-
-# PyBuilder
-target/
 
 # pyenv
 .python-version
@@ -370,14 +363,10 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-cover/
+coverage/
 
 # Scrapy
 .scrapy
-
-# Sphinx documentation
-docs/_build/
-doc/_build/
 
 # PyBuilder
 .pybuilder/

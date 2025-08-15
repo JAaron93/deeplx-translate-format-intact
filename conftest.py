@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+
 from _pytest.config import Config  # type: ignore
 
 pytest_plugins: list[str] = ["pytest_asyncio"]

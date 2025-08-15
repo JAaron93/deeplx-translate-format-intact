@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 from fastapi import (
     APIRouter,
@@ -72,12 +72,15 @@ async def root() -> Dict[str, Any]:
 @app_router.get("/philosophy", response_class=HTMLResponse)
 async def philosophy_interface(request: Request) -> HTMLResponse:
     """Philosophy-enhanced translation interface."""
-    return templates.TemplateResponse("philosophy_interface.html", {"request": request})
+    return templates.TemplateResponse(
+        "philosophy_interface.html",
+        {"request": request},
+    )
 
 
 # Philosophy API Endpoints
 @api_router.post("/philosophy/choice")
-async def save_user_choice(choice_data: Dict[str, Any]):
+async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
     """Save a user choice for a neologism."""
     try:
         # Extract choice data
@@ -131,7 +134,9 @@ async def save_user_choice(choice_data: Dict[str, Any]):
 
 
 @api_router.get("/philosophy/neologisms")
-async def get_detected_neologisms(_session_id: Optional[str] = None):
+async def get_detected_neologisms(
+    _session_id: Optional[str] = None,
+) -> Dict[str, Any]:
     """Get detected neologisms for the current session.
 
     Args:
@@ -156,7 +161,7 @@ async def get_detected_neologisms(_session_id: Optional[str] = None):
 
 
 @api_router.get("/philosophy/progress")
-async def get_philosophy_progress():
+async def get_philosophy_progress() -> Dict[str, Any]:
     """Get current philosophy processing progress."""
     try:
         total_neologisms = 0
@@ -171,7 +176,8 @@ async def get_philosophy_progress():
                 [
                     choice
                     for choice in state.user_choices
-                    if isinstance(choice, dict) and choice.get("processed", False)
+                    if isinstance(choice, dict)
+                    and choice.get("processed", False)
                 ]
             )
         return {
@@ -187,7 +193,9 @@ async def get_philosophy_progress():
 
 
 @api_router.post("/philosophy/export-choices")
-async def export_user_choices(export_data: Dict[str, Any]):
+async def export_user_choices(
+    export_data: Dict[str, Any]
+) -> Union[FileResponse, Dict[str, Any]]:
     """Export user choices to JSON."""
     try:
         session_id = export_data.get("session_id")
@@ -215,7 +223,7 @@ async def export_user_choices(export_data: Dict[str, Any]):
 
 
 @api_router.post("/philosophy/import-choices")
-async def import_user_choices(import_data: Dict[str, Any]):
+async def import_user_choices(import_data: Dict[str, Any]) -> Dict[str, Any]:
     """Import user choices from dictionary."""
     try:
         choices = import_data.get("choices", {})
@@ -228,7 +236,9 @@ async def import_user_choices(import_data: Dict[str, Any]):
             )
 
         # Use the new dictionary-accepting method
-        count = user_choice_manager.import_choices_from_dict(choices, session_id)
+        count = user_choice_manager.import_choices_from_dict(
+            choices, session_id
+        )
 
         return {
             "success": True,
@@ -245,7 +255,7 @@ async def import_user_choices(import_data: Dict[str, Any]):
 
 
 @api_router.get("/philosophy/terminology")
-async def get_terminology():
+async def get_terminology() -> Any:
     """Get current terminology database."""
     try:
         # Get terminology from neologism detector
@@ -258,7 +268,9 @@ async def get_terminology():
 
 
 @api_router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):  # noqa: B008
+async def upload_file(
+    file: UploadFile = File(...)
+) -> Dict[str, Any]:  # noqa: B008
     """Enhanced upload endpoint with advanced processing."""
     try:
         # Save file first so validators can inspect header and structure
@@ -295,7 +307,9 @@ async def upload_file(file: UploadFile = File(...)):  # noqa: B008
 
         # Detect language using the utility function
         sample_text = extract_text_sample_for_language_detection(content)
-        detected_lang = language_detector.detect_language_from_text(sample_text)
+        detected_lang = language_detector.detect_language_from_text(
+            sample_text
+        )
 
         # Clean metadata access pattern
         metadata = content.get("metadata")
@@ -342,7 +356,7 @@ async def translate_document(
     file_path: str,
     source_language: str,
     target_language: str,
-):
+) -> Dict[str, Any]:
     """Enhanced translation endpoint."""
     try:
         import uuid
@@ -384,7 +398,7 @@ async def translate_document(
 
 
 @api_router.get("/status/{job_id}")
-async def get_job_status(job_id: str):
+async def get_job_status(job_id: str) -> Dict[str, Any]:
     """Get enhanced job status."""
     if job_id not in translation_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -393,7 +407,7 @@ async def get_job_status(job_id: str):
 
 
 @api_router.get("/download/{job_id}")
-async def download_result(job_id: str):
+async def download_result(job_id: str) -> FileResponse:
     """Download translated file with enhanced metadata."""
     if job_id not in translation_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
