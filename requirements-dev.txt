@@ -1,0 +1,10 @@
+# Development and CI dependencies
+pytest>=8.2
+pytest-asyncio>=0.23
+pytest-timeout>=2.3
+pytest-cov>=4.1
+mypy>=1.10
+ruff>=0.6
+# Optional: richer output
+pytest-xdist>=3.6
+pytest-rerunfailures>=14.0

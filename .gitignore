@@ -46,6 +46,7 @@ pyvenv.cfg
 .coverage
 .coverage.*
 htmlcov/
+coverage/
 .mypy_cache/
 .dmypy.json
 dmypy.json
@@ -192,6 +193,13 @@ tmp/
 static/generated/
 media/
 staticfiles/
+assets/generated/
+checkpoints/
+*.ckpt
+*.ckpt.*
+*.pth
+*.pt
+*.safetensors
 
 # Dolphin OCR Translate specific
 translation_cache/
@@ -233,6 +241,11 @@ _build/
 *.pdf
 *.docx
 *.txt
+!requirements.txt
+!requirements-dev.txt
+# Keep versioned documentation or test fixtures if needed
+!docs/**/*.pdf
+!tests/fixtures/*.pdf
 
 # Context files for CLI code agents
 GEMINI.md
@@ -406,6 +419,7 @@ test_*.db
 test_*.sqlite*
 *_test.db
 *_test.sqlite*
+tests/fixtures/*.tmp
 
 # API keys and configuration (additional patterns)
 config/api_keys.json

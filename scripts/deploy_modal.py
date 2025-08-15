@@ -197,19 +197,21 @@ def deploy_dolphin_service() -> bool:
             print("❌ 'modal' CLI not found. Install Modal CLI or use the SDK.")
             return False
 
-        result = subprocess.run(
-            [modal_bin, "deploy", module_path], capture_output=True, text=True
+        subprocess.run(
+            [modal_bin, "deploy", module_path],
+            check=True,
+            capture_output=True,
+            text=True
         )
-        if result.returncode != 0:
-            print("❌ Modal CLI deploy failed")
-            if result.stdout:
-                print(result.stdout)
-            if result.stderr:
-                print(result.stderr)
-            return False
-
         print("✅ Modal CLI deploy completed")
         return True
+    except subprocess.CalledProcessError as err:
+        print("❌ Modal CLI deploy failed")
+        if err.stdout:
+            print(err.stdout)
+        if err.stderr:
+            print(err.stderr)
+        return False
     except Exception as err:
         print(f"❌ Deployment error: {err}")
         return False
