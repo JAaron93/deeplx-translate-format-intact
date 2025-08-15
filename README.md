@@ -44,7 +44,7 @@ Professional document translation with OCR capabilities and comprehensive format
 
 2. **EnhancedDocumentProcessor** (`services/enhanced_document_processor.py`)
    - PDF-only document processing
-   - PDF validation, rendering and OCR orchestration
+   - PDF validation, rendering, and OCR orchestration
    - Layout-aware reconstruction utilities
    - Preview generation
 
@@ -56,7 +56,7 @@ Professional document translation with OCR capabilities and comprehensive format
 
 ### Processing Pipeline
 
-```
+```text
 Document Upload (PDF only)
     ↓
 PDF Validation & Header Checks
@@ -102,7 +102,7 @@ Download Translated PDF
 ### Core Application
 - `app.py` - Main application with advanced Gradio interface
 - `services/advanced_pdf_processor.py` - Advanced PDF processing engine
-- `services/enhanced_document_processor.py` - Multi-format document handler
+- `services/enhanced_document_processor.py` - PDF-only document handler
 
 ### Translation Services
 - `services/translation_service.py` - Base translation service with Lingo.dev integration
@@ -134,7 +134,7 @@ Download Translated PDF
 
 - **GRADIO_SHARE**
   - **Purpose**: Forces use of a public share URL when localhost isn't reachable (e.g., headless/CI). Stabilizes Gradio UI tests that use `gradio_client`.
-  - **Accepted truthy values**: `"1"`, `"true"`, `"yes"`, `"on"`.
+  - **Accepted truthy values**: `"1"`, `"true"`, `"yes"`, `"on"` (case-insensitive).
   - **When to set**: Headless environments or CI where `http://127.0.0.1` cannot be accessed.
   - **Default**: Off locally; typically On in CI via test helpers.
 
@@ -159,7 +159,7 @@ GRADIO_SCHEMA_PATCH=true GRADIO_SHARE=true pytest -q tests/test_ui_gradio.py
 ### Translation API Configuration
 **Required:**
 - `LINGO_API_KEY`: Your Lingo.dev API key (required for translation functionality)
-- `DOLPHIN_ENDPOINT`: HTTP endpoint for the Dolphin OCR service (Modal/Spaces)
+- `DOLPHIN_ENDPOINT`: HTTP endpoint for the Dolphin OCR service (Modal/Spaces), e.g., `https://your-modal-domain.example/api/dolphin`
 
 ### 🚀 Parallel Translation Settings
 Configure these environment variables to optimize performance for your use case:
@@ -379,15 +379,26 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 - System dependency: Poppler must be installed and discoverable in PATH for `pdf2image`.
   - macOS (Homebrew): `brew install poppler`
   - Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y poppler-utils`
-  - Windows: install Poppler and add `bin` to PATH (see pdf2image docs: https://github.com/Belval/pdf2image#installing-poppler)
 - Processing time may be longer due to high-resolution rendering
 - Layout backups are automatically created for complex documents
 
 ### Fonts
 - For consistent rendering across environments, install common fonts (e.g., DejaVu, Noto).
-- macOS: common fonts are preinstalled; optionally install additional fonts via Homebrew casks.
+- macOS: Common fonts are preinstalled; optionally install additional fonts via Homebrew casks.
+  For example:
+  - `brew tap homebrew/cask-fonts`
+  - `brew search font-noto` (then `brew install --cask <chosen-fonts>`)
 - Ubuntu/Debian: `sudo apt-get install -y fonts-dejavu fonts-liberation fonts-noto`
-- Ensure ReportLab can locate fonts or embed fallbacks (e.g., register fonts explicitly when needed).
+- Ensure ReportLab can locate fonts or embed fallbacks (e.g., register fonts explicitly when needed; see ReportLab font docs).
+
+Optional code snippet to illustrate explicit font registration in ReportLab:
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+pdfmetrics.registerFont(TTFont("DejaVuSans", "/path/to/DejaVuSans.ttf"))
+# Then set font by name "DejaVuSans" in your canvas/Paragraph styles
+
+ReportLab font guide: https://www.reportlab.com/docs/reportlab-userguide.pdf (search for "TrueType fonts").
 
 ### 🚀 Parallel Translation
 - **API Key Required**: Valid Lingo.dev API key is mandatory for translation functionality

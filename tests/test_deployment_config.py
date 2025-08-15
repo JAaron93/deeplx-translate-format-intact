@@ -37,18 +37,18 @@ def test_minimum_dependency_pins_present() -> None:
     import re
 
     def assert_min_pin(package: str) -> None:
-        pattern = re.compile(rf'(?im)^\s*{re.escape(package)}\s*>=\s*[\d.]+')
-        assert pattern.search(req), (
-            f"{package} must be pinned with a minimum version (e.g., '{package}>=X.Y.Z')"
-        )
+        pattern = re.compile(rf"(?im)^\s*{re.escape(package)}\s*>=\s*[\d.]+")
+        assert pattern.search(
+            req
+        ), f"{package} must be pinned with a minimum version (e.g., '{package}>=X.Y.Z')"
 
     for pkg in ("pdf2image", "Pillow", "reportlab"):
         assert_min_pin(pkg)
 
 
 def test_poppler_and_fonts_documented() -> None:
-    text = Path("README.md").read_text(encoding="utf-8")
+    readme = Path("README.md")
+    assert readme.exists(), "README.md must exist for deployment guidance"
+    text = readme.read_text(encoding="utf-8")
     assert "Poppler" in text, "Poppler installation notes must be documented"
     assert "fonts" in text.lower(), "Font installation guidance must be documented"
-
-

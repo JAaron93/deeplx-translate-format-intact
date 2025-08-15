@@ -10,7 +10,9 @@ This script handles:
 import os
 import sys
 
-
+# Optional (non-fatal) environment variables recognized by deployment.
+# DOLPHIN_ENDPOINT can be provided here for convenience during validation,
+# but it is still validated as required in validate_environment_variables.
 # Optional (non-fatal) environment variables recognized by deployment.
 # DOLPHIN_ENDPOINT can be provided here for convenience during validation,
 # but it is still validated as required in validate_environment_variables.
@@ -24,9 +26,7 @@ OPTIONAL_ENV_VARS = [
     "TRANSLATION_REQUEST_TIMEOUT",
     "GRADIO_SHARE",
     "GRADIO_SCHEMA_PATCH",
-    "DOLPHIN_ENDPOINT",  # also checked as required; listed for reporting
 ]
-
 
 def validate_environment_variables():
     """Validate environment variables and return validation results.
@@ -42,7 +42,7 @@ def validate_environment_variables():
         "DOLPHIN_ENDPOINT",
     ]
 
-    optional_vars = OPTIONAL_ENV_VARS
+    optional_vars = [v for v in OPTIONAL_ENV_VARS if v not in required_vars]
 
     missing_required = []
     empty_required = []
@@ -153,7 +153,9 @@ def prepare_modal_secrets():
         placeholder = "'<your-" + key.lower().replace("_", "-") + ">'"
         secret_cmd += f" {key}={placeholder}"
     print(f"   {secret_cmd}")
-    print("   Note: quote your values or export them as env vars to avoid shell interpretation issues.")
+    print(
+        "   Note: quote your values or export them as env vars to avoid shell interpretation issues."
+    )
 
     return True
 
@@ -204,7 +206,7 @@ def main():
     print("\n✅ Deployment preparation complete!")
     print("\nNext steps:")
     print("1. Create the Modal secret:")
-    print("   modal secret create translation-api LINGO_API_KEY=your-key")
+    print("   modal secret create translation-api LINGO_API_KEY=\"your-key\"")
     if os.getenv("HF_TOKEN"):
         print("   (HF_TOKEN will be included automatically)")
 
