@@ -397,7 +397,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 pdfmetrics.registerFont(TTFont("DejaVuSans", "/path/to/DejaVuSans.ttf"))
-# Then set font by name "DejaVuSans" in your canvas/Paragraph styles
+canvas_obj.setFont("DejaVuSans", 12)
+style = ParagraphStyle("Body", fontName="DejaVuSans", fontSize=12)
 ```
 
 ReportLab font guide: https://www.reportlab.com/docs/reportlab-userguide.pdf (search for "TrueType fonts").

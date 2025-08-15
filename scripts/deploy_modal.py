@@ -128,8 +128,21 @@ def check_environment_variables():
     )
 
 
-def prepare_modal_secrets():
-    """Prepare Modal secret creation commands for the application."""
+def build_secret_command(env_data: dict[str, str | None]) -> str:
+    """Build a quoted Modal secret creation command from provided env data."""
+    secret_cmd = "modal secret create translation-api"
+    for key in env_data:
+        placeholder = "'<your-" + key.lower().replace("_", "-") + ">'"
+        secret_cmd += f" {key}={placeholder}"
+    return secret_cmd
+
+
+def prepare_modal_secrets() -> str:
+    """Prepare Modal secret creation commands for the application.
+
+    Returns:
+        str: The constructed secret creation command with quoted placeholders.
+    """
     print("🔐 Creating Modal secrets...")
 
     # Create translation API secret
@@ -144,29 +157,60 @@ def prepare_modal_secrets():
     # Create the secret using Modal CLI (this would need to be run separately)
     print("📝 Translation API secret data prepared")
     print("   Run this command to create the secret:")
-    secret_cmd = "modal secret create translation-api"
-    for key in translation_secret_data:
-        # Quote placeholders to avoid shell interpretation issues when users
-        # substitute values containing special characters.
-        placeholder = "'<your-" + key.lower().replace("_", "-") + ">'"
-        secret_cmd += f" {key}={placeholder}"
+    secret_cmd = build_secret_command(translation_secret_data)
     print(f"   {secret_cmd}")
     print(
         "   Note: quote your values or export them as env vars to avoid shell interpretation issues."
     )
+    return secret_cmd
 
-    return True
 
+def deploy_dolphin_service() -> bool:
+    """Deploy the Dolphin OCR service via Modal SDK or CLI.
 
-def deploy_dolphin_service():
-    """Prepare Dolphin OCR service deployment instructions (stub implementation)."""
+    Attempts SDK deployment first; falls back to the `modal` CLI.
+    Returns True on success, False on failure.
+    """
     print("🚀 Deploying Dolphin OCR service...")
 
-    # TODO: Implement actual deployment logic
-    print("📦 Dolphin service deployment preparation")
-    print("   To deploy, run: modal deploy services/dolphin_modal_service.py")
+    module_path = "services/dolphin_modal_service.py"
 
-    return True
+    # Try Modal SDK
+    try:
+        import modal  # type: ignore
+
+        deploy_fn = getattr(modal, "deploy", None)
+        if callable(deploy_fn):
+            deploy_fn(module_path)
+            print("✅ Modal deploy completed via SDK")
+            return True
+    except Exception as err:
+        print(f"ℹ️  Modal SDK deploy unavailable or failed: {err}")
+
+    # Fallback to Modal CLI
+    try:
+        import shutil
+        import subprocess
+
+        modal_bin = shutil.which("modal")
+        if not modal_bin:
+            print("❌ 'modal' CLI not found. Install Modal CLI or use the SDK.")
+            return False
+
+        result = subprocess.run([modal_bin, "deploy", module_path], capture_output=True, text=True)
+        if result.returncode != 0:
+            print("❌ Modal CLI deploy failed")
+            if result.stdout:
+                print(result.stdout)
+            if result.stderr:
+                print(result.stderr)
+            return False
+
+        print("✅ Modal CLI deploy completed")
+        return True
+    except Exception as err:
+        print(f"❌ Deployment error: {err}")
+        return False
 
 
 def deploy_main_application():
@@ -190,8 +234,7 @@ def main():
         sys.exit(1)
 
     # Step 2: Create Modal secrets
-    if not create_modal_secrets():
-        sys.exit(1)
+    secret_cmd = prepare_modal_secrets()
 
     # Step 3: Deploy Dolphin service
     if not deploy_dolphin_service():
@@ -204,7 +247,7 @@ def main():
     print("\n✅ Deployment preparation complete!")
     print("\nNext steps:")
     print("1. Create the Modal secret:")
-    print('   modal secret create translation-api LINGO_API_KEY="your-key"')
+    print(f"   {secret_cmd}")
     if os.getenv("HF_TOKEN"):
         print("   (HF_TOKEN will be included automatically)")
 

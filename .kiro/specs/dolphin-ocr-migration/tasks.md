@@ -183,7 +183,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Add basic smoke tests to catch obvious failures during development
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-- [-] 11. Complete PyMuPDF removal and dependency cleanup
+- [x] 11. Complete PyMuPDF removal and dependency cleanup
   - [x] 11.1 Remove PyMuPDF dependencies and legacy code
     - Remove all PyMuPDF (fitz) imports and dependencies from codebase
     - Delete services/advanced_pdf_processor.py and other PyMuPDF-based services
@@ -191,7 +191,7 @@ Convert the Dolphin OCR migration design into a series of prompts for a code-gen
     - Create migration validation tests ensuring no PyMuPDF code remains
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-  - [-] 11.2 Update documentation and deployment configuration
+  - [x] 11.2 Update documentation and deployment configuration
     - Update README.md and documentation to reflect new Dolphin OCR PDF-only capabilities
     - Modify deployment scripts and environment configuration for new dependencies
     - Add environment variable documentation for all new configuration options
