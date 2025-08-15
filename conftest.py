@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import os
+from _pytest.config import Config  # type: ignore
 
-pytest_plugins = ["pytest_asyncio"]
+pytest_plugins: list[str] = ["pytest_asyncio"]
 
 
-def pytest_configure(config):
+def pytest_configure(config: Config) -> None:
     """Set required environment variables for tests early in startup.
 
     This runs before test collection, ensuring modules that read environment

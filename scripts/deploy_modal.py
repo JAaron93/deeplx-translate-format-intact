@@ -201,7 +201,7 @@ def deploy_dolphin_service() -> bool:
             [modal_bin, "deploy", module_path],
             check=True,
             capture_output=True,
-            text=True
+            text=True,
         )
         print("✅ Modal CLI deploy completed")
         return True

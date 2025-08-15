@@ -16,10 +16,11 @@ from api.routes import api_router, app_router
 
 # Import refactored components
 from ui.gradio_interface import create_gradio_interface
+import typing
 
 # Ensure required directories exist BEFORE configuring logging so file handlers
 # don't fail due to missing paths.
-_REQUIRED_DIRECTORIES = [
+_REQUIRED_DIRECTORIES: list[str] = [
     "static",
     "uploads",
     "downloads",
@@ -30,7 +31,7 @@ _REQUIRED_DIRECTORIES = [
 
 
 def _ensure_required_dirs() -> list[str]:
-    """Create required directories if missing and return list of created ones."""
+    """Create required directories if missing and return created list."""
     created: list[str] = []
     for directory in _REQUIRED_DIRECTORIES:
         if not os.path.isdir(directory):
@@ -40,7 +41,7 @@ def _ensure_required_dirs() -> list[str]:
 
 
 # Create directories early
-_created_early = _ensure_required_dirs()
+_created_early: list[str] = _ensure_required_dirs()
 
 # Configure logging (logs/ exists now)
 logging.basicConfig(
@@ -54,7 +55,7 @@ logger = logging.getLogger(__name__)
 if _created_early:
     for _d in _created_early:
         logger.info("Created directory: %s", _d)
-    logger.info("All required directories verified/created before logging setup")
+    logger.info("All required directories verified/created before logging")
 
 # FastAPI app
 app = FastAPI(
@@ -83,8 +84,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.on_event("startup")
-async def startup_event():
-    """Verify required directories exist on startup (create only if missing)."""
+async def startup_event() -> None:
+    """Verify required directories exist on startup (create if missing)."""
     created = []
     for directory in _REQUIRED_DIRECTORIES:
         if not os.path.isdir(directory):
@@ -107,7 +108,7 @@ def main() -> None:
     app_with_gradio = gr.mount_gradio_app(app, gradio_app, path="/ui")
 
     # Start server with Uvicorn
-    # Note: Default to localhost for security, use environment variable to override
+    # Note: Default to localhost; override via HOST and PORT env vars
     host = os.getenv("HOST", "127.0.0.1")
     port = int(os.getenv("PORT", "8000"))
     uvicorn.run(app_with_gradio, host=host, port=port, log_level="info")
