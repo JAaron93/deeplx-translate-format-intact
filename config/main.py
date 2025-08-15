@@ -1,5 +1,6 @@
 """Configuration settings for Dolphin OCR Translate with enhanced image handling
-and parallel processing."""
+and parallel processing.
+"""
 
 import json
 import logging
@@ -98,14 +99,10 @@ class Config:
         with _TERMINOLOGY_FILE.open("r", encoding="utf-8") as f:
             KLAGES_TERMINOLOGY: dict[str, str] = json.load(f)
     except FileNotFoundError:
-        logger.warning(
-            f"Klages terminology file not found: {_TERMINOLOGY_FILE}"
-        )
+        logger.warning(f"Klages terminology file not found: {_TERMINOLOGY_FILE}")
         KLAGES_TERMINOLOGY: dict[str, str] = {}
     except json.JSONDecodeError as e:
-        logger.error(
-            f"Error parsing Klages terminology JSON: {e}"
-        )
+        logger.error(f"Error parsing Klages terminology JSON: {e}")
         KLAGES_TERMINOLOGY: dict[str, str] = {}
 
     # PDF processing settings
@@ -114,11 +111,11 @@ class Config:
         MEMORY_THRESHOLD_MB: int = max(
             100, int(os.getenv("MEMORY_THRESHOLD_MB", "500"))
         )  # MB, min 100
-        TRANSLATION_DELAY: float = max(0.0, float(os.getenv("TRANSLATION_DELAY", "0.1")))
-    except ValueError as e:
-        logger.error(
-            f"Invalid configuration value: {e}"
+        TRANSLATION_DELAY: float = max(
+            0.0, float(os.getenv("TRANSLATION_DELAY", "0.1"))
         )
+    except ValueError as e:
+        logger.error(f"Invalid configuration value: {e}")
         # Set default values if parsing fails
         PDF_DPI: int = 300
         MEMORY_THRESHOLD_MB: int = 500
@@ -134,8 +131,12 @@ class Config:
         MAX_REQUESTS_PER_SECOND: float = max(
             0.1, float(os.getenv("MAX_REQUESTS_PER_SECOND", "5.0"))
         )
-        TRANSLATION_BATCH_SIZE: int = max(1, int(os.getenv("TRANSLATION_BATCH_SIZE", "50")))
-        TRANSLATION_MAX_RETRIES: int = max(0, int(os.getenv("TRANSLATION_MAX_RETRIES", "3")))
+        TRANSLATION_BATCH_SIZE: int = max(
+            1, int(os.getenv("TRANSLATION_BATCH_SIZE", "50"))
+        )
+        TRANSLATION_MAX_RETRIES: int = max(
+            0, int(os.getenv("TRANSLATION_MAX_RETRIES", "3"))
+        )
         TRANSLATION_REQUEST_TIMEOUT: float = max(
             1.0, float(os.getenv("TRANSLATION_REQUEST_TIMEOUT", "30.0"))
         )
@@ -143,9 +144,7 @@ class Config:
             1, int(os.getenv("PARALLEL_PROCESSING_THRESHOLD", "5"))
         )
     except ValueError as e:
-        logger.error(
-            f"Invalid parallel processing configuration value: {e}"
-        )
+        logger.error(f"Invalid parallel processing configuration value: {e}")
         # Set default values if parsing fails
         MAX_CONCURRENT_REQUESTS: int = 10
         MAX_REQUESTS_PER_SECOND: float = 5.0
@@ -184,9 +183,7 @@ class Config:
                 logger.error(f"{dir_name} is required but not configured")
                 validation_passed = False
             elif not isinstance(dir_path, str):
-                logger.error(
-                    f"{dir_name} must be a string, got {type(dir_path)}"
-                )
+                logger.error(f"{dir_name} must be a string, got {type(dir_path)}")
                 validation_passed = False
             else:
                 # Try to create directory if it doesn't exist
@@ -222,9 +219,7 @@ class Config:
             error_msg,
         ) in numeric_validations.items():
             if not isinstance(value, (int, float)):
-                logger.error(
-                    f"{setting_name} must be numeric, got {type(value)}"
-                )
+                logger.error(f"{setting_name} must be numeric, got {type(value)}")
                 validation_passed = False
             elif not (min_val <= value <= max_val):
                 logger.error(
@@ -238,10 +233,10 @@ class Config:
             validation_passed = False
         elif len(cls.SOURCE_LANGUAGE) != 2:
             logger.error(
-                (
+
                     f"SOURCE_LANGUAGE must be a 2-letter code, "
                     f"got: {cls.SOURCE_LANGUAGE}"
-                )
+
             )
             validation_passed = False
 

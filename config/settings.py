@@ -213,9 +213,7 @@ def _parse_bool_env(env_var: str, default: str = "false") -> bool:
             )
             raise ValueError(f"Invalid boolean value for {env_var}: {value}")
     except AttributeError as e:
-        logger.error(
-            f"Error parsing boolean environment variable {env_var}: {e}"
-        )
+        logger.error(f"Error parsing boolean environment variable {env_var}: {e}")
         raise ValueError(f"Error parsing {env_var}: {e}") from e
 
 
@@ -386,8 +384,7 @@ class Settings:
 
         if self.PDF_DPI < 72 or self.PDF_DPI > 600:
             logger.error(
-                f"Invalid PDF_DPI: {self.PDF_DPI}. "
-                "Recommended range: 72-600"
+                f"Invalid PDF_DPI: {self.PDF_DPI}. " "Recommended range: 72-600"
             )
             valid = False
 
@@ -451,7 +448,5 @@ class Settings:
             return True
 
         except (OSError, PermissionError) as e:
-            logger.error(
-                f"Directory writability check failed for '{directory}': {e}"
-            )
+            logger.error(f"Directory writability check failed for '{directory}': {e}")
             return False

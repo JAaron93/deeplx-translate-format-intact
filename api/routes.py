@@ -176,8 +176,7 @@ async def get_philosophy_progress() -> Dict[str, Any]:
                 [
                     choice
                     for choice in state.user_choices
-                    if isinstance(choice, dict)
-                    and choice.get("processed", False)
+                    if isinstance(choice, dict) and choice.get("processed", False)
                 ]
             )
         return {
@@ -236,9 +235,7 @@ async def import_user_choices(import_data: Dict[str, Any]) -> Dict[str, Any]:
             )
 
         # Use the new dictionary-accepting method
-        count = user_choice_manager.import_choices_from_dict(
-            choices, session_id
-        )
+        count = user_choice_manager.import_choices_from_dict(choices, session_id)
 
         return {
             "success": True,
@@ -268,9 +265,7 @@ async def get_terminology() -> Any:
 
 
 @api_router.post("/upload")
-async def upload_file(
-    file: UploadFile = File(...)
-) -> Dict[str, Any]:  # noqa: B008
+async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: B008
     """Enhanced upload endpoint with advanced processing."""
     try:
         # Save file first so validators can inspect header and structure
@@ -307,9 +302,7 @@ async def upload_file(
 
         # Detect language using the utility function
         sample_text = extract_text_sample_for_language_detection(content)
-        detected_lang = language_detector.detect_language_from_text(
-            sample_text
-        )
+        detected_lang = language_detector.detect_language_from_text(sample_text)
 
         # Clean metadata access pattern
         metadata = content.get("metadata")
