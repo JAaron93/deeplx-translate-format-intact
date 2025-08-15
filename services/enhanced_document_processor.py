@@ -144,7 +144,11 @@ class EnhancedDocumentProcessor:
         images = self.pdf_converter.convert_pdf_to_images(pdf_path)
         try:
             dolphin_layout = self.ocr.process_document_images(images)
-        except (OSError, RuntimeError, ValueError) as e:  # Keep extraction resilient to OCR failures
+        except (
+            OSError,
+            RuntimeError,
+            ValueError,
+        ) as e:  # Keep extraction resilient to OCR failures
             logger.error("OCR processing failed for %s: %s", pdf_path, e, exc_info=True)
             # Graceful degradation: continue with empty layout
             dolphin_layout = {"pages": []}

@@ -418,6 +418,7 @@ async def _translate_page_texts_concurrently(
                 len(text or ""),
             )
             return idx, text
+
     tasks = [_translate_one(i, t) for i, t in enumerate(page_texts)]
     try:
         results = await asyncio.gather(*tasks)

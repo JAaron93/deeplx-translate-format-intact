@@ -420,9 +420,6 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 | 1000 pages    | ~500 seconds   | ~60 seconds   | 8.3x faster |
 | 2000 pages    | ~1000 seconds  | ~120 seconds  | 8.3x faster |
 
-
- 
-
 ### 🧪 Testing Methodology & Benchmark Context
 
 #### Test Environment
