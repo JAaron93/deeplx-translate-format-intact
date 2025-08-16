@@ -168,9 +168,7 @@ async def get_philosophy_progress() -> Dict[str, Any]:
     """Get current philosophy processing progress."""
     try:
         total_neologisms = 0
-        if state.neologism_analysis and isinstance(
-            state.neologism_analysis, dict
-        ):
+        if state.neologism_analysis and isinstance(state.neologism_analysis, dict):
             detected = state.neologism_analysis.get("detected_neologisms", [])
             if isinstance(detected, list):
                 total_neologisms = len(detected)

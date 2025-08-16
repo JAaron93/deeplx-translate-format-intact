@@ -285,6 +285,8 @@ claude_context.md
 .continue/
 .codeium/
 .specstory/
+copilot-instructions.md
+byterover-rules.md
 
 # Jupyter Notebook
 .ipynb_checkpoints
