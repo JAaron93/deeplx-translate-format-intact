@@ -128,7 +128,6 @@ $RECYCLE.BIN/
 *.save
 *.autosave
 *.old
-*~
 \#*\#
 .\#*
 *.~*
@@ -334,14 +333,8 @@ Package Control.merged-ca-bundle
 *.mo
 *.pot
 
-# Scrapy
-.scrapy
-
 # pyenv
 .python-version
-
-# pipenv
-Pipfile.lock
 
 # poetry
 poetry.lock
@@ -351,8 +344,7 @@ poetry.lock
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports (partially consolidated above)
-# TODO: ensure no duplicate patterns remain in future edits
+# Unit test / coverage reports (consolidated here)
 
 # PyBuilder
 .pybuilder/
@@ -376,13 +368,6 @@ __pypackages__/
 # Development and benchmarking
 .benchmarks/
 .ruff_cache/
-
-# Pre-commit backups
-*.backup
-.pre-commit-config.yaml.backup
-
-# Layout backups
-.layout_backups/
 
 # Performance profiling
 *.prof

@@ -452,5 +452,7 @@ class Settings:
             logger.error("Directory not writable: '%s'", directory)
             # Emit traceback only in debug mode for diagnostics
             if logger.isEnabledFor(logging.DEBUG):
-                logger.debug("Directory check error for '%s': %s", directory, err, exc_info=True)
+                logger.debug(
+                    "Directory check error for '%s': %s", directory, err, exc_info=True
+                )
             return False

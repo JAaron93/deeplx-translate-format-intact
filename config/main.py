@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Mapping, TypeVar, Union
+from typing import Callable, Mapping, TypeVar
 
 try:
     from dotenv import load_dotenv
@@ -29,48 +29,64 @@ def _parse_env(
     var_name: str,
     default_value: T,
     coerce: Callable[[str], T],
-    min_value: T | None = None
+    min_value: T | None = None,
 ) -> T:
     """Parse an environment variable with a coerce function and optional
-    minimum clamp."""
+    minimum clamp.
+    """
     raw_value = os.getenv(var_name)
     if raw_value is None:
-        if min_value is None:
-            return default_value
-        else:
-            return coerce(max(min_value, default_value)) if isinstance(min_value, (int, float)) and isinstance(default_value, (int, float)) else default_value
+        return (
+            max(min_value, default_value) 
+            if min_value is not None 
+            else default_value
+        )
+    
     try:
         parsed_value = coerce(raw_value)
-    except (ValueError, TypeError) as exc:
+    except (ValueError, TypeError):
         logger.error(
-            "Invalid %s: %s; default %s",
-            var_name,
-            exc,
-            default_value
+            "Invalid %s=%r; falling back to default %s", 
+            var_name, raw_value, default_value
         )
-        if min_value is None:
-            return default_value
-        else:
-            # For numeric types, we can compare them
-            if isinstance(default_value, (int, float)) and isinstance(min_value, (int, float)):
-                return coerce(max(min_value, default_value))
-            return default_value
+        return (
+            max(min_value, default_value) 
+            if min_value is not None 
+            else default_value
+        )
+    
     if min_value is not None:
-        parsed_value = max(min_value, parsed_value) if isinstance(min_value, (int, float)) and isinstance(parsed_value, (int, float)) else parsed_value
+        parsed_value = max(min_value, parsed_value)
     return parsed_value
 
+
 def _parse_bool_env(var_name: str, default_value: bool) -> bool:
-    """Parse a boolean environment variable with consistent truthy handling."""
+    """Parse a boolean environment variable with explicit truthy/falsy handling.
+    
+    Returns True only for explicit truthy values, False only for explicit
+    falsy values, and the default_value for any unrecognized values
+    (including None).
+    """
     raw_value = os.getenv(var_name)
     if raw_value is None:
         return default_value
+    
     # Normalize the value to lowercase and strip whitespace
     normalized_value = raw_value.lower().strip()
-    # Return True for recognized truthy values
-    if normalized_value in {"1", "true", "yes", "on"}:
+    
+    # Define explicit truthy and falsy value sets
+    TRUTHY = {"1", "true", "yes", "on"}
+    FALSY = {"0", "false", "no", "off"}
+    
+    # Return True only for explicit truthy values
+    if normalized_value in TRUTHY:
         return True
-    # Return False for all other values (including falsy ones and invalid ones)
-    return False
+    # Return False only for explicit falsy values
+    elif normalized_value in FALSY:
+        return False
+    # Return default_value for any unrecognized values
+    else:
+        return default_value
 
 
 class Config:
@@ -193,18 +209,12 @@ class Config:
 
     # Parallel processing settings
     # Parallel processing settings - parse independently as well
-    MAX_CONCURRENT_REQUESTS: int = _parse_env(
-        "MAX_CONCURRENT_REQUESTS", 10, int, 1
-    )
+    MAX_CONCURRENT_REQUESTS: int = _parse_env("MAX_CONCURRENT_REQUESTS", 10, int, 1)
     MAX_REQUESTS_PER_SECOND: float = _parse_env(
         "MAX_REQUESTS_PER_SECOND", 5.0, float, 0.1
     )
-    TRANSLATION_BATCH_SIZE: int = _parse_env(
-        "TRANSLATION_BATCH_SIZE", 50, int, 1
-    )
-    TRANSLATION_MAX_RETRIES: int = _parse_env(
-        "TRANSLATION_MAX_RETRIES", 3, int, 0
-    )
+    TRANSLATION_BATCH_SIZE: int = _parse_env("TRANSLATION_BATCH_SIZE", 50, int, 1)
+    TRANSLATION_MAX_RETRIES: int = _parse_env("TRANSLATION_MAX_RETRIES", 3, int, 0)
     TRANSLATION_REQUEST_TIMEOUT: float = _parse_env(
         "TRANSLATION_REQUEST_TIMEOUT", 30.0, float, 1.0
     )
@@ -272,6 +282,42 @@ class Config:
                 10.0,
                 "Translation delay must be between 0 and 10 seconds",
             ),
+            "MAX_CONCURRENT_REQUESTS": (
+                cls.MAX_CONCURRENT_REQUESTS,
+                1,
+                100,
+                "Max concurrent requests must be between 1 and 100",
+            ),
+            "MAX_REQUESTS_PER_SECOND": (
+                cls.MAX_REQUESTS_PER_SECOND,
+                0.1,
+                100.0,
+                "Max requests per second must be between 0.1 and 100.0",
+            ),
+            "TRANSLATION_BATCH_SIZE": (
+                cls.TRANSLATION_BATCH_SIZE,
+                1,
+                1000,
+                "Translation batch size must be between 1 and 1000",
+            ),
+            "TRANSLATION_MAX_RETRIES": (
+                cls.TRANSLATION_MAX_RETRIES,
+                0,
+                10,
+                "Translation max retries must be between 0 and 10",
+            ),
+            "TRANSLATION_REQUEST_TIMEOUT": (
+                cls.TRANSLATION_REQUEST_TIMEOUT,
+                1.0,
+                300.0,
+                "Translation request timeout must be between 1.0 and 300.0 seconds",
+            ),
+            "PARALLEL_PROCESSING_THRESHOLD": (
+                cls.PARALLEL_PROCESSING_THRESHOLD,
+                1,
+                100,
+                "Parallel processing threshold must be between 1 and 100",
+            ),
         }
 
         for setting_name, (
@@ -317,13 +363,13 @@ class Config:
             validation_passed = False
 
         # Validate terminology dictionary
-        if not isinstance(cls.KLAGES_TERMINOLOGY, dict):
+        # KLAGES_TERMINOLOGY is intentionally immutable via MappingProxyType
+        if not isinstance(cls.KLAGES_TERMINOLOGY, Mapping):
             logger.error(
-                f"KLAGES_TERMINOLOGY must be a dictionary, "
+                f"KLAGES_TERMINOLOGY must be a mapping, "
                 f"got {type(cls.KLAGES_TERMINOLOGY)}"
             )
             validation_passed = False
-
         # Log validation result
         if validation_passed:
             logger.info("Configuration validation passed successfully")

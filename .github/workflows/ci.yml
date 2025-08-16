@@ -25,9 +25,6 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
-          # Install poppler for pdf2image on ubuntu
-          sudo apt-get update
-          sudo apt-get install -y poppler-utils
 
       - name: Ruff (lint)
         run: |

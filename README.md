@@ -356,7 +356,7 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 
 ### Compatibility notes
 - Supported Python: 3.8–3.12 (3.11/3.12 recommended). Python 3.13 support pending due to Pillow 10 wheels.
-- Required: `pypdf` for PDF parsing, page counting, and metadata extraction
+- Required: `pypdf` for PDF parsing, page counting, and document metadata (Info/XMP) extraction
 - Plugins depending on `fitz` must be removed or rewritten
 - Rollback: check out a pre-migration tag that still uses PyMuPDF/fitz; note that tests and routes will differ
 
@@ -407,10 +407,16 @@ Note: The snippet uses placeholders (e.g., /path/to/DejaVuSans.ttf, canvas_obj).
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.styles import ParagraphStyle
+from reportlab.platypus import Paragraph
 
 pdfmetrics.registerFont(TTFont("DejaVuSans", "/path/to/DejaVuSans.ttf"))
 canvas_obj.setFont("DejaVuSans", 12)
 style = ParagraphStyle("Body", fontName="DejaVuSans", fontSize=12)
+# Draw a simple paragraph using the defined style on an existing canvas
+para = Paragraph("Sample body text rendered with DejaVuSans.", style)
+avail_width, avail_height = 500, 800  # adjust to your layout
+para.wrapOn(canvas_obj, avail_width, avail_height)
+para.drawOn(canvas_obj, x=72, y=720)  # adjust position as needed
 ```
 
 ReportLab font guide: https://www.reportlab.com/docs/reportlab-userguide.pdf (search for "TrueType fonts").

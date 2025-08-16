@@ -97,8 +97,6 @@ async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
         session_id = choice_data.get("session_id")
 
         # Create a simple neologism representation
-        # Create a simple neologism representation
-        # Create a simple neologism representation
         neologism = DetectedNeologism(
             term=term,
             confidence=0.8,
@@ -139,6 +137,10 @@ async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
             "message": "Choice saved successfully",
         }
 
+    except HTTPException as he:
+        # Preserve client-facing HTTP errors (e.g., 400 validation)
+        logger.warning("HTTP error saving user choice: %s", getattr(he, "detail", he))
+        raise he
     except Exception as e:
         logger.error("Error saving user choice: %s", e)
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -307,7 +309,9 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
         content = document_processor.extract_content(file_path)
 
         # Detect language using the utility function
-        sample_text = (extract_text_sample_for_language_detection(content) or "").strip()
+        sample_text = (
+            extract_text_sample_for_language_detection(content) or ""
+        ).strip()
         detected_lang = (
             language_detector.detect_language_from_text(sample_text)
             if sample_text
@@ -326,11 +330,13 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
         else:
             metadata_dict = None
 
+        # Do not expose server filesystem paths. Use a safe identifier (basename) instead.
+        upload_id = Path(file_path).name
         return {
             "message": "File processed with advanced extraction",
             "filename": file.filename,
             "detected_language": detected_lang or "unknown",
-            "file_path": file_path,
+            "upload_id": upload_id,
             "content_type": content["type"],
             "metadata": metadata_dict,
         }
