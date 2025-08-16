@@ -287,6 +287,9 @@ claude_context.md
 .specstory/
 copilot-instructions.md
 byterover-rules.md
+.windsurf
+.cursorindexingignore
+WARP.md
 
 # Jupyter Notebook
 .ipynb_checkpoints
