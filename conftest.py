@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 pytest_plugins: list[str] = ["pytest_asyncio"]
 
 
-def pytest_configure(config: "pytest_api.Config") -> None:
+def pytest_configure(config: pytest_api.Config) -> None:
     """Set required environment variables for tests early in startup.
 
     This runs before test collection, ensuring modules that read environment

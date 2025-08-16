@@ -36,25 +36,19 @@ def _parse_env(
     """
     raw_value = os.getenv(var_name)
     if raw_value is None:
-        return (
-            max(min_value, default_value) 
-            if min_value is not None 
-            else default_value
-        )
-    
+        return max(min_value, default_value) if min_value is not None else default_value
+
     try:
         parsed_value = coerce(raw_value)
     except (ValueError, TypeError):
         logger.error(
-            "Invalid %s=%r; falling back to default %s", 
-            var_name, raw_value, default_value
+            "Invalid %s=%r; falling back to default %s",
+            var_name,
+            raw_value,
+            default_value,
         )
-        return (
-            max(min_value, default_value) 
-            if min_value is not None 
-            else default_value
-        )
-    
+        return max(min_value, default_value) if min_value is not None else default_value
+
     if min_value is not None:
         parsed_value = max(min_value, parsed_value)
     return parsed_value
@@ -62,7 +56,7 @@ def _parse_env(
 
 def _parse_bool_env(var_name: str, default_value: bool) -> bool:
     """Parse a boolean environment variable with explicit truthy/falsy handling.
-    
+
     Returns True only for explicit truthy values, False only for explicit
     falsy values, and the default_value for any unrecognized values
     (including None).
@@ -70,14 +64,14 @@ def _parse_bool_env(var_name: str, default_value: bool) -> bool:
     raw_value = os.getenv(var_name)
     if raw_value is None:
         return default_value
-    
+
     # Normalize the value to lowercase and strip whitespace
     normalized_value = raw_value.lower().strip()
-    
+
     # Define explicit truthy and falsy value sets
     TRUTHY = {"1", "true", "yes", "on"}
     FALSY = {"0", "false", "no", "off"}
-    
+
     # Return True only for explicit truthy values
     if normalized_value in TRUTHY:
         return True
