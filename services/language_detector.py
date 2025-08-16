@@ -12,20 +12,20 @@ from __future__ import annotations
 import importlib
 import logging
 from pathlib import Path
-from typing import TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
 
 # Optional dependency detection without importing at module import time
 LANGDETECT_AVAILABLE: bool = importlib.util.find_spec("langdetect") is not None
 
 # Removed legacy PDF engine dependency as part of Dolphin OCR migration
-FITZ_AVAILABLE = False
+FITZ_AVAILABLE: bool = False
 
-DOCX_AVAILABLE = False
+DOCX_AVAILABLE: bool = False
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
-LANGUAGE_MAP: dict[str, str] = {
+LANGUAGE_MAP: Dict[str, str] = {
     "en": "English",
     "es": "Spanish",
     "fr": "French",
@@ -54,13 +54,13 @@ class LanguagePattern(TypedDict):
         char_weight: Weight applied to character matches in scoring.
     """
 
-    words: list[str]
-    chars: list[str]
+    words: List[str]
+    chars: List[str]
     word_weight: float
     char_weight: float
 
 
-LANGUAGE_PATTERNS: dict[str, LanguagePattern] = {
+LANGUAGE_PATTERNS: Dict[str, LanguagePattern] = {
     "German": {
         "words": [
             "der",
@@ -137,12 +137,12 @@ class LanguageDetector:
 
     def __init__(self) -> None:
         """Initialize detector with module-level language mappings."""
-        self.language_map = LANGUAGE_MAP
+        self.language_map: Dict[str, str] = LANGUAGE_MAP
         # Caches for optional langdetect dependency
-        self._langdetect_initialized = False
-        self._langdetect_mod = None
-        self._langdetect_exception = None
-        self._detect_func = None
+        self._langdetect_initialized: bool = False
+        self._langdetect_mod: Optional[Any] = None
+        self._langdetect_exception: Optional[Any] = None
+        self._detect_func: Optional[Any] = None
 
     def _ensure_langdetect(self) -> None:
         """Lazily import and cache langdetect modules/functions.
@@ -156,11 +156,11 @@ class LanguageDetector:
         if not LANGDETECT_AVAILABLE:
             return
         try:
-            mod = importlib.import_module("langdetect")
-            exc_mod = importlib.import_module("langdetect.lang_detect_exception")
-            fallback_exc = type("FallbackLangDetectException", (RuntimeError,), {})
-            exc = getattr(exc_mod, "LangDetectException", fallback_exc)
-            detect_func = getattr(mod, "detect", None)
+            mod: Any = importlib.import_module("langdetect")
+            exc_mod: Any = importlib.import_module("langdetect.lang_detect_exception")
+            fallback_exc: type = type("FallbackLangDetectException", (RuntimeError,), {})
+            exc: Any = getattr(exc_mod, "LangDetectException", fallback_exc)
+            detect_func: Optional[Any] = getattr(mod, "detect", None)
             self._langdetect_mod = mod
             self._langdetect_exception = exc
             self._detect_func = detect_func
@@ -191,19 +191,19 @@ class LanguageDetector:
             rather than propagating to the caller.
         """
         # Extract sample text from document
-        sample_text = self._extract_sample_text(file_path)
+        sample_text: str = self._extract_sample_text(file_path)
 
         if not sample_text or len(sample_text.strip()) < 50:
             return "Unknown"
 
         if LANGDETECT_AVAILABLE:
             self._ensure_langdetect()
-            detect_func = self._detect_func
-            lang_exc = self._langdetect_exception
+            detect_func: Optional[Any] = self._detect_func
+            lang_exc: Optional[Any] = self._langdetect_exception
             if detect_func is None or lang_exc is None:
                 return self._simple_language_detection(sample_text)
             try:
-                detected_code = detect_func(sample_text)
+                detected_code: str = detect_func(sample_text)
             except (lang_exc, ValueError) as e:  # type: ignore[misc]
                 logger.warning("Language detection error: %s", e)
                 return "Unknown"
@@ -227,7 +227,7 @@ class LanguageDetector:
             an error occurs during text extraction
         """
         try:
-            file_ext = Path(file_path).suffix.lower()
+            file_ext: str = Path(file_path).suffix.lower()
 
             if file_ext == ".pdf":
                 # OCR-first pipeline: PDF text must be pre-extracted upstream
@@ -262,37 +262,37 @@ class LanguageDetector:
             return "Unknown"
 
         text = text.lower()
-        words = text.split()
-        word_count = len(words)
+        words: List[str] = text.split()
+        word_count: int = len(words)
 
         if word_count == 0:
             return "Unknown"
 
         # Use precomputed language patterns defined at module scope
-        language_patterns = LANGUAGE_PATTERNS
+        language_patterns: Dict[str, LanguagePattern] = LANGUAGE_PATTERNS
 
         # Calculate normalized scores
-        scores: dict[str, float] = {}
+        scores: Dict[str, float] = {}
         for lang, patterns in language_patterns.items():
             # Count matching words and characters
-            pattern_words: list[str] = patterns["words"]
-            pattern_chars: list[str] = patterns["chars"]
+            pattern_words: List[str] = patterns["words"]
+            pattern_chars: List[str] = patterns["chars"]
             word_weight: float = patterns["word_weight"]
             char_weight: float = patterns["char_weight"]
 
-            word_matches = sum(1 for token in pattern_words if token in words)
-            char_matches = sum(1 for ch in pattern_chars if ch in text)
+            word_matches: int = sum(1 for token in pattern_words if token in words)
+            char_matches: int = sum(1 for ch in pattern_chars if ch in text)
 
             # Calculate normalized scores (per 100 words)
-            word_score = (word_matches * word_weight) / word_count * 100
-            char_score = (char_matches * char_weight) / word_count * 100
+            word_score: float = (word_matches * word_weight) / word_count * 100
+            char_score: float = (char_matches * char_weight) / word_count * 100
 
             # Combine scores with weights
             scores[lang] = (word_score * 0.7) + (char_score * 0.3)
 
         # Get language with highest score if above threshold
         if scores:
-            best_lang = max(scores.items(), key=lambda kv: kv[1])[0]
+            best_lang: str = max(scores.items(), key=lambda kv: kv[1])[0]
             # Only return result if score is above minimum threshold
             # At least 0.5 matches per 100 words
             if scores[best_lang] > 0.5:
@@ -327,12 +327,12 @@ class LanguageDetector:
 
         if LANGDETECT_AVAILABLE:
             self._ensure_langdetect()
-            detect_func = self._detect_func
-            lang_exc = self._langdetect_exception
+            detect_func: Optional[Any] = self._detect_func
+            lang_exc: Optional[Any] = self._langdetect_exception
             if detect_func is None or lang_exc is None:
                 return self._simple_language_detection(text)
             try:
-                detected_code = detect_func(text)
+                detected_code: str = detect_func(text)
             except (lang_exc, ValueError) as e:  # type: ignore[misc]
                 logger.warning("Language detection error: %s", e)
                 return "Unknown"
@@ -341,10 +341,10 @@ class LanguageDetector:
         # Fallback to simple heuristics
         return self._simple_language_detection(text)
 
-    def get_supported_languages(self) -> list[str]:
+    def get_supported_languages(self) -> List[str]:
         """Get list of supported languages.
 
         Returns:
-            list[str]: Human-readable names (e.g., ["English", "German"]).
+            List[str]: Human-readable names (e.g., ["English", "German"]).
         """
         return list(self.language_map.values())

@@ -9,19 +9,20 @@ large documents efficiently with parallel processing.
 import asyncio
 import logging
 import time
-from typing import List
+from typing import Any, Dict, List
 
 from services.enhanced_translation_service import EnhancedTranslationService
 from services.parallel_translation_service import ParallelTranslationConfig
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
-def create_sample_document() -> dict:
+def create_sample_document() -> Dict[str, Any]:
     """Create a sample document with multiple pages for testing."""
     return {
         "pages": {
@@ -46,7 +47,7 @@ def create_sample_document() -> dict:
 
 def create_large_text_batch() -> List[str]:
     """Create a large batch of texts for performance testing."""
-    base_texts = [
+    base_texts: List[str] = [
         "Die Philosophie beschäftigt sich mit grundlegenden Fragen des Seins.",
         "Bewusstsein ist ein komplexes Phänomen der menschlichen Erfahrung.",
         "Erkenntnistheorie untersucht die Bedingungen möglicher Erkenntnis.",
@@ -60,10 +61,10 @@ def create_large_text_batch() -> List[str]:
     ]
 
     # Create a larger batch by repeating and modifying base texts
-    large_batch = []
+    large_batch: List[str] = []
     for i in range(50):  # Create 500 texts total
         for j, text in enumerate(base_texts):
-            modified_text = f"{text} (Variante {i + 1}.{j + 1})"
+            modified_text: str = f"{text} (Variante {i + 1}.{j + 1})"
             large_batch.append(modified_text)
 
     return large_batch
@@ -72,19 +73,19 @@ def create_large_text_batch() -> List[str]:
 class ProgressTracker:
     """Progress tracking utility for demonstrations."""
 
-    def __init__(self, description: str):
-        self.description = description
-        self.start_time = time.time()
-        self.last_update = 0
+    def __init__(self, description: str) -> None:
+        self.description: str = description
+        self.start_time: float = time.time()
+        self.last_update: float = 0
 
-    def update_progress(self, current: int, total: int):
+    def update_progress(self, current: int, total: int) -> None:
         """Update progress for simple progress tracking."""
-        percentage = (current / total * 100) if total > 0 else 0
+        percentage: float = (current / total * 100) if total > 0 else 0
 
         # Only update every 10% or on completion
         if percentage - self.last_update >= 10 or current == total:
-            elapsed = time.time() - self.start_time
-            rate = current / elapsed if elapsed > 0 else 0
+            elapsed: float = time.time() - self.start_time
+            rate: float = current / elapsed if elapsed > 0 else 0
 
             logger.info(
                 "%s: %d/%d (%.1f%%) - %.1f items/sec - %.1fs elapsed",
@@ -98,12 +99,12 @@ class ProgressTracker:
             self.last_update = percentage
 
 
-async def demo_basic_parallel_translation():
+async def demo_basic_parallel_translation() -> None:
     """Demonstrate basic parallel translation functionality."""
     logger.info("=== Basic Parallel Translation Demo ===")
 
     # Create sample texts
-    texts = [
+    texts: List[str] = [
         "Die Philosophie der Bewusstseinsforschung ist komplex.",
         "Wirklichkeitsbewusstsein spielt eine zentrale Rolle.",
         "Erkenntnistheorie untersucht die Grundlagen des Wissens.",
@@ -112,17 +113,19 @@ async def demo_basic_parallel_translation():
     ]
 
     # Configure for demonstration (lower concurrency for API safety)
-    config = ParallelTranslationConfig(
-        max_concurrent_requests=3, max_requests_per_second=2.0, batch_size=10
+    config: ParallelTranslationConfig = ParallelTranslationConfig(
+        max_concurrent_requests=3, 
+        max_requests_per_second=2.0, 
+        batch_size=10
     )
 
-    service = EnhancedTranslationService()
+    service: EnhancedTranslationService = EnhancedTranslationService()
     service.parallel_config = config
 
-    tracker = ProgressTracker("Basic Translation")
+    tracker: ProgressTracker = ProgressTracker("Basic Translation")
 
     try:
-        start_time = time.time()
+        start_time: float = time.time()
 
         # Note: This would require a valid Lingo API key
         # For demo purposes, we'll simulate the process
@@ -133,11 +136,11 @@ async def demo_basic_parallel_translation():
             await asyncio.sleep(0.1)  # Simulate processing time
             tracker.update_progress(i + 1, len(texts))
 
-        elapsed = time.time() - start_time
+        elapsed: float = time.time() - start_time
         logger.info("Translation completed in %.2f seconds", elapsed)
 
         # Show performance stats
-        stats = service.get_performance_stats()
+        stats: Dict[str, Any] = service.get_performance_stats()
         logger.info("Performance stats: %s", stats)
 
     except Exception as e:
@@ -146,30 +149,32 @@ async def demo_basic_parallel_translation():
         await service.close()
 
 
-async def demo_large_document_processing():
+async def demo_large_document_processing() -> None:
     """Demonstrate large document processing capabilities."""
     logger.info("=== Large Document Processing Demo ===")
 
     # Create sample document
-    document = create_sample_document()
+    document: Dict[str, Any] = create_sample_document()
 
     # Configure for high-performance processing
-    config = ParallelTranslationConfig(
-        max_concurrent_requests=5, max_requests_per_second=3.0, batch_size=20
+    config: ParallelTranslationConfig = ParallelTranslationConfig(
+        max_concurrent_requests=5, 
+        max_requests_per_second=3.0, 
+        batch_size=20
     )
 
-    service = EnhancedTranslationService()
+    service: EnhancedTranslationService = EnhancedTranslationService()
     service.parallel_config = config
 
-    tracker = ProgressTracker("Document Translation")
+    tracker: ProgressTracker = ProgressTracker("Document Translation")
 
     try:
-        start_time = time.time()
+        start_time: float = time.time()
 
         logger.info("Processing document with %d pages...", len(document["pages"]))
 
         # Count total text blocks
-        total_blocks = sum(
+        total_blocks: int = sum(
             len(page_data)
             for page_data in document["pages"].values()
             if isinstance(page_data, dict)
@@ -182,14 +187,14 @@ async def demo_large_document_processing():
             await asyncio.sleep(0.05)  # Simulate processing time
             tracker.update_progress(i + 1, total_blocks)
 
-        elapsed = time.time() - start_time
+        elapsed: float = time.time() - start_time
         logger.info("Document processing completed in %.2f seconds", elapsed)
 
         # Show performance improvement estimate
-        sequential_time_estimate = (
+        sequential_time_estimate: float = (
             total_blocks * 0.5
         )  # Assume 0.5s per request sequentially
-        improvement = sequential_time_estimate / elapsed if elapsed > 0 else 1
+        improvement: float = sequential_time_estimate / elapsed if elapsed > 0 else 1
 
         logger.info(
             "Estimated performance improvement: %.1fx faster than sequential processing",
@@ -202,47 +207,48 @@ async def demo_large_document_processing():
         await service.close()
 
 
-async def demo_batch_performance_comparison():
+async def demo_batch_performance_comparison() -> None:
     """Demonstrate performance comparison between sequential and parallel processing."""
     logger.info("=== Performance Comparison Demo ===")
 
     # Create large text batch
-    texts = create_large_text_batch()
+    texts: List[str] = create_large_text_batch()
     logger.info("Created batch of %d texts for performance testing", len(texts))
 
     # Test with different batch sizes
-    batch_sizes = [10, 25, 50, 100]
+    batch_sizes: List[int] = [10, 25, 50, 100]
 
     for batch_size in batch_sizes:
         logger.info("--- Testing with batch size: %d ---", batch_size)
 
-        config = ParallelTranslationConfig(
+        config: ParallelTranslationConfig = ParallelTranslationConfig(
             max_concurrent_requests=min(batch_size // 2, 10),
             max_requests_per_second=5.0,
             batch_size=batch_size,
         )
 
-        service = EnhancedTranslationService()
+        service: EnhancedTranslationService = EnhancedTranslationService()
         service.parallel_config = config
 
         # Take a subset for testing
-        test_texts = texts[:batch_size]
+        test_texts: List[str] = texts[:batch_size]
 
-        tracker = ProgressTracker(f"Batch Size {batch_size}")
+        tracker: ProgressTracker = ProgressTracker(f"Batch Size {batch_size}")
 
         try:
-            start_time = time.time()
+            start_time: float = time.time()
 
             # Simulate batch processing
             for i in range(len(test_texts)):
                 await asyncio.sleep(0.01)  # Simulate processing time
                 tracker.update_progress(i + 1, len(test_texts))
 
-            elapsed = time.time() - start_time
-            rate = len(test_texts) / elapsed if elapsed > 0 else 0
+            elapsed: float = time.time() - start_time
+            rate: float = len(test_texts) / elapsed if elapsed > 0 else 0
 
             logger.info(
-                "Batch size %d: %.2f seconds, %.1f texts/sec", batch_size, elapsed, rate
+                "Batch size %d: %.2f seconds, %.1f texts/sec", 
+                batch_size, elapsed, rate
             )
 
         except Exception as e:
@@ -251,12 +257,12 @@ async def demo_batch_performance_comparison():
             await service.close()
 
 
-async def demo_error_handling_and_resilience():
+async def demo_error_handling_and_resilience() -> None:
     """Demonstrate error handling and resilience features."""
     logger.info("=== Error Handling and Resilience Demo ===")
 
     # Configure with aggressive retry settings for demonstration
-    config = ParallelTranslationConfig(
+    config: ParallelTranslationConfig = ParallelTranslationConfig(
         max_concurrent_requests=3,
         max_requests_per_second=1.0,
         max_retries=2,
@@ -264,7 +270,7 @@ async def demo_error_handling_and_resilience():
         backoff_multiplier=2.0,
     )
 
-    service = EnhancedTranslationService()
+    service: EnhancedTranslationService = EnhancedTranslationService()
     service.parallel_config = config
 
     logger.info("Configured with retry settings:")
@@ -273,12 +279,12 @@ async def demo_error_handling_and_resilience():
     logger.info("- Backoff multiplier: %.1fx", config.backoff_multiplier)
 
     # Simulate processing with potential failures
-    texts = ["Text 1", "Text 2", "Text 3", "Text 4", "Text 5"]
+    texts: List[str] = ["Text 1", "Text 2", "Text 3", "Text 4", "Text 5"]
 
-    tracker = ProgressTracker("Resilience Test")
+    tracker: ProgressTracker = ProgressTracker("Resilience Test")
 
     try:
-        start_time = time.time()
+        start_time: float = time.time()
 
         for i, _ in enumerate(texts):
             # Simulate processing with occasional "failures"
@@ -289,7 +295,7 @@ async def demo_error_handling_and_resilience():
             await asyncio.sleep(0.2)  # Simulate normal processing
             tracker.update_progress(i + 1, len(texts))
 
-        elapsed = time.time() - start_time
+        elapsed: float = time.time() - start_time
         logger.info("Resilience test completed in %.2f seconds", elapsed)
 
     except Exception as e:
@@ -298,7 +304,7 @@ async def demo_error_handling_and_resilience():
         await service.close()
 
 
-async def main():
+async def main() -> None:
     """Run all demonstration scenarios."""
     logger.info("Starting Parallel Translation Service Demonstration")
     logger.info("=" * 60)

@@ -9,17 +9,18 @@ regardless of the execution location.
 import sys
 import traceback
 from pathlib import Path
+from typing import Any, Callable, List, Tuple, Dict
 
 
 # Dynamically resolve the project root directory based on script location
 # This ensures reliable imports regardless of where the script is executed from
-def setup_project_path():
+def setup_project_path() -> str:
     """Set up the project path for reliable imports."""
     # Get the directory containing this script
-    script_dir = Path(__file__).resolve().parent
+    script_dir: Path = Path(__file__).resolve().parent
 
     # Get the actual project root (parent of scripts directory)
-    project_root = str(script_dir.parent)
+    project_root: str = str(script_dir.parent)
     if project_root not in sys.path:
         # Add at end to avoid overriding system packages
         sys.path.append(project_root)
@@ -28,10 +29,10 @@ def setup_project_path():
 
 
 # Set up the project path
-PROJECT_ROOT = setup_project_path()
+PROJECT_ROOT: str = setup_project_path()
 
 
-def run_test(test_name, test_func):
+def run_test(test_name: str, test_func: Callable[[], None]) -> bool:
     """Run a single test function."""
     try:
         print(f"Running {test_name}...")
@@ -44,7 +45,7 @@ def run_test(test_name, test_func):
         return False
 
 
-def test_user_choice_models():
+def test_user_choice_models() -> None:
     """Test user choice models basic functionality."""
     from models.user_choice_models import (
         ChoiceScope,
@@ -55,7 +56,7 @@ def test_user_choice_models():
     )
 
     # Test TranslationContext creation
-    context = TranslationContext(
+    context: TranslationContext = TranslationContext(
         sentence_context="Test sentence",
         semantic_field="test",
         philosophical_domain="test",
@@ -65,7 +66,7 @@ def test_user_choice_models():
     )
 
     # Test UserChoice creation
-    choice = UserChoice(
+    choice: UserChoice = UserChoice(
         choice_id="test_id",
         neologism_term="test_term",
         choice_type=ChoiceType.TRANSLATE,
@@ -79,14 +80,14 @@ def test_user_choice_models():
     assert choice.neologism_term == "test_term"
 
     # Test create_choice_id function
-    choice_id = create_choice_id("test_term", "test_hash")
+    choice_id: str = create_choice_id("test_term", "test_hash")
     assert len(choice_id) == 16, f"Expected length 16, got {len(choice_id)}"
     assert choice_id.isalnum(), f"Choice ID should be alphanumeric, got: {choice_id}"
 
     print("User choice models test completed successfully")
 
 
-def test_choice_database():
+def test_choice_database() -> None:
     """Test choice database basic functionality."""
     import os
     import tempfile
@@ -101,17 +102,17 @@ def test_choice_database():
 
     # Create temporary database
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
-        db_path = tmp.name
+        db_path: str = tmp.name
 
     try:
         # Test database creation
-        db = ChoiceDatabase(db_path)
+        db: ChoiceDatabase = ChoiceDatabase(db_path)
 
         # Verify database was created
         assert db is not None
 
         # Test context creation
-        context = TranslationContext(
+        context: TranslationContext = TranslationContext(
             sentence_context="Test sentence",
             semantic_field="test",
             philosophical_domain="test",
@@ -121,7 +122,7 @@ def test_choice_database():
         )
 
         # Test choice creation
-        choice = UserChoice(
+        choice: UserChoice = UserChoice(
             choice_id="test_id",
             neologism_term="test_term",
             choice_type=ChoiceType.TRANSLATE,
@@ -132,7 +133,7 @@ def test_choice_database():
 
         # Test basic database operations
         db.save_user_choice(choice)
-        retrieved_choice = db.get_user_choice("test_id")
+        retrieved_choice: Any = db.get_user_choice("test_id")
         assert retrieved_choice is not None, "Failed to retrieve saved choice"
 
         # Verify the choice was created successfully
@@ -146,7 +147,7 @@ def test_choice_database():
             os.unlink(db_path)
 
 
-def test_neologism_models():
+def test_neologism_models() -> None:
     """Test neologism models basic functionality."""
     from models.neologism_models import (
         ConfidenceFactors,
@@ -173,7 +174,7 @@ def test_neologism_models():
     print("✓ ConfidenceLevel enum validation passed")
 
     # Test MorphologicalAnalysis creation and attributes
-    analysis = MorphologicalAnalysis(
+    analysis: MorphologicalAnalysis = MorphologicalAnalysis(
         root_words=["test", "word"],
         prefixes=["pre", "sub"],
         suffixes=["ing", "ed"],
@@ -219,7 +220,7 @@ def test_neologism_models():
     ), f"Expected 0.6, got {analysis.morphological_productivity}"
 
     # Test to_dict method
-    analysis_dict = analysis.to_dict()
+    analysis_dict: Dict[str, Any] = analysis.to_dict()
     assert isinstance(analysis_dict, dict), "to_dict should return a dictionary"
     assert "root_words" in analysis_dict, "Dictionary should contain 'root_words' key"
     assert (
@@ -228,7 +229,7 @@ def test_neologism_models():
     print("✓ MorphologicalAnalysis creation and validation passed")
 
     # Test PhilosophicalContext creation and attributes
-    phil_context = PhilosophicalContext(
+    phil_context: PhilosophicalContext = PhilosophicalContext(
         philosophical_density=0.8,
         semantic_field="epistemology",
         domain_indicators=["knowledge", "belief"],
@@ -266,7 +267,7 @@ def test_neologism_models():
     ), f"Expected 'philosophical_treatise', got {phil_context.text_genre}"
 
     # Test PhilosophicalContext to_dict method
-    phil_dict = phil_context.to_dict()
+    phil_dict: Dict[str, Any] = phil_context.to_dict()
     assert isinstance(
         phil_dict, dict
     ), "PhilosophicalContext to_dict should return a dictionary"
@@ -279,7 +280,7 @@ def test_neologism_models():
     print("✓ PhilosophicalContext creation and validation passed")
 
     # Test ConfidenceFactors creation and attributes
-    confidence_factors = ConfidenceFactors(
+    confidence_factors: ConfidenceFactors = ConfidenceFactors(
         morphological_complexity=0.7,
         compound_structure_score=0.8,
         morphological_productivity=0.6,
@@ -306,14 +307,14 @@ def test_neologism_models():
     ), f"Expected 0.9, got {confidence_factors.rarity_score}"
 
     # Test ConfidenceFactors weighted score calculation
-    weighted_score = confidence_factors.calculate_weighted_score()
+    weighted_score: float = confidence_factors.calculate_weighted_score()
     assert isinstance(weighted_score, float), "Weighted score should be a float"
     assert (
         0.0 <= weighted_score <= 1.0
     ), f"Weighted score should be between 0 and 1, got {weighted_score}"
 
     # Test ConfidenceFactors to_dict method
-    factors_dict = confidence_factors.to_dict()
+    factors_dict: Dict[str, Any] = confidence_factors.to_dict()
     assert isinstance(
         factors_dict, dict
     ), "ConfidenceFactors to_dict should return a dictionary"
@@ -326,7 +327,7 @@ def test_neologism_models():
     print("✓ ConfidenceFactors creation and validation passed")
 
     # Test DetectedNeologism creation and attributes
-    detected_neologism = DetectedNeologism(
+    detected_neologism: DetectedNeologism = DetectedNeologism(
         term="Wirklichkeitsbewusstsein",
         confidence=0.85,
         neologism_type=NeologismType.COMPOUND,
@@ -376,13 +377,13 @@ def test_neologism_models():
     ), f"Expected 3 related terms, got {len(detected_neologism.related_terms)}"
 
     # Test confidence_level property
-    confidence_level = detected_neologism.confidence_level
+    confidence_level: ConfidenceLevel = detected_neologism.confidence_level
     assert (
         confidence_level == ConfidenceLevel.HIGH
     ), f"Expected ConfidenceLevel.HIGH for confidence 0.85, got {confidence_level}"
 
     # Test DetectedNeologism to_dict method
-    neologism_dict = detected_neologism.to_dict()
+    neologism_dict: Dict[str, Any] = detected_neologism.to_dict()
     assert isinstance(
         neologism_dict, dict
     ), "DetectedNeologism to_dict should return a dictionary"
@@ -402,7 +403,7 @@ def test_neologism_models():
     ), "Dictionary should contain confidence level as string"
 
     # Test DetectedNeologism to_json method
-    neologism_json = detected_neologism.to_json()
+    neologism_json: str = detected_neologism.to_json()
     assert isinstance(neologism_json, str), "to_json should return a string"
     assert "Wirklichkeitsbewusstsein" in neologism_json, "JSON should contain the term"
     assert "0.85" in neologism_json, "JSON should contain the confidence value"
@@ -411,18 +412,18 @@ def test_neologism_models():
     print("Neologism models test completed successfully")
 
 
-def main():
+def main() -> None:
     """Run all tests."""
     print("Starting simple test runner...")
 
-    tests = [
+    tests: List[Tuple[str, Callable[[], None]]] = [
         ("User Choice Models", test_user_choice_models),
         ("Choice Database", test_choice_database),
         ("Neologism Models", test_neologism_models),
     ]
 
-    passed = 0
-    failed = 0
+    passed: int = 0
+    failed: int = 0
 
     for test_name, test_func in tests:
         if run_test(test_name, test_func):

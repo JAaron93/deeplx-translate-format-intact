@@ -2,15 +2,16 @@
 
 import logging
 import os
+from typing import Set
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 # Valid ISO 639-1 language codes
-VALID_LANGUAGE_CODES = {
+VALID_LANGUAGE_CODES: Set[str] = {
     "AA",
     "AB",
     "AE",
@@ -201,7 +202,7 @@ VALID_LANGUAGE_CODES = {
 def _parse_bool_env(env_var: str, default: str = "false") -> bool:
     """Parse boolean environment variable with error handling."""
     try:
-        value = os.getenv(env_var, default).lower().strip()
+        value: str = os.getenv(env_var, default).lower().strip()
         if value in ("true", "1", "yes", "on"):
             return True
         elif value in ("false", "0", "no", "off"):
@@ -264,17 +265,18 @@ class Settings:
     CLEANUP_INTERVAL_HOURS: int = int(os.getenv("CLEANUP_INTERVAL_HOURS", "24"))
     MAX_FILE_AGE_HOURS: int = int(os.getenv("MAX_FILE_AGE_HOURS", "48"))
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize settings and create required directories."""
         # Create required directories with proper error handling
-        for directory in [
+        directories_to_create: list[str] = [
             self.UPLOAD_DIR,
             self.DOWNLOAD_DIR,
             self.TEMP_DIR,
             self.IMAGE_CACHE_DIR,
-        ]:
+        ]
+        for directory in directories_to_create:
             # Normalize path to absolute path
-            normalized_path = os.path.abspath(directory)
+            normalized_path: str = os.path.abspath(directory)
 
             try:
                 os.makedirs(normalized_path, exist_ok=True)
@@ -283,7 +285,8 @@ class Settings:
                 )
             except PermissionError as e:
                 logger.error(
-                    f"Permission denied when creating directory '{normalized_path}': {e}. "
+                    f"Permission denied when creating directory "
+                    f"'{normalized_path}': {e}. "
                     "Check file system permissions for the application."
                 )
                 raise
@@ -296,7 +299,7 @@ class Settings:
 
     def get_available_translators(self) -> list[str]:
         """Get list of available translation services."""
-        available = []
+        available: list[str] = []
 
         if self.LINGO_API_KEY:
             available.append("lingo")
@@ -305,7 +308,7 @@ class Settings:
 
     def validate_configuration(self) -> bool:
         """Validate that required configuration is present and all settings are valid."""
-        validation_results = [
+        validation_results: list[bool] = [
             self._validate_api_key(),
             self._validate_language_settings(),
             self._validate_directories(),
@@ -314,7 +317,7 @@ class Settings:
             self._validate_terminology(),
         ]
 
-        overall_valid = all(validation_results)
+        overall_valid: bool = all(validation_results)
 
         if overall_valid:
             logger.info("Configuration validation passed")
@@ -332,7 +335,7 @@ class Settings:
 
     def _validate_language_settings(self) -> bool:
         """Validate language code settings."""
-        valid = True
+        valid: bool = True
 
         if self.SOURCE_LANGUAGE.upper() not in VALID_LANGUAGE_CODES:
             logger.error(
@@ -352,14 +355,14 @@ class Settings:
 
     def _validate_directories(self) -> bool:
         """Validate directory accessibility and writability."""
-        directories_to_check = [
+        directories_to_check: list[str] = [
             self.UPLOAD_DIR,
             self.DOWNLOAD_DIR,
             self.TEMP_DIR,
             self.IMAGE_CACHE_DIR,
         ]
 
-        valid = True
+        valid: bool = True
         for directory in directories_to_check:
             if not self._check_directory_writable(directory):
                 # Avoid double-logging here; _check_directory_writable logs at error level
@@ -369,7 +372,7 @@ class Settings:
 
     def _validate_numeric_settings(self) -> bool:
         """Validate numeric configuration settings."""
-        valid = True
+        valid: bool = True
 
         if self.PORT < 1 or self.PORT > 65535:
             logger.error(f"Invalid PORT: {self.PORT}. Must be between 1-65535")
@@ -384,7 +387,8 @@ class Settings:
 
         if self.PDF_DPI < 72 or self.PDF_DPI > 600:
             logger.error(
-                f"Invalid PDF_DPI: {self.PDF_DPI}. " "Recommended range: 72-600"
+                f"Invalid PDF_DPI: {self.PDF_DPI}. "
+                "Recommended range: 72-600"
             )
             valid = False
 
@@ -420,7 +424,7 @@ class Settings:
 
     def _validate_terminology(self) -> bool:
         """Validate terminology and translation settings."""
-        valid = True
+        valid: bool = True
 
         # Check if source and target languages are different
         if self.SOURCE_LANGUAGE.upper() == self.TARGET_LANGUAGE.upper():
@@ -439,7 +443,7 @@ class Settings:
             os.makedirs(directory, exist_ok=True)
 
             # Try to write a test file
-            test_file_path = os.path.join(directory, ".write_test")
+            test_file_path: str = os.path.join(directory, ".write_test")
             with open(test_file_path, "w") as test_file:
                 test_file.write("test")
 
@@ -453,6 +457,7 @@ class Settings:
             # Emit traceback only in debug mode for diagnostics
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(
-                    "Directory check error for '%s': %s", directory, err, exc_info=True
+                    "Directory check error for '%s': %s", 
+                    directory, err, exc_info=True
                 )
             return False

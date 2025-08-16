@@ -7,7 +7,7 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 # Migration note: Replaced legacy PyMuPDF/fitz-based PDF engine with Dolphin OCR
 # for all PDF processing. Rationale: improved OCR accuracy, better layout
@@ -26,38 +26,46 @@ from services.translation_service import TranslationService
 from services.user_choice_manager import UserChoiceManager
 from utils.file_handler import FileHandler
 from utils.language_utils import extract_text_sample_for_language_detection
-
-# PDF preprocessing constants
-PDF_PREPROCESSING_DPI = 300  # Standard high-resolution DPI for PDF-to-image conversion
-PDF_ESTIMATED_MB_PER_PAGE = 2.5  # Rough estimate of MB per page for image conversion
 from utils.validators import FileValidator
 
+# PDF preprocessing constants
+PDF_PREPROCESSING_DPI: int = 300  # Standard high-resolution DPI for PDF-to-image conversion
+PDF_ESTIMATED_MB_PER_PAGE: float = 2.5  # Rough estimate of MB per page for image conversion
+
 # Configure logging
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 # Initialize services
-settings = Settings()
-translation_service = TranslationService()
-document_processor = EnhancedDocumentProcessor(
+settings: Settings = Settings()
+translation_service: TranslationService = TranslationService()
+document_processor: EnhancedDocumentProcessor = EnhancedDocumentProcessor(
     dpi=getattr(settings, "PDF_DPI", 300),
     preserve_images=getattr(settings, "PRESERVE_IMAGES", True),
 )
 
 # Initialize philosophy-enhanced services
-neologism_detector = NeologismDetector()
-user_choice_manager = UserChoiceManager()
-philosophy_translation_service = PhilosophyEnhancedTranslationService(
-    translation_service=translation_service,
-    neologism_detector=neologism_detector,
-    user_choice_manager=user_choice_manager,
+neologism_detector: NeologismDetector = NeologismDetector()
+user_choice_manager: UserChoiceManager = UserChoiceManager()
+philosophy_translation_service: PhilosophyEnhancedTranslationService = (
+    PhilosophyEnhancedTranslationService(
+        translation_service=translation_service,
+        neologism_detector=neologism_detector,
+        user_choice_manager=user_choice_manager,
+    )
 )
 
-language_detector = LanguageDetector()
-file_handler = FileHandler()
-file_validator = FileValidator()
+language_detector: LanguageDetector = LanguageDetector()
+file_handler: FileHandler = FileHandler()
+file_validator: FileValidator = FileValidator()
+
+# Type aliases for better readability
+FileObject = Union[str, Any]  # Gradio file object can be str, FileData, or file-like
+ProgressCallback = Callable[[int], None]
+ContentDict = Dict[str, Any]
+TranslatedPageDict = Dict[str, List[str]]
 
 
-def extract_file_info(file) -> Tuple[str, str, int]:
+def extract_file_info(file: FileObject) -> Tuple[str, str, int]:
     """Extract file information from various Gradio file formats.
 
     Args:
@@ -118,7 +126,7 @@ def extract_file_info(file) -> Tuple[str, str, int]:
     return file_path, file_name, file_size
 
 
-async def process_file_upload(file) -> Tuple[str, str, str, str, str]:
+async def process_file_upload(file: FileObject) -> Tuple[str, str, str, str, str]:
     """Process uploaded PDF file with pre-processing display."""
     try:
         # Extract file information using the new function
@@ -128,7 +136,9 @@ async def process_file_upload(file) -> Tuple[str, str, str, str, str]:
             return "", f"❌ {e!s}", "", "", ""
 
         # Validate file (includes PDF extension and size validation)
-        validation_result = file_validator.validate_file(file_name, file_size)
+        validation_result: Dict[str, Any] = file_validator.validate_file(
+            file_name, file_size
+        )
         if not validation_result["valid"]:
             return "", f"❌ {validation_result['error']}", "", "", ""
 
@@ -137,22 +147,24 @@ async def process_file_upload(file) -> Tuple[str, str, str, str, str]:
         logger.info(f"Starting PDF pre-processing: {file_name}")
 
         # Show PDF-to-image preprocessing steps
-        preprocessing_info = await _show_pdf_preprocessing_steps(file_path, file_size)
+        preprocessing_info: str = await _show_pdf_preprocessing_steps(
+            file_path, file_size
+        )
 
         # Extract content with advanced processing
-        content = document_processor.extract_content(file_path)
+        content: ContentDict = document_processor.extract_content(file_path)
         state.current_content = content
 
         # Generate preview
-        preview = content.get("preview", "Preview not available")
+        preview: str = content.get("preview", "Preview not available")
 
         # Detect language using the centralized utility function
-        sample_text = extract_text_sample_for_language_detection(content)
-        detected_lang = language_detector.detect_language_from_text(sample_text)
+        sample_text: str = extract_text_sample_for_language_detection(content)
+        detected_lang: str = language_detector.detect_language_from_text(sample_text)
         state.source_language = detected_lang
 
         # Store processing info
-        metadata = content.get("metadata")
+        metadata: Any = content.get("metadata")
         if metadata:
             state.processing_info = {
                 "file_type": metadata.file_type,
@@ -164,7 +176,7 @@ async def process_file_upload(file) -> Tuple[str, str, str, str, str]:
             }
 
         # Create status message with detailed info
-        status_parts = [
+        status_parts: List[str] = [
             "✅ File processed successfully",
             f"📄 Type: {Path(file_name).suffix.upper()}",
             f"🌐 Detected language: {detected_lang}",
@@ -183,10 +195,10 @@ async def process_file_upload(file) -> Tuple[str, str, str, str, str]:
             if hasattr(metadata, "dpi"):
                 status_parts.append(f"🖼️ Resolution: {metadata.dpi} DPI")
 
-        status = "\n".join(status_parts)
+        status: str = "\n".join(status_parts)
 
         # Processing details for display
-        processing_details = json.dumps(state.processing_info, indent=2)
+        processing_details: str = json.dumps(state.processing_info, indent=2)
 
         logger.info(f"Advanced processing complete: {file_name}")
         return preview, status, detected_lang, preprocessing_info, processing_details
@@ -217,7 +229,9 @@ async def start_translation(
         try:
             state.max_pages = int(max_pages) if max_pages else 0
         except (TypeError, ValueError) as e:
-            logger.warning(f"Failed to convert max_pages to int: {e}, using default 0")
+            logger.warning(
+                f"Failed to convert max_pages to int: {e}, using default 0"
+            )
             state.max_pages = 0
 
         # Create session for philosophy mode
@@ -250,14 +264,14 @@ async def start_translation(
 
 
 async def translate_content(
-    content: dict,
+    content: ContentDict,
     source_language: str,
     target_language: str,
     max_pages: Optional[int] = None,
-    progress_callback=None,
+    progress_callback: Optional[ProgressCallback] = None,
     philosophy_mode: bool = False,
     session_id: Optional[str] = None,
-) -> Tuple[dict, str]:
+) -> Tuple[TranslatedPageDict, str]:
     """Core translation function that handles text extraction and translation.
 
     Args:
@@ -278,7 +292,7 @@ async def translate_content(
             progress_callback(10)
 
         if content["type"] == "pdf_advanced":
-            text_by_page = content["text_by_page"]
+            text_by_page: Dict[str, List[str]] = content["text_by_page"]
         else:
             raise ValueError(f"Unsupported content type: {content['type']}")
 
@@ -286,15 +300,15 @@ async def translate_content(
         if progress_callback:
             progress_callback(30)
 
-        translated_by_page = {}
+        translated_by_page: TranslatedPageDict = {}
 
         # Determine pages to process based on numeric order
-        page_keys = sorted(text_by_page.keys(), key=lambda x: int(x))
+        page_keys: List[str] = sorted(text_by_page.keys(), key=lambda x: int(x))
         if max_pages is not None and max_pages > 0:
             page_keys = page_keys[:max_pages]
-        pages_to_process = {k: text_by_page[k] for k in page_keys}
+        pages_to_process: Dict[str, List[str]] = {k: text_by_page[k] for k in page_keys}
 
-        total_pages = len(pages_to_process)
+        total_pages: int = len(pages_to_process)
         for idx, (page_num, page_texts) in enumerate(pages_to_process.items()):
             if not page_texts:
                 translated_by_page[page_num] = []
@@ -308,7 +322,7 @@ async def translate_content(
             # Choose translation service based on mode
             if philosophy_mode and session_id:
                 # Use philosophy-enhanced translation with bounded concurrency via helper
-                translated_texts = await _translate_page_texts_concurrently(
+                translated_texts: List[str] = await _translate_page_texts_concurrently(
                     page_texts=page_texts,
                     source_language=source_language,
                     target_language=target_language,
@@ -316,20 +330,20 @@ async def translate_content(
                 )
             else:
                 # Batch translate text elements for efficiency
-                batch_size = 20
-                translated_texts = [None] * len(page_texts)
+                batch_size: int = 20
+                translated_texts: List[Optional[str]] = [None] * len(page_texts)
 
                 # Identify non-empty text indices to translate
-                indices_to_translate = [
+                indices_to_translate: List[int] = [
                     idx for idx, txt in enumerate(page_texts) if txt.strip()
                 ]
 
                 for start in range(0, len(indices_to_translate), batch_size):
-                    batch_indices = indices_to_translate[start : start + batch_size]
-                    batch_texts = [page_texts[idx] for idx in batch_indices]
+                    batch_indices: List[int] = indices_to_translate[start : start + batch_size]
+                    batch_texts: List[str] = [page_texts[idx] for idx in batch_indices]
 
                     try:
-                        batch_translated = await translation_service.translate_batch(
+                        batch_translated: List[str] = await translation_service.translate_batch(
                             batch_texts, source_language, target_language
                         )
                     except Exception as e:
@@ -337,7 +351,7 @@ async def translate_content(
                             f"Batch translation failed for page {page_num} "
                             f"(indices {batch_indices}): {e}"
                         )
-                        batch_translated = batch_texts  # Fallback to original
+                        batch_translated: List[str] = batch_texts  # Fallback to original
 
                     # Map translated texts back to their original positions
                     for idx, translated in zip(batch_indices, batch_translated):
@@ -352,12 +366,12 @@ async def translate_content(
 
             # Update progress
             if progress_callback:
-                page_progress = 30 + ((idx + 1) / total_pages * 50)
-                progress_callback(int(page_progress))
+                page_progress: int = 30 + int((idx + 1) / total_pages * 50)
+                progress_callback(page_progress)
 
         # Generate output filename
-        file_path = content.get("file_path", "document")
-        output_filename = generate_output_filename(
+        file_path: str = content.get("file_path", "document")
+        output_filename: str = generate_output_filename(
             Path(file_path).name if file_path else "document", target_language
         )
 
@@ -369,11 +383,11 @@ async def translate_content(
 
 
 async def _translate_page_texts_concurrently(
-    page_texts: list[str],
+    page_texts: List[str],
     source_language: str,
     target_language: str,
     session_id: str,
-) -> list[str]:
+) -> List[str]:
     """Translate page texts concurrently with bounded concurrency and safe fallbacks.
 
     - Respects settings.translation_concurrency_limit (fallback 8)
@@ -383,15 +397,15 @@ async def _translate_page_texts_concurrently(
     """
     # Defensive read of concurrency limit
     try:
-        limit = int(getattr(settings, "translation_concurrency_limit", 8))
+        limit: int = int(getattr(settings, "translation_concurrency_limit", 8))
         if limit < 1:
             limit = 8
     except Exception:
         limit = 8
 
-    sem = asyncio.Semaphore(limit)
+    sem: asyncio.Semaphore = asyncio.Semaphore(limit)
 
-    async def _translate_one(idx: int, text: str) -> tuple[int, str]:
+    async def _translate_one(idx: int, text: str) -> Tuple[int, str]:
         if not (text or "").strip():
             return idx, text
         # Explicitly propagate cancellation for sentinel input used in tests
@@ -399,12 +413,14 @@ async def _translate_page_texts_concurrently(
             raise asyncio.CancelledError()
         try:
             async with sem:
-                result = await philosophy_translation_service.translate_text_with_neologism_handling_async(
-                    text=text,
-                    source_lang=source_language,
-                    target_lang=target_language,
-                    provider="auto",
-                    session_id=session_id,
+                result: Dict[str, Any] = await (
+                    philosophy_translation_service.translate_text_with_neologism_handling_async(
+                        text=text,
+                        source_lang=source_language,
+                        target_lang=target_language,
+                        provider="auto",
+                        session_id=session_id,
+                    )
                 )
                 return idx, result.get("translated_text", text)
         except asyncio.CancelledError:
@@ -419,14 +435,16 @@ async def _translate_page_texts_concurrently(
             )
             return idx, text
 
-    tasks = [_translate_one(i, t) for i, t in enumerate(page_texts)]
+    tasks: List[asyncio.Task[Tuple[int, str]]] = [
+        _translate_one(i, t) for i, t in enumerate(page_texts)
+    ]
     try:
-        results = await asyncio.gather(*tasks)
+        results: List[Tuple[int, str]] = await asyncio.gather(*tasks)
     except asyncio.CancelledError:
         # Ensure cancellation is not swallowed
         raise
 
-    translated_texts = [""] * len(page_texts)
+    translated_texts: List[str] = [""] * len(page_texts)
     for i, val in results:
         translated_texts[i] = val
     return translated_texts
@@ -441,13 +459,13 @@ async def perform_advanced_translation() -> None:
             f"{state.target_language}"
         )
 
-        content = state.current_content
+        content: ContentDict = state.current_content
         content["file_path"] = state.current_file
 
         # Retrieve concurrency limit from settings with a defensive fallback.
         # This avoids test flakiness if Settings are unavailable or misconfigured.
         try:
-            concurrency_limit = int(
+            concurrency_limit: int = int(
                 getattr(settings, "translation_concurrency_limit", 8)
             )
             if concurrency_limit < 1:
@@ -457,11 +475,13 @@ async def perform_advanced_translation() -> None:
         logger.debug(f"Using translation concurrency limit: {concurrency_limit}")
 
         # Define progress callback
-        def update_progress(progress: int):
+        def update_progress(progress: int) -> None:
             state.translation_progress = progress
 
         # Use the centralized translate_content function
-        max_pages = state.max_pages if state.max_pages > 0 else None
+        max_pages: Optional[int] = state.max_pages if state.max_pages > 0 else None
+        translated_by_page: TranslatedPageDict
+        output_filename: str
         translated_by_page, output_filename = await translate_content(
             content=content,
             source_language=state.source_language,
@@ -477,14 +497,14 @@ async def perform_advanced_translation() -> None:
 
         # If a page limit was applied, restrict layouts for PDF reconstruction
         if max_pages is not None:
-            page_keys = list(translated_by_page.keys())
-            limited_layouts = [
+            page_keys: List[str] = list(translated_by_page.keys())
+            limited_layouts: List[Any] = [
                 lay for lay in content.get("layouts", []) if lay.page_num in page_keys
             ]
-            content_limited = dict(content)
+            content_limited: ContentDict = dict(content)
             content_limited["layouts"] = limited_layouts
         else:
-            content_limited = content
+            content_limited: ContentDict = content
 
         logger.info(f"Creating translated document: {output_filename}")
         state.output_file = document_processor.create_translated_document(
@@ -509,8 +529,8 @@ def update_translation_progress(progress: int) -> None:
 
 def generate_output_filename(original_filename: str, target_language: str) -> str:
     """Generate output filename with proper format."""
-    name = Path(original_filename).stem
-    ext = Path(original_filename).suffix
+    name: str = Path(original_filename).stem
+    ext: str = Path(original_filename).suffix
     return f"translated_{name}_{target_language.lower()}_advanced{ext}"
 
 
@@ -560,20 +580,22 @@ async def process_advanced_translation_job(
 ) -> None:
     """Process translation job with advanced formatting preservation."""
     try:
-        job = translation_jobs[job_id]
+        job: Dict[str, Any] = translation_jobs[job_id]
         job["status"] = "processing"
 
         # Extract content with advanced processing
         job["progress"] = 20
-        content = document_processor.extract_content(file_path)
+        content: ContentDict = document_processor.extract_content(file_path)
         content["file_path"] = file_path
 
         # Define progress callback for job updates
-        def update_job_progress(progress: int):
+        def update_job_progress(progress: int) -> None:
             # Scale progress to job progress range (20-80)
             job["progress"] = 20 + int(progress * 0.6)
 
         # Use the centralized translate_content function
+        translated_by_page: TranslatedPageDict
+        output_filename: str
         translated_by_page, output_filename = await translate_content(
             content=content,
             source_language=source_lang,
@@ -587,7 +609,7 @@ async def process_advanced_translation_job(
         # Create output with preserved formatting
         job["progress"] = 80
 
-        output_file = document_processor.create_translated_document(
+        output_file: str = document_processor.create_translated_document(
             content, translated_by_page, output_filename
         )
 
@@ -624,7 +646,7 @@ async def _show_pdf_preprocessing_steps(
         ValueError: If the PDF file is corrupted or invalid
     """
     try:
-        preprocessing_steps = []
+        preprocessing_steps: List[str] = []
 
         # Step 1: PDF Analysis
         preprocessing_steps.append("🔍 Step 1: PDF Analysis")
@@ -634,10 +656,10 @@ async def _show_pdf_preprocessing_steps(
             from pypdf import PdfReader  # type: ignore
 
             with open(file_path, "rb") as pdf_file:
-                reader = PdfReader(pdf_file)
-                pages_obj = getattr(reader, "pages", [])
-                page_count = max(1, len(pages_obj))
-                doc_info = getattr(reader, "metadata", {}) or {}
+                reader: Any = PdfReader(pdf_file)
+                pages_obj: List[Any] = getattr(reader, "pages", [])
+                page_count: int = max(1, len(pages_obj))
+                doc_info: Dict[str, Any] = getattr(reader, "metadata", {}) or {}
         except Exception as err:
             logger.warning("pypdf page-count failed (%s); using size heuristic", err)
             page_count = max(1, int(file_size / (75 * 1024)))
@@ -652,7 +674,7 @@ async def _show_pdf_preprocessing_steps(
 
         # Step 2: PDF-to-Image Conversion Planning
         preprocessing_steps.append("\n🖼️ Step 2: PDF-to-Image Conversion")
-        estimated_image_size = page_count * mb_per_page
+        estimated_image_size: float = page_count * mb_per_page
         preprocessing_steps.append(f"   🎯 Target resolution: {dpi} DPI")
         preprocessing_steps.append(
             f"   📊 Estimated image data: ~{estimated_image_size:.1f} MB"
@@ -678,16 +700,16 @@ async def _show_pdf_preprocessing_steps(
         return "\n".join(preprocessing_steps)
 
     except FileNotFoundError as e:
-        error_msg = f"PDF file not found: {file_path}"
+        error_msg: str = f"PDF file not found: {file_path}"
         logger.error(f"Preprocessing error - {error_msg}: {e}")
         return f"❌ Preprocessing analysis failed: {error_msg}"
 
     except ValueError as e:
-        error_msg = f"PDF file is corrupted or invalid: {file_path}"
+        error_msg: str = f"PDF file is corrupted or invalid: {file_path}"
         logger.error(f"Preprocessing error - {error_msg}: {e}")
         return f"❌ Preprocessing analysis failed: {error_msg}"
 
     except Exception as e:
-        error_msg = "Unexpected error during PDF analysis"
+        error_msg: str = "Unexpected error during PDF analysis"
         logger.error(f"Preprocessing error - {error_msg}: {e}")
         return f"❌ Preprocessing analysis failed: {error_msg}"

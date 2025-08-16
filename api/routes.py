@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from fastapi import (
     APIRouter,
@@ -40,14 +40,25 @@ from models.user_choice_models import (
 from utils import pdf_validator
 from utils.language_utils import extract_text_sample_for_language_detection
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 # Templates
-templates = Jinja2Templates(directory="templates")
+templates: Jinja2Templates = Jinja2Templates(directory="templates")
 
 # Create APIRouter instances
-api_router = APIRouter()
-app_router = APIRouter()
+api_router: APIRouter = APIRouter()
+app_router: APIRouter = APIRouter()
+
+# Type aliases for better readability
+ChoiceData = Dict[str, Any]
+ExportData = Dict[str, Any]
+ImportData = Dict[str, Any]
+UploadResponse = Dict[str, Any]
+TranslationResponse = Dict[str, Any]
+JobStatusResponse = Dict[str, Any]
+NeologismResponse = Dict[str, Any]
+ProgressResponse = Dict[str, Any]
+TerminologyResponse = Dict[str, str]
 
 
 @app_router.get("/")
@@ -80,24 +91,25 @@ async def philosophy_interface(request: Request) -> HTMLResponse:
 
 # Philosophy API Endpoints
 @api_router.post("/philosophy/choice")
-async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
+async def save_user_choice(choice_data: ChoiceData) -> Dict[str, Any]:
     """Save a user choice for a neologism."""
     try:
         # Extract choice data with explicit validation
-        term = choice_data.get("term")
-        if not isinstance(term, str) or not term.strip():
+        term_raw = choice_data.get("term")
+        if not isinstance(term_raw, str) or not term_raw.strip():
             raise HTTPException(
                 status_code=400, detail="Term must be a non-empty string"
             )
+        term: str = term_raw
 
-        choice_value = str(choice_data.get("choice", "preserve"))
-        custom_translation = str(choice_data.get("custom_translation", ""))
-        notes = str(choice_data.get("notes", ""))
+        choice_value: str = str(choice_data.get("choice", "preserve"))
+        custom_translation: str = str(choice_data.get("custom_translation", ""))
+        notes: str = str(choice_data.get("notes", ""))
 
-        session_id = choice_data.get("session_id")
+        session_id: Optional[str] = choice_data.get("session_id")
 
         # Create a simple neologism representation
-        neologism = DetectedNeologism(
+        neologism: DetectedNeologism = DetectedNeologism(
             term=term,
             confidence=0.8,
             neologism_type=NeologismType.PHILOSOPHICAL_TERM,
@@ -110,13 +122,13 @@ async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         # Map choice string to ChoiceType
-        choice_type_mapping = {
+        choice_type_mapping: Dict[str, ChoiceType] = {
             "preserve": ChoiceType.PRESERVE,
             "translate": ChoiceType.TRANSLATE,
             "custom": ChoiceType.CUSTOM_TRANSLATION,
         }
 
-        choice_type = choice_type_mapping.get(
+        choice_type: ChoiceType = choice_type_mapping.get(
             choice_value,
             ChoiceType.PRESERVE,
         )
@@ -139,7 +151,9 @@ async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
 
     except HTTPException as he:
         # Preserve client-facing HTTP errors (e.g., 400 validation)
-        logger.warning("HTTP error saving user choice: %s", getattr(he, "detail", he))
+        logger.warning(
+            "HTTP error saving user choice: %s", getattr(he, "detail", he)
+        )
         raise he
     except Exception as e:
         logger.error("Error saving user choice: %s", e)
@@ -149,7 +163,7 @@ async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
 @api_router.get("/philosophy/neologisms")
 async def get_detected_neologisms(
     _session_id: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> NeologismResponse:
     """Get detected neologisms for the current session.
 
     Args:
@@ -157,12 +171,12 @@ async def get_detected_neologisms(
     """
     try:
         # Return neologisms from state
-        neologisms = (
+        neologisms: List[Any] = (
             state.neologism_analysis.get("detected_neologisms", [])
             if state.neologism_analysis
             else []
         )
-        total = len(neologisms)
+        total: int = len(neologisms)
         return {"neologisms": neologisms, "total": total}
     except Exception as e:
         logger.error("Error getting neologisms: %s", e)
@@ -170,16 +184,18 @@ async def get_detected_neologisms(
 
 
 @api_router.get("/philosophy/progress")
-async def get_philosophy_progress() -> Dict[str, Any]:
+async def get_philosophy_progress() -> ProgressResponse:
     """Get current philosophy processing progress."""
     try:
-        total_neologisms = 0
+        total_neologisms: int = 0
         if state.neologism_analysis and isinstance(state.neologism_analysis, dict):
-            detected = state.neologism_analysis.get("detected_neologisms", [])
+            detected: List[Any] = state.neologism_analysis.get(
+                "detected_neologisms", []
+            )
             if isinstance(detected, list):
                 total_neologisms = len(detected)
 
-        processed_neologisms = 0
+        processed_neologisms: int = 0
         if isinstance(state.user_choices, list):
             processed_neologisms = sum(
                 1
@@ -200,20 +216,22 @@ async def get_philosophy_progress() -> Dict[str, Any]:
 
 @api_router.post("/philosophy/export-choices")
 async def export_user_choices(
-    export_data: Dict[str, Any]
+    export_data: ExportData
 ) -> Union[FileResponse, Dict[str, Any]]:
     """Export user choices to JSON."""
     try:
-        session_id = export_data.get("session_id")
+        session_id: Optional[str] = export_data.get("session_id")
 
         if session_id:
-            file_path = user_choice_manager.export_session_choices(session_id)
+            export_file_path: Optional[str] = user_choice_manager.export_session_choices(
+                session_id
+            )
         else:
-            file_path = user_choice_manager.export_all_choices()
+            export_file_path: Optional[str] = user_choice_manager.export_all_choices()
 
-        if file_path:
+        if export_file_path:
             return FileResponse(
-                file_path,
+                export_file_path,
                 media_type="application/json",
                 filename=(
                     "philosophy-choices-"
@@ -230,11 +248,11 @@ async def export_user_choices(
 
 
 @api_router.post("/philosophy/import-choices")
-async def import_user_choices(import_data: Dict[str, Any]) -> Dict[str, Any]:
+async def import_user_choices(import_data: ImportData) -> Dict[str, Any]:
     """Import user choices from dictionary."""
     try:
-        choices = import_data.get("choices", {})
-        session_id = import_data.get("session_id")
+        choices: Dict[str, Any] = import_data.get("choices", {})
+        session_id: Optional[str] = import_data.get("session_id")
 
         # Validate that choices is a dictionary
         if not isinstance(choices, dict):
@@ -243,7 +261,9 @@ async def import_user_choices(import_data: Dict[str, Any]) -> Dict[str, Any]:
             )
 
         # Use the new dictionary-accepting method
-        count = user_choice_manager.import_choices_from_dict(choices, session_id)
+        count: int = user_choice_manager.import_choices_from_dict(
+            choices, session_id
+        )
 
         return {
             "success": True,
@@ -260,11 +280,11 @@ async def import_user_choices(import_data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @api_router.get("/philosophy/terminology")
-async def get_terminology() -> Dict[str, str]:
+async def get_terminology() -> TerminologyResponse:
     """Get current terminology database."""
     try:
         # Get terminology from neologism detector
-        terminology = neologism_detector.terminology_map
+        terminology: Dict[str, str] = neologism_detector.terminology_map
         return terminology
 
     except Exception as e:
@@ -273,11 +293,11 @@ async def get_terminology() -> Dict[str, str]:
 
 
 @api_router.post("/upload")
-async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: B008
+async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: B008
     """Enhanced upload endpoint with advanced processing."""
     try:
         # Save file first so validators can inspect header and structure
-        file_path = file_handler.save_upload_file(file)
+        file_path: str = file_handler.save_upload_file(file)
 
         # Basic format validation
         fmt = pdf_validator.validate_pdf_extension_and_header(file_path)
@@ -306,20 +326,21 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
             )
 
         # Process with advanced extraction
-        content = document_processor.extract_content(file_path)
+        content: Dict[str, Any] = document_processor.extract_content(file_path)
 
         # Detect language using the utility function
-        sample_text = (
+        sample_text: str = (
             extract_text_sample_for_language_detection(content) or ""
         ).strip()
-        detected_lang = (
+        detected_lang: Optional[str] = (
             language_detector.detect_language_from_text(sample_text)
             if sample_text
             else None
         )
 
         # Clean metadata access pattern
-        metadata = content.get("metadata")
+        metadata: Any = content.get("metadata")
+        metadata_dict: Optional[Dict[str, Any]] = None
         if metadata:
             if hasattr(metadata, "__dict__"):
                 metadata_dict = metadata.__dict__
@@ -331,7 +352,7 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
             metadata_dict = None
 
         # Do not expose server filesystem paths. Use a safe identifier (basename) instead.
-        upload_id = Path(file_path).name
+        upload_id: str = Path(file_path).name
         return {
             "message": "File processed with advanced extraction",
             "filename": file.filename,
@@ -365,12 +386,12 @@ async def translate_document(
     file_path: str,
     source_language: str,
     target_language: str,
-) -> Dict[str, Any]:
+) -> TranslationResponse:
     """Enhanced translation endpoint."""
     try:
         import uuid
 
-        job_id = str(uuid.uuid4())
+        job_id: str = str(uuid.uuid4())
 
         # Create job entry with enhanced info
         translation_jobs[job_id] = {
@@ -407,7 +428,7 @@ async def translate_document(
 
 
 @api_router.get("/status/{job_id}")
-async def get_job_status(job_id: str) -> Dict[str, Any]:
+async def get_job_status(job_id: str) -> JobStatusResponse:
     """Get enhanced job status."""
     if job_id not in translation_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -421,7 +442,7 @@ async def download_result(job_id: str) -> FileResponse:
     if job_id not in translation_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    job = translation_jobs[job_id]
+    job: Dict[str, Any] = translation_jobs[job_id]
     if (job["status"] != "completed") or (not job["output_file"]):
         raise HTTPException(
             status_code=400,

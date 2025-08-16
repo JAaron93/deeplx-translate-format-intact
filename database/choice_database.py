@@ -31,7 +31,7 @@ class ChoiceDatabase:
         learning_rate_alpha: float = 0.1,
         ensure_ascii: bool = False,
         batch_size: int = 1000,
-    ):
+    ) -> None:
         """Initialize the database manager.
 
         Args:

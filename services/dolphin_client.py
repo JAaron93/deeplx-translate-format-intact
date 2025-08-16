@@ -6,7 +6,7 @@ the previous HuggingFace Spaces API approach.
 
 The service exposes an endpoint that accepts a multipart upload of a PDF file
 and returns JSON describing the page layouts. This helper wraps the HTTP call
-so the rest of the codebase doesn’t need to know the wire format.
+so the rest of the codebase doesn't need to know the wire format.
 """
 
 from __future__ import annotations
@@ -14,21 +14,21 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
-from typing import Any, Union
+from typing import Any, Dict, List, Union
 
 import httpx
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 # Default endpoints - Modal Labs takes priority
-DEFAULT_MODAL_ENDPOINT = (
+DEFAULT_MODAL_ENDPOINT: str = (
     "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run"
 )
-DEFAULT_LOCAL_ENDPOINT = "http://localhost:8501/layout"
-DEFAULT_TIMEOUT = 300  # seconds (increased for Modal processing)
+DEFAULT_LOCAL_ENDPOINT: str = "http://localhost:8501/layout"
+DEFAULT_TIMEOUT: int = 300  # seconds (increased for Modal processing)
 
 
-async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
+async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:
     """Send *pdf_path* to the Dolphin service and return the JSON payload.
 
     Parameters
@@ -42,7 +42,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
         Whatever JSON structure the Dolphin service responds with.  The caller
         is responsible for interpreting the schema.
     """
-    endpoint = os.getenv("DOLPHIN_ENDPOINT", DEFAULT_MODAL_ENDPOINT)
+    endpoint: str = os.getenv("DOLPHIN_ENDPOINT", DEFAULT_MODAL_ENDPOINT)
     pdf_path = pathlib.Path(pdf_path)
 
     if not pdf_path.exists():
@@ -50,7 +50,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
 
     # Get timeout from environment variable or use default
     try:
-        timeout_seconds = int(
+        timeout_seconds: int = int(
             os.getenv("DOLPHIN_TIMEOUT_SECONDS", str(DEFAULT_TIMEOUT))
         )
     except ValueError:
@@ -62,13 +62,15 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
     # Use streaming upload to avoid loading big PDFs fully into memory.
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
         with pdf_path.open("rb") as fp:
-            files = {"file": (pdf_path.name, fp, "application/pdf")}
-            response = await client.post(endpoint, files=files)
+            files: Dict[str, tuple[str, Any, str]] = {
+                "file": (pdf_path.name, fp, "application/pdf")
+            }
+            response: httpx.Response = await client.post(endpoint, files=files)
 
     response.raise_for_status()
 
     try:
-        data = response.json()
+        data: Dict[str, Any] = response.json()
     except ValueError as e:
         raise ValueError(f"Invalid JSON response from Dolphin service: {e}") from e
 
@@ -89,7 +91,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
             raise ValueError(f"Page {i} is not a dictionary")
 
         # Check for required page-level fields (updated for Modal format)
-        required_fields = ["page_number", "width", "height", "text_blocks"]
+        required_fields: List[str] = ["page_number", "width", "height", "text_blocks"]
         for field in required_fields:
             if field not in page:
                 raise ValueError(f"Page {i} is missing required field: {field}")
@@ -104,7 +106,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
                 raise ValueError(f"Text block {j} in page {i} is not a dictionary")
 
             # Check for required text block fields (Modal format)
-            block_required = ["text", "bbox", "confidence", "block_type"]
+            block_required: List[str] = ["text", "bbox", "confidence", "block_type"]
             for field in block_required:
                 if field not in block:
                     raise ValueError(
@@ -112,7 +114,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
                     )
 
             # Validate bbox format [x0, y0, x1, y1]
-            bbox = block.get("bbox", [])
+            bbox: List[Union[int, float]] = block.get("bbox", [])
             if not (
                 isinstance(bbox, list)
                 and len(bbox) == 4

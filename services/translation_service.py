@@ -8,7 +8,7 @@ import logging
 import os
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import requests
 
@@ -20,14 +20,14 @@ except (ModuleNotFoundError, ImportError):  # pragma: no cover - fallback
     from services.mcp_lingo_client import McpLingoClient, McpLingoConfig  # type: ignore
 
 # Translation service configuration
-TRANSLATION_DELAY = float(
+TRANSLATION_DELAY: float = float(
     os.getenv("TRANSLATION_DELAY", "0.1")
 )  # Delay between batch requests in seconds
 
 # Configurable User-Agent header
-USER_AGENT = os.getenv("DOLPHIN_USER_AGENT", "Dolphin-OCR-Translate/2.0")
+USER_AGENT: str = os.getenv("DOLPHIN_USER_AGENT", "Dolphin-OCR-Translate/2.0")
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class BaseTranslator(ABC):
@@ -42,8 +42,8 @@ class BaseTranslator(ABC):
 
     @abstractmethod
     async def translate_batch(
-        self, texts: list[str], source_lang: str, target_lang: str
-    ) -> list[str]:
+        self, texts: List[str], source_lang: str, target_lang: str
+    ) -> List[str]:
         """Translate a batch of text strings."""
         pass
 
@@ -51,7 +51,7 @@ class BaseTranslator(ABC):
 class LingoTranslator(BaseTranslator):
     """Lingo.dev translation implementation."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None) -> None:
         """Initialize Lingo translator with API key and session configuration.
 
         If api_key is not provided, read from the LINGO_API_KEY environment variable.
@@ -63,9 +63,9 @@ class LingoTranslator(BaseTranslator):
         if not api_key:
             raise ValueError("LINGO_API_KEY is required")
 
-        self.api_key = api_key
-        self.base_url = "https://api.lingo.dev/v1/translate"
-        self.session = requests.Session()
+        self.api_key: str = api_key
+        self.base_url: str = "https://api.lingo.dev/v1/translate"
+        self.session: requests.Session = requests.Session()
         self.session.headers.update(
             {
                 "Authorization": f"Bearer {api_key}",
@@ -82,18 +82,18 @@ class LingoTranslator(BaseTranslator):
             if not text.strip():
                 return text
 
-            payload = {
+            payload: Dict[str, str] = {
                 "text": text,
                 "source": source_lang.lower(),
                 "target": target_lang.lower(),
             }
 
-            response = await asyncio.to_thread(
+            response: requests.Response = await asyncio.to_thread(
                 self.session.post, self.base_url, json=payload, timeout=30
             )
 
             if response.status_code == 200:
-                result = response.json()
+                result: Dict[str, Any] = response.json()
                 if "translation" in result:
                     return result["translation"]
                 elif "text" in result:
@@ -112,10 +112,10 @@ class LingoTranslator(BaseTranslator):
             return text
 
     async def translate_batch(
-        self, texts: list[str], source_lang: str, target_lang: str
-    ) -> list[str]:
+        self, texts: List[str], source_lang: str, target_lang: str
+    ) -> List[str]:
         """Translate batch of texts using Lingo.dev."""
-        results = []
+        results: List[str] = []
 
         # Process texts individually for better error handling
         for text in texts:
@@ -123,7 +123,7 @@ class LingoTranslator(BaseTranslator):
                 results.append(text)
                 continue
 
-            translated = await self.translate_text(text, source_lang, target_lang)
+            translated: str = await self.translate_text(text, source_lang, target_lang)
             results.append(translated)
 
             # Configurable delay between batch requests to avoid rate limiting
@@ -135,7 +135,7 @@ class LingoTranslator(BaseTranslator):
 class MCPLingoTranslator(BaseTranslator):
     """Lingo.dev translation via MCP server (stdio)."""
 
-    def __init__(self, config: McpLingoConfig):
+    def __init__(self, config: McpLingoConfig) -> None:
         """Initialize MCP Lingo translator with an explicit configuration.
 
         This avoids mutating private attributes after construction and ensures
@@ -143,9 +143,9 @@ class MCPLingoTranslator(BaseTranslator):
         """
         if not config or not getattr(config, "api_key", None):
             raise ValueError("Valid McpLingoConfig with api_key is required for MCP")
-        self._client = McpLingoClient(config)
-        self._started = False
-        self._lock = asyncio.Lock()
+        self._client: McpLingoClient = McpLingoClient(config)
+        self._started: bool = False
+        self._lock: asyncio.Lock = asyncio.Lock()
 
     async def _ensure_started(self) -> None:
         if self._started:
@@ -166,8 +166,8 @@ class MCPLingoTranslator(BaseTranslator):
             return text
 
     async def translate_batch(
-        self, texts: list[str], source_lang: str, target_lang: str
-    ) -> list[str]:
+        self, texts: List[str], source_lang: str, target_lang: str
+    ) -> List[str]:
         await self._ensure_started()
         try:
             return await self._client.translate_batch(texts, source_lang, target_lang)
@@ -179,41 +179,42 @@ class MCPLingoTranslator(BaseTranslator):
 class TranslationService:
     """Main translation service with Lingo.dev provider."""
 
-    def __init__(self, terminology_map: Optional[dict[str, str]] = None) -> None:
+    def __init__(self, terminology_map: Optional[Dict[str, str]] = None) -> None:
         """Initialize translation service with optional terminology mapping."""
         # Mapping of provider name to translator instance
-        self.providers: dict[str, BaseTranslator] = {}
+        self.providers: Dict[str, BaseTranslator] = {}
         # Optional terminology mapping for preprocessing
-        self.terminology_map: dict[str, str] = terminology_map or {}
+        self.terminology_map: Dict[str, str] = terminology_map or {}
         self._initialize_providers()
 
     def _initialize_providers(self) -> None:
         """Initialize Lingo.dev translation provider (REST or MCP)."""
         try:
-            lingo_key = os.getenv("LINGO_API_KEY")
-            use_mcp = os.getenv("LINGO_USE_MCP", "false").lower() == "true"
+            lingo_key: Optional[str] = os.getenv("LINGO_API_KEY")
+            use_mcp: bool = os.getenv("LINGO_USE_MCP", "false").lower() == "true"
             # Startup diagnostics to make provider selection explicit in logs
             logger.info(
                 "Translation provider config: LINGO_USE_MCP=%s, LINGO_API_KEY_present=%s",
                 use_mcp,
                 bool(lingo_key),
             )
+
             if lingo_key:
                 if use_mcp:
                     # Read MCP config from environment at runtime
-                    tool_name = os.getenv("LINGO_MCP_TOOL_NAME") or None
+                    tool_name: Optional[str] = os.getenv("LINGO_MCP_TOOL_NAME") or None
                     try:
-                        startup_timeout = float(
+                        startup_timeout: float = float(
                             os.getenv("LINGO_MCP_STARTUP_TIMEOUT", "20")
                         )
                     except ValueError:
                         startup_timeout = 20.0
                     try:
-                        call_timeout = float(os.getenv("LINGO_MCP_CALL_TIMEOUT", "60"))
+                        call_timeout: float = float(os.getenv("LINGO_MCP_CALL_TIMEOUT", "60"))
                     except ValueError:
                         call_timeout = 60.0
 
-                    cfg = McpLingoConfig(
+                    cfg: McpLingoConfig = McpLingoConfig(
                         api_key=lingo_key,
                         tool_name=tool_name,
                         startup_timeout_s=startup_timeout,
@@ -235,17 +236,17 @@ class TranslationService:
             logger.error(f"Failed to initialize Lingo translator: {e}")
             raise
 
-    def get_available_providers(self) -> list[str]:
+    def get_available_providers(self) -> List[str]:
         """Get list of available translation providers."""
         return list(self.providers.keys())
 
     async def translate_batch(
         self,
-        texts: list[str],
+        texts: List[str],
         source_lang: str,
         target_lang: str,
         provider: str = "auto",
-    ) -> list[str]:
+    ) -> List[str]:
         """Translate a list of texts using Lingo.dev provider."""
         if provider == "auto":
             provider = self._select_best_provider()
@@ -253,15 +254,15 @@ class TranslationService:
         if provider not in self.providers:
             raise ValueError(f"Provider {provider} not available")
 
-        translator = self.providers[provider]
-        batch_texts = texts.copy()
+        translator: BaseTranslator = self.providers[provider]
+        batch_texts: List[str] = texts.copy()
 
         # Apply optional terminology preprocessing
         if self.terminology_map:
             batch_texts = [self._apply_terminology(t) for t in batch_texts]
 
         try:
-            translated = await translator.translate_batch(
+            translated: List[str] = await translator.translate_batch(
                 batch_texts, source_lang, target_lang
             )
             # Strip non-translate tags after translation
@@ -292,9 +293,9 @@ class TranslationService:
         if provider not in self.providers:
             raise ValueError(f"Provider {provider} not available")
 
-        translator = self.providers[provider]
+        translator: BaseTranslator = self.providers[provider]
         try:
-            translated = await translator.translate_text(text, source_lang, target_lang)
+            translated: str = await translator.translate_text(text, source_lang, target_lang)
             return self._strip_non_translate_tags(translated)
         except Exception as e:
             logger.error(f"Translation failed with provider {provider}: {e}")
@@ -302,12 +303,12 @@ class TranslationService:
 
     async def translate_document(
         self,
-        content: dict[str, Any],
+        content: Dict[str, Any],
         source_lang: str,
         target_lang: str,
         provider: str = "auto",
         progress_callback: Optional[Callable[[int], None]] = None,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Translate document content."""
         # Select provider
         if provider == "auto":
@@ -316,29 +317,29 @@ class TranslationService:
         if provider not in self.providers:
             raise ValueError(f"Provider {provider} not available")
 
-        translator = self.providers[provider]
+        translator: BaseTranslator = self.providers[provider]
 
         # Extract text blocks for translation
-        text_blocks = self._extract_text_blocks(content)
-        total_blocks = len(text_blocks)
+        text_blocks: List[Dict[str, Any]] = self._extract_text_blocks(content)
+        total_blocks: int = len(text_blocks)
 
         if progress_callback:
             progress_callback(0)
 
         # Process in batches for efficiency
-        batch_size = 20
-        translated_blocks = []
+        batch_size: int = 20
+        translated_blocks: List[Dict[str, Any]] = []
 
         for i in range(0, total_blocks, batch_size):
-            batch = text_blocks[i : i + batch_size]
-            batch_texts = [block["text"] for block in batch]
+            batch: List[Dict[str, Any]] = text_blocks[i : i + batch_size]
+            batch_texts: List[str] = [block["text"] for block in batch]
 
             # Apply terminology preprocessing if configured
             if self.terminology_map:
                 batch_texts = [self._apply_terminology(t) for t in batch_texts]
 
             # Perform batch translation with the selected provider
-            translated_texts = await translator.translate_batch(
+            translated_texts: List[str] = await translator.translate_batch(
                 batch_texts, source_lang, target_lang
             )
             # Strip tags
@@ -348,17 +349,17 @@ class TranslationService:
 
             # Merge translated texts back into their respective blocks
             for j, translated_text in enumerate(translated_texts):
-                block = batch[j].copy()
+                block: Dict[str, Any] = batch[j].copy()
                 block["text"] = translated_text
                 translated_blocks.append(block)
 
             # Update progress
             if progress_callback:
-                progress = min(100, int((i + len(batch)) / total_blocks * 100))
+                progress: int = min(100, int((i + len(batch)) / total_blocks * 100))
                 progress_callback(progress)
 
         # Reconstruct document with translated content
-        translated_content = self._reconstruct_document(content, translated_blocks)
+        translated_content: Dict[str, Any] = self._reconstruct_document(content, translated_blocks)
 
         if progress_callback:
             progress_callback(100)
@@ -372,9 +373,9 @@ class TranslationService:
 
         raise ValueError("No translation providers available")
 
-    def _extract_text_blocks(self, content: dict[str, Any]) -> list[dict[str, Any]]:
+    def _extract_text_blocks(self, content: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Extract text blocks from document content for translation."""
-        text_blocks = []
+        text_blocks: List[Dict[str, Any]] = []
 
         if "pages" in content:
             for page_num, page in enumerate(content["pages"]):
@@ -393,17 +394,17 @@ class TranslationService:
         return text_blocks
 
     def _reconstruct_document(
-        self, original_content: dict[str, Any], translated_blocks: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+        self, original_content: Dict[str, Any], translated_blocks: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Reconstruct document with translated text blocks."""
         # Use a deep copy to avoid mutating nested structures in the original
-        translated_content = copy.deepcopy(original_content)
+        translated_content: Dict[str, Any] = copy.deepcopy(original_content)
 
         # Create a mapping of translated blocks by page and element
-        block_map = {}
+        block_map: Dict[int, Dict[Optional[str], str]] = {}
         for block in translated_blocks:
-            page_num = block["page"]
-            element_id = block.get("element_id")
+            page_num: int = block["page"]
+            element_id: Optional[str] = block.get("element_id")
             if page_num not in block_map:
                 block_map[page_num] = {}
             # Only index valid element IDs
@@ -418,7 +419,7 @@ class TranslationService:
                     for element in page["text_elements"]:
                         # Skip any null entries
                         if element:
-                            element_id = element.get("id")
+                            element_id: Optional[str] = element.get("id")
                             if (
                                 element_id is not None
                                 and element_id in block_map[page_num]
@@ -435,10 +436,10 @@ class TranslationService:
 
     def _apply_terminology(self, text: str) -> str:
         """Replace terms in text using self.terminology_map with word-boundary safety."""
-        processed = text
+        processed: str = text
         for source in self.terminology_map:
             # Wrap term in HTML span with translate="no" to preserve it
-            pattern = rf"(?<!\w){re.escape(source)}(?!\w)"
+            pattern: str = rf"(?<!\w){re.escape(source)}(?!\w)"
             processed = re.sub(
                 pattern, f'<span translate="no">{source}</span>', processed
             )

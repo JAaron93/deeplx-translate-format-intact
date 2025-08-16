@@ -20,7 +20,7 @@ except ImportError:  # pragma: no cover - optional at runtime
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 T = TypeVar("T", int, float)
 
@@ -41,13 +41,13 @@ def _parse_env(
     fallback_value: T = (
         max(min_value, default_value) if min_value is not None else default_value
     )
-    raw_value = os.getenv(var_name)
+    raw_value: str | None = os.getenv(var_name)
     if raw_value is None:
         logger.debug("%s not set; using fallback %s", var_name, fallback_value)
         return fallback_value
 
     try:
-        parsed_value = coerce(raw_value)
+        parsed_value: T = coerce(raw_value)
     except (ValueError, TypeError):
         logger.error(
             "Invalid %s=%r; falling back to %s",
@@ -70,12 +70,12 @@ def _parse_bool_env(var_name: str, default_value: bool) -> bool:
     falsy values, and the default_value for any unrecognized values
     (including None).
     """
-    raw_value = os.getenv(var_name)
+    raw_value: str | None = os.getenv(var_name)
     if raw_value is None:
         return default_value
 
     # Normalize the value to lowercase and strip whitespace
-    normalized_value = raw_value.lower().strip()
+    normalized_value: str = raw_value.lower().strip()
 
     # Return True only for explicit truthy values
     if normalized_value in TRUTHY:
@@ -168,11 +168,11 @@ class Config:
 
     # Load Klages terminology dictionary from external JSON for
     # easier maintenance
-    _TERMINOLOGY_FILE = Path(__file__).parent / "klages_terminology.json"
+    _TERMINOLOGY_FILE: Path = Path(__file__).parent / "klages_terminology.json"
     KLAGES_TERMINOLOGY: Mapping[str, str] = MappingProxyType({})
     try:
         with _TERMINOLOGY_FILE.open("r", encoding="utf-8") as f:
-            _raw = json.load(f)
+            _raw: object = json.load(f)
         if isinstance(_raw, dict) and all(
             isinstance(k, str) and isinstance(v, str) for k, v in _raw.items()
         ):
@@ -184,7 +184,8 @@ class Config:
             )
         else:
             logger.error(
-                "Invalid Klages terminology structure in '%s': expected mapping[str, str], got: %s",
+                "Invalid Klages terminology structure in '%s': "
+                "expected mapping[str, str], got: %s",
                 _TERMINOLOGY_FILE,
                 type(_raw).__name__,
             )
@@ -228,7 +229,7 @@ class Config:
         Returns:
             bool: True if all validations pass, False otherwise
         """
-        validation_passed = True
+        validation_passed: bool = True
 
         # Validate API key
         if not cls.LINGO_API_KEY:
@@ -239,7 +240,7 @@ class Config:
             validation_passed = False
 
         # Validate directory paths
-        required_dirs = {
+        required_dirs: dict[str, str] = {
             "INPUT_DIR": cls.INPUT_DIR,
             "OUTPUT_DIR": cls.OUTPUT_DIR,
             "TEMP_DIR": cls.TEMP_DIR,
@@ -267,7 +268,7 @@ class Config:
                     validation_passed = False
 
         # Validate numeric settings
-        numeric_validations = {
+        numeric_validations: dict[str, tuple[int | float, int | float, int | float, str]] = {
             "PDF_DPI": (cls.PDF_DPI, 72, 600, "DPI must be between 72 and 600"),
             "MEMORY_THRESHOLD_MB": (
                 cls.MEMORY_THRESHOLD_MB,
@@ -380,7 +381,7 @@ class Config:
     @classmethod
     def get_available_providers(cls) -> list[str]:
         """Get list of available translation providers."""
-        providers = []
+        providers: list[str] = []
 
         if cls.LINGO_API_KEY:
             providers.append("lingo")

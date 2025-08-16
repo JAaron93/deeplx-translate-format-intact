@@ -8,18 +8,17 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any, List, Optional
 
 # Add the project root to the Python path
-project_root = Path(__file__).parent.parent
+project_root: Path = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+
+from services.dolphin_client import get_layout
 
 # ---------------------------------------------------------------------------
 # Test-data paths searched by the helper functions
 # ---------------------------------------------------------------------------
-from typing import List  # existing Optional import is already present
-
-from services.dolphin_client import get_layout
 
 TEST_PDF_PATHS: List[str] = [
     "tests/fixtures/sample.pdf",
@@ -42,19 +41,19 @@ def find_test_pdf() -> Optional[Path]:
     return next((p for p in candidates if p.exists()), None)
 
 
-def print_test_pdf_locations():
+def print_test_pdf_locations() -> None:
     """Print the expected test PDF locations for user guidance."""
     print("   Expected locations:")
     for path in TEST_PDF_PATHS:
         print(f"   - {path}")
 
 
-async def run_test_modal_endpoint():
+async def run_test_modal_endpoint() -> bool:
     """Test the Modal Dolphin OCR endpoint."""
     print("🧪 Testing Modal Dolphin OCR endpoint...")
 
     # Check if endpoint is configured
-    endpoint = os.getenv("DOLPHIN_ENDPOINT")
+    endpoint: Optional[str] = os.getenv("DOLPHIN_ENDPOINT")
     if not endpoint:
         print("❌ DOLPHIN_ENDPOINT not set in environment")
         return False
@@ -62,7 +61,7 @@ async def run_test_modal_endpoint():
     print(f"📡 Testing endpoint: {endpoint}")
 
     # Look for a test PDF file using the reusable function
-    test_pdf = find_test_pdf()
+    test_pdf: Optional[Path] = find_test_pdf()
     if not test_pdf:
         print("❌ No test PDF found. Please create a test PDF file.")
         print_test_pdf_locations()
@@ -72,7 +71,7 @@ async def run_test_modal_endpoint():
 
     try:
         # Test the Dolphin client
-        result = await get_layout(test_pdf)
+        result: Any = await get_layout(test_pdf)
 
         if not isinstance(result, dict):
             raise ValueError(f"Expected dict result, got {type(result)}")
@@ -82,7 +81,7 @@ async def run_test_modal_endpoint():
 
         # Print summary of results
         if "pages" in result:
-            pages = result["pages"]
+            pages: Any = result["pages"]
             if not isinstance(pages, list):
                 print(f"⚠️  Unexpected pages format: {type(pages)}")
                 return True
@@ -90,7 +89,7 @@ async def run_test_modal_endpoint():
             for i, page in enumerate(pages):
                 if not isinstance(page, dict):
                     continue
-                text_blocks = page.get("text_blocks", [])
+                text_blocks: Any = page.get("text_blocks", [])
                 print(f"   Page {i + 1}: {len(text_blocks)} text blocks")
 
         return True
@@ -100,23 +99,23 @@ async def run_test_modal_endpoint():
         return False
 
 
-async def run_test_local_fallback():
+async def run_test_local_fallback() -> bool:
     """Test fallback to local endpoint if available."""
     print("\n🧪 Testing local fallback endpoint...")
 
     # Temporarily override endpoint for local testing
-    original_endpoint = os.getenv("DOLPHIN_ENDPOINT")
+    original_endpoint: Optional[str] = os.getenv("DOLPHIN_ENDPOINT")
     os.environ["DOLPHIN_ENDPOINT"] = "http://localhost:8501/layout"
 
     try:
         # Look for a test PDF file using the reusable function
-        test_pdf = find_test_pdf()
+        test_pdf: Optional[Path] = find_test_pdf()
         if not test_pdf:
             print("⚠️  No test PDF found for local testing")
             print_test_pdf_locations()
             return True  # Not a failure, just skip
 
-        result = await get_layout(test_pdf)
+        await get_layout(test_pdf)
         print("✅ Local endpoint test successful!")
         return True
 
@@ -132,12 +131,12 @@ async def run_test_local_fallback():
             os.environ.pop("DOLPHIN_ENDPOINT", None)
 
 
-def check_modal_authentication():
+def check_modal_authentication() -> bool:
     """Check Modal authentication."""
     print("🔐 Checking Modal authentication...")
 
-    token_id = os.getenv("MODAL_TOKEN_ID")
-    token_secret = os.getenv("MODAL_TOKEN_SECRET")
+    token_id: Optional[str] = os.getenv("MODAL_TOKEN_ID")
+    token_secret: Optional[str] = os.getenv("MODAL_TOKEN_SECRET")
 
     if not token_id or not token_secret:
         print("❌ Modal authentication not configured")
@@ -148,22 +147,25 @@ def check_modal_authentication():
     return True
 
 
-def check_environment():
+def check_environment() -> bool:
     """Check the deployment environment."""
     print("🌍 Checking deployment environment...")
 
-    required_vars = [
+    required_vars: List[str] = [
         "DOLPHIN_ENDPOINT",
         "LINGO_API_KEY",
     ]
     # System dependencies checks: Poppler and fonts hints
     print("🔎 Checking system dependencies (informational)...")
     if sys.platform.startswith("linux") or sys.platform == "darwin":
-        poppler_hint = "Install 'poppler-utils' (Linux) or 'brew install poppler' (macOS) if pdf2image fails."
+        poppler_hint: str = (
+            "Install 'poppler-utils' (Linux) or 'brew install poppler' (macOS) "
+            "if pdf2image fails."
+        )
         print(f"   • Poppler: required by pdf2image. {poppler_hint}")
         print("   • Fonts: install DejaVu/Noto for consistent rendering.")
 
-    missing_vars = []
+    missing_vars: List[str] = []
     for var in required_vars:
         if not os.getenv(var):
             missing_vars.append(var)
@@ -178,7 +180,7 @@ def check_environment():
     return True
 
 
-async def main():
+async def main() -> None:
     """Main test function."""
     print("🧪 Modal Labs Deployment Test")
     print("=" * 40)
@@ -192,10 +194,10 @@ async def main():
         sys.exit(1)
 
     # Test Modal endpoint
-    modal_success = await run_test_modal_endpoint()
+    modal_success: bool = await run_test_modal_endpoint()
 
     # Test local fallback
-    local_fallback_success = await run_test_local_fallback()
+    local_fallback_success: bool = await run_test_local_fallback()
 
     print("\n" + "=" * 40)
     if modal_success and local_fallback_success:

@@ -8,14 +8,17 @@ evaluation.
 import json
 import os
 import time
+from typing import Any, Dict
 
 
-def demonstrate_web_eval_agent():
+def demonstrate_web_eval_agent() -> None:
     """Demonstrate the web-eval-agent capabilities."""
-    api_key = os.getenv("OP_API_KEY", "[API_KEY_NOT_SET]")
+    api_key: str = os.getenv("OP_API_KEY", "[API_KEY_NOT_SET]")
     # Resolve demo URL from environment with sensible default
-    default_demo_url = "http://localhost:8000/static/demos/web-eval/demo.html"
-    demo_url = os.getenv("WEB_EVAL_DEMO_URL", default_demo_url)
+    default_demo_url: str = (
+        "http://localhost:8000/static/demos/web-eval/demo.html"
+    )
+    demo_url: str = os.getenv("WEB_EVAL_DEMO_URL", default_demo_url)
     print("🚀 Web Eval Agent MCP Server Demonstration")
     print("=" * 50)
 
@@ -39,7 +42,8 @@ def demonstrate_web_eval_agent():
     print("\n🎯 Demonstration Task:")
     print(f"  Evaluating {demo_url}")
     print(
-        "  Task: 'Evaluate the web page for user experience issues and test the button functionality'"
+        "  Task: 'Evaluate the web page for user experience issues and test "
+        "the button functionality'"
     )
 
     # Simulate the evaluation process
@@ -55,7 +59,7 @@ def demonstrate_web_eval_agent():
 
     # Show sample output
     print("\n📊 Evaluation Results:")
-    sample_report = {
+    sample_report: Dict[str, Any] = {
         "url": demo_url,
         "task": (
             "Evaluate the web page for user experience issues and test the "
@@ -97,5 +101,10 @@ def demonstrate_web_eval_agent():
     print("You can now use it in your IDE to evaluate web applications.")
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Main function to run the web evaluation demonstration."""
     demonstrate_web_eval_agent()
+
+
+if __name__ == "__main__":
+    main()
