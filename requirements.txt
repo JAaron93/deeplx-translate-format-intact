@@ -37,7 +37,7 @@ Pygments==2.19.2
 Pillow==11.3.0
 pdf2image==1.17.0
 pypdf==5.1.0
-reportlab==4.2.5
+reportlab==4.4.3
 python-dotenv==1.1.1
 requests==2.32.4
 rich==14.1.0
