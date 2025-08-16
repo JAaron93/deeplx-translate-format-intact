@@ -1,5 +1,6 @@
-"""Configuration settings for Dolphin OCR Translate with enhanced image handling
-and parallel processing.
+"""Configuration settings for Dolphin OCR Translate.
+
+Enhanced image handling and parallel processing.
 """
 
 import json
@@ -7,11 +8,49 @@ import logging
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except Exception:  # pragma: no cover - optional at runtime
+    def load_dotenv() -> None:  # type: ignore[misc]
+        return None
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_int_env(
+    var_name: str, default_value: int, min_value: int | None = None
+) -> int:
+    """Parse an int env var with optional minimum clamp and default fallback."""
+    raw_value = os.getenv(var_name)
+    if raw_value is None:
+        return default_value if min_value is None else max(min_value, default_value)
+    try:
+        parsed_value = int(raw_value)
+    except ValueError as exc:
+        logger.error("Invalid %s: %s; default %s", var_name, exc, default_value)
+        return default_value if min_value is None else max(min_value, default_value)
+    if min_value is not None:
+        parsed_value = max(min_value, parsed_value)
+    return parsed_value
+
+
+def _parse_float_env(
+    var_name: str, default_value: float, min_value: float | None = None
+) -> float:
+    """Parse a float env var with optional minimum clamp and default fallback."""
+    raw_value = os.getenv(var_name)
+    if raw_value is None:
+        return default_value if min_value is None else max(min_value, default_value)
+    try:
+        parsed_value = float(raw_value)
+    except ValueError as exc:
+        logger.error("Invalid %s: %s; default %s", var_name, exc, default_value)
+        return default_value if min_value is None else max(min_value, default_value)
+    if min_value is not None:
+        parsed_value = max(min_value, parsed_value)
+    return parsed_value
 
 
 class Config:
@@ -95,63 +134,45 @@ class Config:
     # Load Klages terminology dictionary from external JSON for
     # easier maintenance
     _TERMINOLOGY_FILE = Path(__file__).parent / "klages_terminology.json"
+    KLAGES_TERMINOLOGY: dict[str, str] = {}
     try:
         with _TERMINOLOGY_FILE.open("r", encoding="utf-8") as f:
-            KLAGES_TERMINOLOGY: dict[str, str] = json.load(f)
+            KLAGES_TERMINOLOGY = json.load(f)
     except FileNotFoundError:
-        logger.warning(f"Klages terminology file not found: {_TERMINOLOGY_FILE}")
-        KLAGES_TERMINOLOGY: dict[str, str] = {}
+        logger.warning(
+            "Klages terminology file not found: %s", _TERMINOLOGY_FILE
+        )
     except json.JSONDecodeError as e:
-        logger.error(f"Error parsing Klages terminology JSON: {e}")
-        KLAGES_TERMINOLOGY: dict[str, str] = {}
+        logger.error(
+            "Error parsing Klages terminology JSON at '%s': %s",
+            _TERMINOLOGY_FILE,
+            e,
+        )
 
     # PDF processing settings
-    try:
-        PDF_DPI: int = max(72, int(os.getenv("PDF_DPI", "300")))  # Minimum 72 DPI
-        MEMORY_THRESHOLD_MB: int = max(
-            100, int(os.getenv("MEMORY_THRESHOLD_MB", "500"))
-        )  # MB, min 100
-        TRANSLATION_DELAY: float = max(
-            0.0, float(os.getenv("TRANSLATION_DELAY", "0.1"))
-        )
-    except ValueError as e:
-        logger.error(f"Invalid configuration value: {e}")
-        # Set default values if parsing fails
-        PDF_DPI: int = 300
-        MEMORY_THRESHOLD_MB: int = 500
-        TRANSLATION_DELAY: float = 0.1
+    # Parse independently so one bad value does not reset others
+    PDF_DPI: int = _parse_int_env("PDF_DPI", 300, 72)
+    MEMORY_THRESHOLD_MB: int = _parse_int_env("MEMORY_THRESHOLD_MB", 500, 100)
+    TRANSLATION_DELAY: float = _parse_float_env("TRANSLATION_DELAY", 0.1, 0.0)
 
     PRESERVE_IMAGES: bool = os.getenv("PRESERVE_IMAGES", "true").lower() == "true"
 
     # Parallel processing settings
-    try:
-        MAX_CONCURRENT_REQUESTS: int = max(
-            1, int(os.getenv("MAX_CONCURRENT_REQUESTS", "10"))
-        )
-        MAX_REQUESTS_PER_SECOND: float = max(
-            0.1, float(os.getenv("MAX_REQUESTS_PER_SECOND", "5.0"))
-        )
-        TRANSLATION_BATCH_SIZE: int = max(
-            1, int(os.getenv("TRANSLATION_BATCH_SIZE", "50"))
-        )
-        TRANSLATION_MAX_RETRIES: int = max(
-            0, int(os.getenv("TRANSLATION_MAX_RETRIES", "3"))
-        )
-        TRANSLATION_REQUEST_TIMEOUT: float = max(
-            1.0, float(os.getenv("TRANSLATION_REQUEST_TIMEOUT", "30.0"))
-        )
-        PARALLEL_PROCESSING_THRESHOLD: int = max(
-            1, int(os.getenv("PARALLEL_PROCESSING_THRESHOLD", "5"))
-        )
-    except ValueError as e:
-        logger.error(f"Invalid parallel processing configuration value: {e}")
-        # Set default values if parsing fails
-        MAX_CONCURRENT_REQUESTS: int = 10
-        MAX_REQUESTS_PER_SECOND: float = 5.0
-        TRANSLATION_BATCH_SIZE: int = 50
-        TRANSLATION_MAX_RETRIES: int = 3
-        TRANSLATION_REQUEST_TIMEOUT: float = 30.0
-        PARALLEL_PROCESSING_THRESHOLD: int = 5
+    # Parallel processing settings - parse independently as well
+    MAX_CONCURRENT_REQUESTS: int = _parse_int_env(
+        "MAX_CONCURRENT_REQUESTS", 10, 1
+    )
+    MAX_REQUESTS_PER_SECOND: float = _parse_float_env(
+        "MAX_REQUESTS_PER_SECOND", 5.0, 0.1
+    )
+    TRANSLATION_BATCH_SIZE: int = _parse_int_env("TRANSLATION_BATCH_SIZE", 50, 1)
+    TRANSLATION_MAX_RETRIES: int = _parse_int_env("TRANSLATION_MAX_RETRIES", 3, 0)
+    TRANSLATION_REQUEST_TIMEOUT: float = _parse_float_env(
+        "TRANSLATION_REQUEST_TIMEOUT", 30.0, 1.0
+    )
+    PARALLEL_PROCESSING_THRESHOLD: int = _parse_int_env(
+        "PARALLEL_PROCESSING_THRESHOLD", 5, 1
+    )
 
     @classmethod
     def validate_config(cls) -> bool:
@@ -191,7 +212,10 @@ class Config:
                     Path(dir_path).mkdir(parents=True, exist_ok=True)
                 except (OSError, PermissionError, ValueError) as e:
                     logger.error(
-                        f"Cannot create or access {dir_name} '{dir_path}': {e}"
+                        "Cannot create or access %s '%s': %s",
+                        dir_name,
+                        dir_path,
+                        e,
                     )
                     validation_passed = False
 

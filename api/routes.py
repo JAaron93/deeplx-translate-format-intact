@@ -83,11 +83,23 @@ async def philosophy_interface(request: Request) -> HTMLResponse:
 async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
     """Save a user choice for a neologism."""
     try:
-        # Extract choice data with conservative typing
-        term = str(choice_data.get("term", ""))
+        # Extract choice data with explicit validation
+        term = choice_data.get("term")
+        if not isinstance(term, str) or not term.strip():
+            raise HTTPException(status_code=400, detail="Term must be a non-empty string")
+        
         choice_value = str(choice_data.get("choice", "preserve"))
         custom_translation = str(choice_data.get("custom_translation", ""))
         notes = str(choice_data.get("notes", ""))
+
+
+
+
+
+
+
+
+
         session_id = choice_data.get("session_id")
 
         # Create a simple neologism representation
@@ -152,11 +164,7 @@ async def get_detected_neologisms(
             if state.neologism_analysis
             else []
         )
-        total = (
-            len(state.neologism_analysis.get("detected_neologisms", []))
-            if state.neologism_analysis
-            else 0
-        )
+        total = len(neologisms)
         return {"neologisms": neologisms, "total": total}
     except Exception as e:
         logger.error("Error getting neologisms: %s", e)
@@ -303,8 +311,10 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
         content = document_processor.extract_content(file_path)
 
         # Detect language using the utility function
-        sample_text = extract_text_sample_for_language_detection(content)
-        detected_lang = language_detector.detect_language_from_text(sample_text)
+        sample_text = extract_text_sample_for_language_detection(content) or ""
+        detected_lang = (
+            language_detector.detect_language_from_text(sample_text) if sample_text else None
+        )
 
         # Clean metadata access pattern
         metadata = content.get("metadata")
@@ -413,6 +423,8 @@ async def download_result(job_id: str) -> FileResponse:
             status_code=400,
             detail="Translation not completed",
         )
+    if not Path(job["output_file"]).exists():
+        raise HTTPException(status_code=404, detail="Output file not found")
 
     return FileResponse(
         job["output_file"],

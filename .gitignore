@@ -46,6 +46,8 @@ pyvenv.cfg
 .coverage
 .coverage.*
 htmlcov/
+.coverage/
+.coverage
 .mypy_cache/
 .dmypy.json
 dmypy.json
@@ -58,6 +60,9 @@ noxfile_config.json
 .hypothesis/
 .pytype/
 cov.xml
+coverage.xml
+nosetests.xml
+coverage/
 *.coveragerc
 .stestr/
 .testrepository/
@@ -302,9 +307,6 @@ WARP.md
 # Rope
 .ropeproject
 
-# mkdocs
-/site
-
 # Pyre
 .pyre/
 
@@ -354,20 +356,7 @@ poetry.lock
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-coverage/
+# Unit test / coverage reports (moved and consolidated above)
 
 # Scrapy
 .scrapy

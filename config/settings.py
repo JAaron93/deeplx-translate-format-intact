@@ -213,7 +213,7 @@ def _parse_bool_env(env_var: str, default: str = "false") -> bool:
             )
             raise ValueError(f"Invalid boolean value for {env_var}: {value}")
     except AttributeError as e:
-        logger.error(f"Error parsing boolean environment variable {env_var}: {e}")
+        logger.exception("Error parsing boolean environment variable %s", env_var)
         raise ValueError(f"Error parsing {env_var}: {e}") from e
 
 
@@ -448,5 +448,5 @@ class Settings:
             return True
 
         except (OSError, PermissionError) as e:
-            logger.error(f"Directory writability check failed for '{directory}': {e}")
+            logger.exception("Directory writability check failed for '%s'", directory)
             return False

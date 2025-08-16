@@ -10,22 +10,25 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+
     groups:
       dev-tools:
         patterns:
           - "pytest*"
           - "mypy*"
           - "ruff*"
-          - "pytest-asyncio*"
-          - "pytest-cov*"
-          - "pytest-xdist*"
-          - "pytest-rerunfailures*"
-    ignore:
-      - dependency-name: "gradio"
-        # UI stack updates are coordinated separately
-        update-types: ["version-update:semver-major"]
+          # Optionally add if you use typing stubs:
+          # - "types-*"
+    # Policy: Track all Gradio updates (including majors) to stay consistent with upstream.
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

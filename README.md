@@ -90,7 +90,7 @@ Download Translated PDF
 ### Requirements
 
 - Python 3.11 or 3.12 recommended (3.8–3.12 supported). Python 3.13 support pending due to Pillow 10 wheels.
-- Core libs are pinned in `requirements.txt` (e.g., `pdf2image==3.1.0`, `Pillow==10.0.0`, `reportlab==4.0.0`, `pypdf`).
+- Core libs are pinned in `requirements.txt` (e.g., `pdf2image==1.17.0`, `Pillow==11.3.0`, `reportlab==4.2.5`, `pypdf==5.1.0`).
 - Client/Server: `fastapi`, `uvicorn`, `httpx`
 - UI: `gradio`
 - Testing: `pytest`, `pytest-cov`
@@ -147,7 +147,7 @@ Download Translated PDF
 Example command:
 
 ```bash
-GRADIO_SCHEMA_PATCH=true GRADIO_SHARE=true pytest -q tests/test_ui_gradio.py
+GRADIO_SCHEMA_PATCH=true GRADIO_SHARE=true pytest -q -m "not slow" tests/test_ui_gradio.py
 ```
 
 ## 🔧 Configuration
@@ -353,7 +353,7 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 
 ### Compatibility notes
 - Supported Python: 3.8–3.12 (3.11/3.12 recommended). Python 3.13 support pending due to Pillow 10 wheels.
-- Optional: `pypdf` for PDF parsing and page counting; required by this repo
+- Required: `pypdf` for PDF parsing and page counting (used for page counting and metadata)
 - Plugins depending on `fitz` must be removed or rewritten
 - Rollback: check out a pre-migration tag that still uses PyMuPDF/fitz; note that tests and routes will differ
 
@@ -398,6 +398,7 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 - Ensure ReportLab can locate fonts or embed fallbacks (e.g., register fonts explicitly when needed; see ReportLab font docs).
 
 Optional code snippet to illustrate explicit font registration in ReportLab:
+Note: The snippet uses placeholders (e.g., /path/to/DejaVuSans.ttf, canvas_obj). Adjust paths and create a canvas before use.
 
 ```python
 from reportlab.pdfbase import pdfmetrics
