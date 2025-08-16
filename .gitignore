@@ -304,9 +304,6 @@ WARP.md
 # Pyre
 .pyre/
 
-# pyright
-pyrightconfig.json
-
 # Celery
 celerybeat-schedule
 celerybeat.pid
@@ -343,8 +340,6 @@ poetry.lock
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
-# Unit test / coverage reports (consolidated here)
 
 # PyBuilder
 .pybuilder/

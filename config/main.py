@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T", int, float)
 
+# Boolean environment variable parsing constants
+TRUTHY = {"1", "true", "yes", "on"}
+FALSY = {"0", "false", "no", "off"}
+
 
 def _parse_env(
     var_name: str,
@@ -34,9 +38,14 @@ def _parse_env(
     """Parse an environment variable with a coerce function and optional
     minimum clamp.
     """
+    fallback_value: T = (
+        max(min_value, default_value)
+        if min_value is not None
+        else default_value
+    )
     raw_value = os.getenv(var_name)
     if raw_value is None:
-        return max(min_value, default_value) if min_value is not None else default_value
+        return fallback_value
 
     try:
         parsed_value = coerce(raw_value)
@@ -46,8 +55,9 @@ def _parse_env(
             var_name,
             raw_value,
             default_value,
+            exc_info=True,
         )
-        return max(min_value, default_value) if min_value is not None else default_value
+        return fallback_value
 
     if min_value is not None:
         parsed_value = max(min_value, parsed_value)
@@ -67,10 +77,6 @@ def _parse_bool_env(var_name: str, default_value: bool) -> bool:
 
     # Normalize the value to lowercase and strip whitespace
     normalized_value = raw_value.lower().strip()
-
-    # Define explicit truthy and falsy value sets
-    TRUTHY = {"1", "true", "yes", "on"}
-    FALSY = {"0", "false", "no", "off"}
 
     # Return True only for explicit truthy values
     if normalized_value in TRUTHY:

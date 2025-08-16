@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import pytest as pytest_api
 
-pytest_plugins: list[str] = ["pytest_asyncio"]
+pytest_plugins: tuple[str, ...] = ("pytest_asyncio",)
 
 
 def pytest_configure(config: pytest_api.Config) -> None:
