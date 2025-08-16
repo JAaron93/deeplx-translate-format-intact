@@ -7,50 +7,70 @@ import json
 import logging
 import os
 from pathlib import Path
+from types import MappingProxyType
+from typing import Callable, Mapping, TypeVar, Union
 
 try:
     from dotenv import load_dotenv
-except Exception:  # pragma: no cover - optional at runtime
-    def load_dotenv() -> None:  # type: ignore[misc]
-        return None
+except ImportError:  # pragma: no cover - optional at runtime
+    # Fallback no-op with signature compatible to python-dotenv
+    def load_dotenv(*args: object, **kwargs: object) -> bool:
+        return False
+
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar("T", int, float)
 
-def _parse_int_env(
-    var_name: str, default_value: int, min_value: int | None = None
-) -> int:
-    """Parse an int env var with optional minimum clamp and default fallback."""
+
+def _parse_env(
+    var_name: str,
+    default_value: T,
+    coerce: Callable[[str], T],
+    min_value: T | None = None
+) -> T:
+    """Parse an environment variable with a coerce function and optional
+    minimum clamp."""
     raw_value = os.getenv(var_name)
     if raw_value is None:
-        return default_value if min_value is None else max(min_value, default_value)
+        if min_value is None:
+            return default_value
+        else:
+            return coerce(max(min_value, default_value)) if isinstance(min_value, (int, float)) and isinstance(default_value, (int, float)) else default_value
     try:
-        parsed_value = int(raw_value)
-    except ValueError as exc:
-        logger.error("Invalid %s: %s; default %s", var_name, exc, default_value)
-        return default_value if min_value is None else max(min_value, default_value)
+        parsed_value = coerce(raw_value)
+    except (ValueError, TypeError) as exc:
+        logger.error(
+            "Invalid %s: %s; default %s",
+            var_name,
+            exc,
+            default_value
+        )
+        if min_value is None:
+            return default_value
+        else:
+            # For numeric types, we can compare them
+            if isinstance(default_value, (int, float)) and isinstance(min_value, (int, float)):
+                return coerce(max(min_value, default_value))
+            return default_value
     if min_value is not None:
-        parsed_value = max(min_value, parsed_value)
+        parsed_value = max(min_value, parsed_value) if isinstance(min_value, (int, float)) and isinstance(parsed_value, (int, float)) else parsed_value
     return parsed_value
 
-
-def _parse_float_env(
-    var_name: str, default_value: float, min_value: float | None = None
-) -> float:
-    """Parse a float env var with optional minimum clamp and default fallback."""
+def _parse_bool_env(var_name: str, default_value: bool) -> bool:
+    """Parse a boolean environment variable with consistent truthy handling."""
     raw_value = os.getenv(var_name)
     if raw_value is None:
-        return default_value if min_value is None else max(min_value, default_value)
-    try:
-        parsed_value = float(raw_value)
-    except ValueError as exc:
-        logger.error("Invalid %s: %s; default %s", var_name, exc, default_value)
-        return default_value if min_value is None else max(min_value, default_value)
-    if min_value is not None:
-        parsed_value = max(min_value, parsed_value)
-    return parsed_value
+        return default_value
+    # Normalize the value to lowercase and strip whitespace
+    normalized_value = raw_value.lower().strip()
+    # Return True for recognized truthy values
+    if normalized_value in {"1", "true", "yes", "on"}:
+        return True
+    # Return False for all other values (including falsy ones and invalid ones)
+    return False
 
 
 class Config:
@@ -134,14 +154,28 @@ class Config:
     # Load Klages terminology dictionary from external JSON for
     # easier maintenance
     _TERMINOLOGY_FILE = Path(__file__).parent / "klages_terminology.json"
-    KLAGES_TERMINOLOGY: dict[str, str] = {}
+    KLAGES_TERMINOLOGY: Mapping[str, str] = MappingProxyType({})
     try:
         with _TERMINOLOGY_FILE.open("r", encoding="utf-8") as f:
-            KLAGES_TERMINOLOGY = json.load(f)
+            _raw = json.load(f)
+        if isinstance(_raw, dict) and all(
+            isinstance(k, str) and isinstance(v, str) for k, v in _raw.items()
+        ):
+            KLAGES_TERMINOLOGY = MappingProxyType(_raw)
+            logger.info(
+                "Loaded %d terminology entries from %s",
+                len(KLAGES_TERMINOLOGY),
+                _TERMINOLOGY_FILE,
+            )
+        else:
+            logger.error(
+                "Invalid Klages terminology structure in '%s': expected mapping[str, str], got: %s",
+                _TERMINOLOGY_FILE,
+                type(_raw).__name__,
+            )
+            KLAGES_TERMINOLOGY = MappingProxyType({})
     except FileNotFoundError:
-        logger.warning(
-            "Klages terminology file not found: %s", _TERMINOLOGY_FILE
-        )
+        logger.warning("Klages terminology file not found: %s", _TERMINOLOGY_FILE)
     except json.JSONDecodeError as e:
         logger.error(
             "Error parsing Klages terminology JSON at '%s': %s",
@@ -151,27 +185,31 @@ class Config:
 
     # PDF processing settings
     # Parse independently so one bad value does not reset others
-    PDF_DPI: int = _parse_int_env("PDF_DPI", 300, 72)
-    MEMORY_THRESHOLD_MB: int = _parse_int_env("MEMORY_THRESHOLD_MB", 500, 100)
-    TRANSLATION_DELAY: float = _parse_float_env("TRANSLATION_DELAY", 0.1, 0.0)
+    PDF_DPI: int = _parse_env("PDF_DPI", 300, int, 72)
+    MEMORY_THRESHOLD_MB: int = _parse_env("MEMORY_THRESHOLD_MB", 500, int, 100)
+    TRANSLATION_DELAY: float = _parse_env("TRANSLATION_DELAY", 0.1, float, 0.0)
 
-    PRESERVE_IMAGES: bool = os.getenv("PRESERVE_IMAGES", "true").lower() == "true"
+    PRESERVE_IMAGES: bool = _parse_bool_env("PRESERVE_IMAGES", True)
 
     # Parallel processing settings
     # Parallel processing settings - parse independently as well
-    MAX_CONCURRENT_REQUESTS: int = _parse_int_env(
-        "MAX_CONCURRENT_REQUESTS", 10, 1
+    MAX_CONCURRENT_REQUESTS: int = _parse_env(
+        "MAX_CONCURRENT_REQUESTS", 10, int, 1
     )
-    MAX_REQUESTS_PER_SECOND: float = _parse_float_env(
-        "MAX_REQUESTS_PER_SECOND", 5.0, 0.1
+    MAX_REQUESTS_PER_SECOND: float = _parse_env(
+        "MAX_REQUESTS_PER_SECOND", 5.0, float, 0.1
     )
-    TRANSLATION_BATCH_SIZE: int = _parse_int_env("TRANSLATION_BATCH_SIZE", 50, 1)
-    TRANSLATION_MAX_RETRIES: int = _parse_int_env("TRANSLATION_MAX_RETRIES", 3, 0)
-    TRANSLATION_REQUEST_TIMEOUT: float = _parse_float_env(
-        "TRANSLATION_REQUEST_TIMEOUT", 30.0, 1.0
+    TRANSLATION_BATCH_SIZE: int = _parse_env(
+        "TRANSLATION_BATCH_SIZE", 50, int, 1
     )
-    PARALLEL_PROCESSING_THRESHOLD: int = _parse_int_env(
-        "PARALLEL_PROCESSING_THRESHOLD", 5, 1
+    TRANSLATION_MAX_RETRIES: int = _parse_env(
+        "TRANSLATION_MAX_RETRIES", 3, int, 0
+    )
+    TRANSLATION_REQUEST_TIMEOUT: float = _parse_env(
+        "TRANSLATION_REQUEST_TIMEOUT", 30.0, float, 1.0
+    )
+    PARALLEL_PROCESSING_THRESHOLD: int = _parse_env(
+        "PARALLEL_PROCESSING_THRESHOLD", 5, int, 1
     )
 
     @classmethod
@@ -281,7 +319,8 @@ class Config:
         # Validate terminology dictionary
         if not isinstance(cls.KLAGES_TERMINOLOGY, dict):
             logger.error(
-                f"KLAGES_TERMINOLOGY must be a dictionary, got {type(cls.KLAGES_TERMINOLOGY)}"
+                f"KLAGES_TERMINOLOGY must be a dictionary, "
+                f"got {type(cls.KLAGES_TERMINOLOGY)}"
             )
             validation_passed = False
 

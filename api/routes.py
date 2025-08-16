@@ -86,22 +86,18 @@ async def save_user_choice(choice_data: Dict[str, Any]) -> Dict[str, Any]:
         # Extract choice data with explicit validation
         term = choice_data.get("term")
         if not isinstance(term, str) or not term.strip():
-            raise HTTPException(status_code=400, detail="Term must be a non-empty string")
-        
+            raise HTTPException(
+                status_code=400, detail="Term must be a non-empty string"
+            )
+
         choice_value = str(choice_data.get("choice", "preserve"))
         custom_translation = str(choice_data.get("custom_translation", ""))
         notes = str(choice_data.get("notes", ""))
 
-
-
-
-
-
-
-
-
         session_id = choice_data.get("session_id")
 
+        # Create a simple neologism representation
+        # Create a simple neologism representation
         # Create a simple neologism representation
         neologism = DetectedNeologism(
             term=term,
@@ -311,9 +307,11 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
         content = document_processor.extract_content(file_path)
 
         # Detect language using the utility function
-        sample_text = extract_text_sample_for_language_detection(content) or ""
+        sample_text = (extract_text_sample_for_language_detection(content) or "").strip()
         detected_lang = (
-            language_detector.detect_language_from_text(sample_text) if sample_text else None
+            language_detector.detect_language_from_text(sample_text)
+            if sample_text
+            else None
         )
 
         # Clean metadata access pattern
@@ -331,7 +329,7 @@ async def upload_file(file: UploadFile = File(...)) -> Dict[str, Any]:  # noqa: 
         return {
             "message": "File processed with advanced extraction",
             "filename": file.filename,
-            "detected_language": detected_lang,
+            "detected_language": detected_lang or "unknown",
             "file_path": file_path,
             "content_type": content["type"],
             "metadata": metadata_dict,
@@ -423,15 +421,15 @@ async def download_result(job_id: str) -> FileResponse:
             status_code=400,
             detail="Translation not completed",
         )
-    if not Path(job["output_file"]).exists():
+    try:
+        return FileResponse(
+            job["output_file"],
+            media_type="application/octet-stream",
+            filename=Path(job["output_file"]).name,
+            headers={
+                "X-Processing-Type": "advanced",
+                "X-Format-Preserved": "true",
+            },
+        )
+    except (FileNotFoundError, OSError):
         raise HTTPException(status_code=404, detail="Output file not found")
-
-    return FileResponse(
-        job["output_file"],
-        media_type="application/octet-stream",
-        filename=Path(job["output_file"]).name,
-        headers={
-            "X-Processing-Type": "advanced",
-            "X-Format-Preserved": "true",
-        },
-    )

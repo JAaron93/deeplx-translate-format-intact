@@ -28,8 +28,6 @@ dist/
 pip-wheel-metadata/
 *.whl
 MANIFEST
-pip-log.txt
-pip-delete-this-directory.txt
 
 # Virtual environments
 venv/
@@ -46,12 +44,9 @@ pyvenv.cfg
 .coverage
 .coverage.*
 htmlcov/
-.coverage/
-.coverage
 .mypy_cache/
 .dmypy.json
 dmypy.json
-.cache/
 .tox/
 noxfile_config.json
 .nox/
@@ -356,10 +351,8 @@ poetry.lock
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports (moved and consolidated above)
-
-# Scrapy
-.scrapy
+# Unit test / coverage reports (partially consolidated above)
+# TODO: ensure no duplicate patterns remain in future edits
 
 # PyBuilder
 .pybuilder/

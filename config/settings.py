@@ -362,7 +362,7 @@ class Settings:
         valid = True
         for directory in directories_to_check:
             if not self._check_directory_writable(directory):
-                logger.error(f"Directory '{directory}' is not writable")
+                # Avoid double-logging here; _check_directory_writable logs at error level
                 valid = False
 
         return valid
@@ -447,6 +447,10 @@ class Settings:
             os.remove(test_file_path)
             return True
 
-        except (OSError, PermissionError) as e:
-            logger.exception("Directory writability check failed for '%s'", directory)
+        except (OSError, PermissionError) as err:
+            # Log without traceback at error level for expected validation failures
+            logger.error("Directory not writable: '%s'", directory)
+            # Emit traceback only in debug mode for diagnostics
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("Directory check error for '%s': %s", directory, err, exc_info=True)
             return False

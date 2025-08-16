@@ -91,6 +91,9 @@ Download Translated PDF
 
 - Python 3.11 or 3.12 recommended (3.8–3.12 supported). Python 3.13 support pending due to Pillow 10 wheels.
 - Core libs are pinned in `requirements.txt` (e.g., `pdf2image==1.17.0`, `Pillow==11.3.0`, `reportlab==4.2.5`, `pypdf==5.1.0`).
+- Poppler runtime required by `pdf2image` (provides `pdftoppm`/`pdfinfo`). Ensure it's installed and on PATH:
+  - Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y poppler-utils`
+  - macOS: `brew install poppler`
 - Client/Server: `fastapi`, `uvicorn`, `httpx`
 - UI: `gradio`
 - Testing: `pytest`, `pytest-cov`
@@ -353,7 +356,7 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 
 ### Compatibility notes
 - Supported Python: 3.8–3.12 (3.11/3.12 recommended). Python 3.13 support pending due to Pillow 10 wheels.
-- Required: `pypdf` for PDF parsing and page counting (used for page counting and metadata)
+- Required: `pypdf` for PDF parsing, page counting, and metadata extraction
 - Plugins depending on `fitz` must be removed or rewritten
 - Rollback: check out a pre-migration tag that still uses PyMuPDF/fitz; note that tests and routes will differ
 
@@ -403,6 +406,7 @@ Note: The snippet uses placeholders (e.g., /path/to/DejaVuSans.ttf, canvas_obj).
 ```python
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.styles import ParagraphStyle
 
 pdfmetrics.registerFont(TTFont("DejaVuSans", "/path/to/DejaVuSans.ttf"))
 canvas_obj.setFont("DejaVuSans", 12)

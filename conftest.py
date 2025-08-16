@@ -2,14 +2,19 @@ from __future__ import annotations
 
 import os
 from typing import TYPE_CHECKING
+import pytest as pytest_api
 
 if TYPE_CHECKING:
-    import pytest
+    try:
+        from pytest import Config as PytestConfig  # pytest >= 7 public API
+    except Exception:
+        # Fallback for older pytest versions that don't re-export via `pytest.Config`
+        from _pytest.config import Config as PytestConfig
 
 pytest_plugins: list[str] = ["pytest_asyncio"]
 
 
-def pytest_configure(config: pytest.Config) -> None:
+def pytest_configure(config: pytest_api.Config) -> None:
     """Set required environment variables for tests early in startup.
 
     This runs before test collection, ensuring modules that read environment
@@ -18,4 +23,4 @@ def pytest_configure(config: pytest.Config) -> None:
     os.environ.setdefault("SECRET_KEY", "test-secret-key")
     # When focusing, quiet output at runtime without relying on pre-parsed addopts
     if os.getenv("FOCUSED"):
-        config.option.quiet = 1
+        config.option.quiet = max(getattr(config.option, "quiet", 0), 1)

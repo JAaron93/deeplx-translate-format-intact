@@ -6,7 +6,7 @@ This project uses pinned dev tooling and automation to keep CI stable and reprod
 
 - Pytest is configured in `pytest.ini`:
   - `asyncio_mode = auto` for `pytest-asyncio>=0.23` on pytest 8.
-  - Markers include `load` and `slow`. Use `-m "not slow"` to skip slower suites. Example: pytest -q -m "not slow and not load"
+  - Markers include `load` and `slow`. Use `-m "not slow"` to skip slower suites. Example: `pytest -q -m "not slow and not load"`. Use `pytest --markers` to list available markers. Declare any custom markers in `pytest.ini` to avoid PytestUnknownMarkWarning.
   - Coverage gates are applied by default; set `FOCUSED=1` to disable locally for focused runs.
 - Ruff and mypy live in `pyproject.toml` under `[tool.ruff]` and `[tool.mypy]` so local and CI share rules.
 - Runtime deps: `requirements.txt`. Dev-only pins: `requirements-dev.txt` (includes `-r requirements.txt`).
