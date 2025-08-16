@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", int, float)
 
 # Boolean environment variable parsing constants
-TRUTHY = {"1", "true", "yes", "on"}
-FALSY = {"0", "false", "no", "off"}
+TRUTHY: frozenset[str] = frozenset({"1", "true", "yes", "on"})
+FALSY: frozenset[str] = frozenset({"0", "false", "no", "off"})
 
 
 def _parse_env(
@@ -39,23 +39,22 @@ def _parse_env(
     minimum clamp.
     """
     fallback_value: T = (
-        max(min_value, default_value)
-        if min_value is not None
-        else default_value
+        max(min_value, default_value) if min_value is not None else default_value
     )
     raw_value = os.getenv(var_name)
     if raw_value is None:
+        logger.debug("%s not set; using fallback %s", var_name, fallback_value)
         return fallback_value
 
     try:
         parsed_value = coerce(raw_value)
     except (ValueError, TypeError):
         logger.error(
-            "Invalid %s=%r; falling back to default %s",
+            "Invalid %s=%r; falling back to %s",
             var_name,
             raw_value,
-            default_value,
-            exc_info=True,
+            fallback_value,
+            exc_info=False,
         )
         return fallback_value
 

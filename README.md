@@ -401,7 +401,7 @@ The legacy PyMuPDF/fitz-based engine has been removed and replaced with Dolphin 
 - Ensure ReportLab can locate fonts or embed fallbacks (e.g., register fonts explicitly when needed; see ReportLab font docs).
 
 Optional code snippet to illustrate explicit font registration in ReportLab:
-Note: The snippet uses placeholders (e.g., /path/to/DejaVuSans.ttf, canvas_obj). Adjust paths and create a canvas before use.
+Note: The snippet uses placeholders (e.g., /path/to/DejaVuSans.ttf). Adjust the font path to your environment.
 
 ```python
 from reportlab.pdfbase import pdfmetrics
@@ -418,12 +418,13 @@ pdfmetrics.registerFont(TTFont("DejaVuSans", "/path/to/DejaVuSans.ttf"))
 # Optional: canvas_obj.setFont affects direct canvas text (e.g., drawString),
 # but Paragraph rendering uses the fontName in its ParagraphStyle.
 canvas_obj.setFont("DejaVuSans", 12)
+canvas_obj.drawString(1*inch, 10.5*inch, "Direct canvas text with DejaVuSans")
 style = ParagraphStyle("Body", fontName="DejaVuSans", fontSize=12)
 # Draw a simple paragraph using the defined style on an existing canvas
 para = Paragraph("Sample body text rendered with DejaVuSans.", style)
 avail_width, avail_height = 500, 800  # adjust to your layout
 para.wrapOn(canvas_obj, avail_width, avail_height)
-para.drawOn(canvas_obj, x=72, y=720)  # adjust position as needed (72pt = 1 inch)
+para.drawOn(canvas_obj, x=1*inch, y=10*inch)  # adjust position as needed (72pt = 1 inch)
 
 # Finalize the page and write the PDF to disk
 canvas_obj.showPage()
