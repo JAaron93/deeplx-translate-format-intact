@@ -11,7 +11,7 @@ cobble==0.1.4
 confection==0.1.5
 cymem==2.0.11
 fastapi==0.115.6
-gradio==5.9.1
+gradio==5.31.0
 h11==0.16.0
 httpcore==1.0.9
 httpx==0.28.1
