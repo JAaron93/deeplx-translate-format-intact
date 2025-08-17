@@ -207,14 +207,18 @@ class TranslationService:
                             os.getenv("LINGO_MCP_STARTUP_TIMEOUT", "20")
                         )
                     except ValueError:
-                        logger.warning("Invalid LINGO_MCP_STARTUP_TIMEOUT value, using default 20.0")
+                        logger.warning(
+                            "Invalid LINGO_MCP_STARTUP_TIMEOUT value, using default 20.0"
+                        )
                         startup_timeout = 20.0
                     try:
                         call_timeout: float = float(
                             os.getenv("LINGO_MCP_CALL_TIMEOUT", "60")
                         )
                     except ValueError:
-                        logger.warning("Invalid LINGO_MCP_CALL_TIMEOUT value, using default 60.0")
+                        logger.warning(
+                            "Invalid LINGO_MCP_CALL_TIMEOUT value, using default 60.0"
+                        )
                         call_timeout = 60.0
 
                     cfg: McpLingoConfig = McpLingoConfig(

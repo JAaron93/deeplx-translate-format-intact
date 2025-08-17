@@ -16,6 +16,7 @@ DEFAULT_DEMO_URL: str = "http://localhost:8000/static/demos/web-eval/demo.html"
 
 class SampleReport(TypedDict):
     """Type definition for web evaluation sample report."""
+
     url: str
     task: str
     agent_steps: List[str]

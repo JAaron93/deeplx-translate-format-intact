@@ -54,7 +54,16 @@ except ImportError as e:
     _service_availability["ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE"] = False
 
 # Dynamically build __all__ list based on successfully imported services
-__all__: list[str] = _available_services.copy()
+# Include service symbols, availability flags, and summary counters
+__all__: list[str] = [
+    *_available_services,
+    "NEOLOGISM_DETECTOR_AVAILABLE",
+    "TRANSLATION_SERVICE_AVAILABLE", 
+    "LANGUAGE_DETECTOR_AVAILABLE",
+    "ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE",
+    "services_count",
+    "services_list",
+]
 
 # Export availability flags for runtime dependency checking
 NEOLOGISM_DETECTOR_AVAILABLE: bool = _service_availability[

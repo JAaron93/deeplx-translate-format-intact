@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
+from collections.abc import Mapping, Sequence
 
 from models.user_choice_models import (
     ChoiceConflict,
@@ -1164,7 +1165,7 @@ class ChoiceDatabase:
             return 0
 
     def _validate_and_reconstruct_choice(
-        self, choice_data: dict[str, Any], session_id: Optional[str] = None
+        self, choice_data: Mapping[str, Any], session_id: Optional[str] = None
     ) -> UserChoice:
         """Validate and reconstruct a UserChoice object from JSON data.
 
@@ -1275,7 +1276,7 @@ class ChoiceDatabase:
 
         return choice
 
-    def _bulk_import_choices(self, choices: list[UserChoice]) -> int:
+    def _bulk_import_choices(self, choices: Sequence[UserChoice]) -> int:
         """Perform bulk import of validated choices using high-performance database operations.
 
         Args:
@@ -1328,7 +1329,7 @@ class ChoiceDatabase:
             return 0
 
     def _import_choice_batch(
-        self, conn: sqlite3.Connection, batch: list[UserChoice]
+        self, conn: sqlite3.Connection, batch: Sequence[UserChoice]
     ) -> int:
         """Import a batch of choices using executemany for optimal performance.
 

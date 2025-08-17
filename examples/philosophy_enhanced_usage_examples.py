@@ -112,7 +112,7 @@ class PhilosophyTranslationExamples:
 
         return results
 
-    def example_3_user_choice_management(self) -> tuple[Any, ChoiceSession]:
+    def example_3_user_choice_management(self) -> Tuple[Any, ChoiceSession]:
         """Example 3: Managing user choices for neologism handling."""
         print("\n" + "=" * 80)
         print("EXAMPLE 3: User Choice Management for Neologisms")
@@ -249,19 +249,17 @@ class PhilosophyTranslationExamples:
         # Validate required document fields before processing
         required_fields = ["type", "title", "content", "metadata"]
         missing_fields = [
-            field for field in required_fields 
-            if field not in document_content
+            field for field in required_fields if field not in document_content
         ]
         if missing_fields:
-            raise ValueError(
-                f"Missing required document fields: {missing_fields}"
-            )
+            raise ValueError(f"Missing required document fields: {missing_fields}")
 
         # Validate metadata contains required fields
         if "metadata" in document_content:
             required_metadata = ["author", "genre", "language"]
             missing_metadata = [
-                field for field in required_metadata 
+                field
+                for field in required_metadata
                 if field not in document_content["metadata"]
             ]
             if missing_metadata:
@@ -343,7 +341,9 @@ class PhilosophyTranslationExamples:
         start_time: float = time.perf_counter()
 
         results: List[Any] = self.service.translate_batch_with_neologism_handling(
-            texts=large_texts[:10],  # Limited to 10 texts for quick demonstration; adjust for actual performance testing
+            texts=large_texts[
+                :10
+            ],  # Limited to 10 texts for quick demonstration; adjust for actual performance testing
             source_lang="en",
             target_lang="de",
             provider="auto",
@@ -355,7 +355,7 @@ class PhilosophyTranslationExamples:
         processing_time: float = end_time - start_time
 
         print(f"Processed {len(results)} texts in {processing_time:.2f} seconds")
-        avg_time = processing_time / len(results)
+        avg_time = processing_time / len(results) if results else 0.0
         print(f"Average time per text: {avg_time:.3f} seconds")
 
     def run_all_examples(self) -> None:

@@ -6,11 +6,11 @@ It dynamically resolves the project root directory to ensure reliable imports
 regardless of the execution location.
 """
 
+import json
 import sys
 import traceback
-import json
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple, Optional
+from typing import Any, Callable, Dict, List, Tuple
 
 
 # Dynamically resolve the project root directory based on script location
@@ -407,8 +407,12 @@ def test_neologism_models() -> None:
     neologism_json: str = detected_neologism.to_json()
     assert isinstance(neologism_json, str), "to_json should return a string"
     data = json.loads(neologism_json)
-    assert data.get("term") == "Wirklichkeitsbewusstsein", "JSON should contain the term"
-    assert abs(float(data.get("confidence", -1)) - 0.85) < 1e-9, "JSON should contain the confidence value"
+    assert (
+        data.get("term") == "Wirklichkeitsbewusstsein"
+    ), "JSON should contain the term"
+    assert (
+        abs(float(data.get("confidence", -1)) - 0.85) < 1e-9
+    ), "JSON should contain the confidence value"
     print("✓ DetectedNeologism creation and validation passed")
 
     print("Neologism models test completed successfully")

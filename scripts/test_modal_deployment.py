@@ -202,7 +202,9 @@ async def main() -> None:
     print("\n" + "=" * 40)
     match (modal_success, local_fallback_success):
         case (True, True):
-            print("✅ All tests passed! Modal deployment and local fallback are working.")
+            print(
+                "✅ All tests passed! Modal deployment and local fallback are working."
+            )
         case (True, False):
             print("⚠️  Modal deployment is working, but local fallback failed.")
             print("   This may not be critical if local service is not required.")

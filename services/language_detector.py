@@ -152,11 +152,9 @@ class LanguageDetector:
             return
         try:
             mod: Any = importlib.import_module("langdetect")
-            exc_mod: Any = importlib.import_module(
-                "langdetect.lang_detect_exception"
-            )
+            exc_mod: Any = importlib.import_module("langdetect.lang_detect_exception")
             fallback_exc: type = type(
-                "FallbackLangDetectException", (RuntimeError,), {}
+                "LocalLangDetectException", (RuntimeError,), {}
             )
             exc: Any = getattr(exc_mod, "LangDetectException", fallback_exc)
             detect_func: Optional[Any] = getattr(mod, "detect", None)

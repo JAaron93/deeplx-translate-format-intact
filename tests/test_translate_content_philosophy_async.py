@@ -177,8 +177,8 @@ async def test_respects_concurrency_limit(monkeypatch: pytest.MonkeyPatch):
     # Patch settings to limit concurrency to 5
     import core.translation_handler as th
 
-    # ensure the instantiated settings object reflects the limit
-    th.settings.translation_concurrency_limit = 5
+    # ensure the instantiated settings object reflects the limit (auto-restored)
+    monkeypatch.setattr(th.settings, "translation_concurrency_limit", 5, raising=True)
 
     fake = FakeTranslator(random_latency=False)
 

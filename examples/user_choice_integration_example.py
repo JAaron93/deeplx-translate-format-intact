@@ -14,6 +14,7 @@ Usage:
 
 import os
 import tempfile
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from models.user_choice_models import ChoiceScope, ChoiceType, ConflictResolution
@@ -37,8 +38,20 @@ def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     )
 
     # Create a neologism detector
+    # Resolve terminology path relative to the repo root
+    terminology_path = (
+        Path(__file__).resolve().parents[1] / "config" / "klages_terminology.json"
+    )
+    
+    # Validate that the terminology file exists
+    if not terminology_path.exists():
+        raise FileNotFoundError(
+            f"Terminology file not found: {terminology_path}. "
+            "Ensure the file exists in the config directory."
+        )
+    
     detector: NeologismDetector = NeologismDetector(
-        terminology_path="config/klages_terminology.json", philosophical_threshold=0.3
+        terminology_path=str(terminology_path), philosophical_threshold=0.3
     )
 
     print("✓ User Choice Manager and Neologism Detector initialized")

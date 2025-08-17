@@ -8,10 +8,10 @@ files.
 """
 
 # Add project root to path before any imports to avoid E402 linting errors
+import logging
 import sys
 from pathlib import Path
 
-import logging
 logger = logging.getLogger(__name__)
 
 # Always work with an absolute, canonicalised path
@@ -309,7 +309,8 @@ def get_available_categories(config_path: Optional[str] = None) -> list[str]:
 
     try:
         return get_categories_from_config(config_path)
-    except Exception:
+    except Exception as e:
+        print(f"⚠️  Warning: Error loading categories from {config_path}: {e}")
         return get_default_categories()
 
 

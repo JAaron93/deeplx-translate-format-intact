@@ -312,7 +312,11 @@ class ParallelLingoTranslator:
                             )
 
                         if response.status == 429:  # Rate limited
-                            retry_after = int(response.headers.get("Retry-After", 1))
+                            header_val = response.headers.get("Retry-After")
+                            try:
+                                retry_after = max(1.0, float(header_val)) if header_val else 1.0
+                            except (TypeError, ValueError):
+                                retry_after = 1.0
                             await asyncio.sleep(retry_after)
                             last_error = (
                                 f"Rate limited (429), retry after {retry_after}s"
@@ -464,7 +468,6 @@ class ParallelLingoTranslator:
         results = await self.translate_batch_parallel(tasks, progress_callback)
 
         # Extract translated texts in original order
-        # Extract translated texts in original order
         translated_texts = [""] * len(texts)
         for result in results:
             index = result.metadata.get("index")
@@ -525,8 +528,9 @@ class ParallelLingoTranslator:
 
         # Extract from layouts if available
         for i, layout in enumerate(content.get("layouts", [])):
-            if hasattr(layout, "text") and layout.text.strip():
-                text_blocks.append((f"layout_{i}", layout.text))
+            text_attr = getattr(layout, "text", None)
+            if isinstance(text_attr, str) and text_attr.strip():
+                text_blocks.append((f"layout_{i}", text_attr))
 
         return text_blocks
 

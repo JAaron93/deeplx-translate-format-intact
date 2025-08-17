@@ -308,7 +308,7 @@ class Settings:
 
     def validate_configuration(self) -> bool:
         """Validate that required configuration is present and all settings are valid.
-        
+
         Note: Boolean settings (DEBUG, PRESERVE_IMAGES) are validated
         during parsing by _parse_bool_env and will raise ValueError if
         invalid.
@@ -390,9 +390,7 @@ class Settings:
             valid = False
 
         if self.PDF_DPI < 72 or self.PDF_DPI > 600:
-            logger.error(
-                f"Invalid PDF_DPI: {self.PDF_DPI}. Recommended range: 72-600"
-            )
+            logger.error(f"Invalid PDF_DPI: {self.PDF_DPI}. Recommended range: 72-600")
             valid = False
 
         if self.MEMORY_THRESHOLD <= 0:
@@ -418,8 +416,6 @@ class Settings:
             valid = False
 
         return valid
-
-
 
     def _validate_terminology(self) -> bool:
         """Validate terminology and translation settings."""

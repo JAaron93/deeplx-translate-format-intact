@@ -4,6 +4,7 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+from collections.abc import Mapping
 
 from fastapi import (
     APIRouter,
@@ -342,10 +343,16 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
         metadata: Any = content.get("metadata")
         metadata_dict: Optional[Dict[str, Any]] = None
         if metadata:
-            if isinstance(metadata, dict):
-                metadata_dict = metadata
+            if isinstance(metadata, Mapping):
+                metadata_dict = dict(metadata)
             elif hasattr(metadata, "__dict__"):
-                metadata_dict = metadata.__dict__
+                metadata_dict = {k: v for k, v in metadata.__dict__.items() if not k.startswith("_")}
+            # Drop sensitive/path-like fields if present
+            if metadata_dict:
+                for key in list(metadata_dict.keys()):
+                    k = key.lower()
+                    if k in {"path", "file_path", "filepath", "full_path"}:
+                        metadata_dict.pop(key, None)
 
         # Do not expose server filesystem paths. Use a safe identifier (basename) instead.
         upload_id: str = Path(file_path).name

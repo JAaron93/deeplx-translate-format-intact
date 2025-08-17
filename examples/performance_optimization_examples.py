@@ -58,18 +58,16 @@ class PerformanceOptimizer:
         """Get current performance metrics."""
         # Current process memory usage (MB)
         mem_mb = self.process.memory_info().rss / 1024 / 1024
-        
+
         # Track peak memory
         self.peak_memory = max(self.peak_memory, mem_mb)
-        
+
         # Per-process CPU percent since last call (non-blocking)
         cpu = float(self.process.cpu_percent(interval=None))
-        
+
         # Elapsed time since optimizer init (seconds)
-        processing_time = float(
-            time.perf_counter() - self.start_time
-        )
-        
+        processing_time = float(time.perf_counter() - self.start_time)
+
         return {
             # Backward-compatible keys expected by callers
             "memory_mb": float(mem_mb),
