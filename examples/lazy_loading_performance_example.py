@@ -130,7 +130,9 @@ Examples:
     return parser.parse_args()
 
 
-def demonstrate_lazy_loading(eager_memory_override: Optional[float] = None) -> dict[str, float]:
+def demonstrate_lazy_loading(
+    eager_memory_override: Optional[float] = None,
+) -> dict[str, float]:
     """Demonstrate lazy loading performance benefits."""
 
     print("=" * 60)

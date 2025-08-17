@@ -512,7 +512,7 @@ async def perform_advanced_translation() -> None:
             content_limited: ContentDict = dict(content)
             content_limited["layouts"] = limited_layouts
         else:
-            content_limited: ContentDict = content
+            content_limited = content
 
         logger.info(f"Creating translated document: {output_filename}")
         state.output_file = document_processor.create_translated_document(

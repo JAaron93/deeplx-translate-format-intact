@@ -91,22 +91,32 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
             raise ValueError(f"Page {i} is not a dictionary")
 
         # Check for required page-level fields (updated for Modal format)
-        required_fields: list[str] = ["page_number", "width", "height", "text_blocks"]
+        required_fields: list[str] = [
+            "page_number", "width", "height", "text_blocks"
+        ]
         for field in required_fields:
             if field not in page:
-                raise ValueError(f"Page {i} is missing required field: {field}")
+                raise ValueError(
+                    f"Page {i} is missing required field: {field}"
+                )
 
         # Validate text_blocks array (Modal format uses text_blocks)
         if not isinstance(page["text_blocks"], list):
-            raise ValueError(f"Page {i} 'text_blocks' is not a list")
+            raise ValueError(
+                f"Page {i} 'text_blocks' is not a list"
+            )
 
         # Validate each text block in the page
         for j, block in enumerate(page["text_blocks"]):
             if not isinstance(block, dict):
-                raise ValueError(f"Text block {j} in page {i} is not a dictionary")
+                raise ValueError(
+                    f"Text block {j} in page {i} is not a dictionary"
+                )
 
             # Check for required text block fields (Modal format)
-            block_required: list[str] = ["text", "bbox", "confidence", "block_type"]
+            block_required: list[str] = [
+                "text", "bbox", "confidence", "block_type"
+            ]
             for field in block_required:
                 if field not in block:
                     raise ValueError(
@@ -114,15 +124,19 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
                     )
 
             # Validate bbox format [x0, y0, x1, y1]
-            bbox: list[Union[int, float]] = block.get("bbox", [])
+            bbox_coords: list[Union[int, float]] = (
+                block.get("bbox", [])
+            )
             if not (
-                isinstance(bbox, list)
-                and len(bbox) == 4
-                and all(isinstance(coord, (int, float)) for coord in bbox)
+                isinstance(bbox_coords, list)
+                and len(bbox_coords) == 4
+                and all(
+                    isinstance(coord, (int, float)) for coord in bbox_coords
+                )
             ):
                 raise ValueError(
                     f"Element {j} in page {i} has invalid bbox format. "
-                    f"Expected [x0, y0, x1, y1], got {bbox}"
+                    f"Expected [x0, y0, x1, y1], got {bbox_coords}"
                 )
 
     return data

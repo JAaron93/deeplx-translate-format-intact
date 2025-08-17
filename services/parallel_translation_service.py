@@ -20,7 +20,7 @@ import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Optional
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout

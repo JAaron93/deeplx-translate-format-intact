@@ -17,11 +17,6 @@ from typing import Any, Optional, TypedDict
 # Optional dependency detection without importing at module import time
 LANGDETECT_AVAILABLE: bool = importlib.util.find_spec("langdetect") is not None
 
-# Removed legacy PDF engine dependency as part of Dolphin OCR migration
-FITZ_AVAILABLE: bool = False
-
-DOCX_AVAILABLE: bool = False
-
 logger: logging.Logger = logging.getLogger(__name__)
 
 
@@ -157,7 +152,9 @@ class LanguageDetector:
             return
         try:
             mod: Any = importlib.import_module("langdetect")
-            exc_mod: Any = importlib.import_module("langdetect.lang_detect_exception")
+            exc_mod: Any = importlib.import_module(
+                "langdetect.lang_detect_exception"
+            )
             fallback_exc: type = type(
                 "FallbackLangDetectException", (RuntimeError,), {}
             )
@@ -237,7 +234,8 @@ class LanguageDetector:
                 logger.info(
                     (
                         "PDF text not available locally; expecting upstream OCR. "
-                        "Verify OCR service/pipeline (env: OCR_SERVICE/OCR_PIPELINE) "
+                        "Verify OCR service/pipeline "
+                        "(env: OCR_SERVICE/OCR_PIPELINE) "
                         "is configured and producing text for: %s"
                     ),
                     file_path,
@@ -282,12 +280,13 @@ class LanguageDetector:
             word_weight: float = patterns["word_weight"]
             char_weight: float = patterns["char_weight"]
 
-            word_matches: int = sum(1 for token in pattern_words if token in words)
+            words_set = set(words)
+            word_matches: int = sum(1 for token in pattern_words if token in words_set)
             char_matches: int = sum(1 for ch in pattern_chars if ch in text)
 
             # Calculate normalized scores (per 100 words)
-            word_score: float = (word_matches * word_weight) / word_count * 100
-            char_score: float = (char_matches * char_weight) / word_count * 100
+            word_score: float = (word_matches * word_weight) / max(word_count, 1) * 100
+            char_score: float = (char_matches * char_weight) / max(word_count, 1) * 100
 
             # Combine scores with weights
             scores[lang] = (word_score * 0.7) + (char_score * 0.3)

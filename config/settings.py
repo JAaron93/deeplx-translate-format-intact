@@ -307,13 +307,17 @@ class Settings:
         return available
 
     def validate_configuration(self) -> bool:
-        """Validate that required configuration is present and all settings are valid."""
+        """Validate that required configuration is present and all settings are valid.
+        
+        Note: Boolean settings (DEBUG, PRESERVE_IMAGES) are validated
+        during parsing by _parse_bool_env and will raise ValueError if
+        invalid.
+        """
         validation_results: list[bool] = [
             self._validate_api_key(),
             self._validate_language_settings(),
             self._validate_directories(),
             self._validate_numeric_settings(),
-            self._validate_boolean_settings(),
             self._validate_terminology(),
         ]
 
@@ -387,7 +391,7 @@ class Settings:
 
         if self.PDF_DPI < 72 or self.PDF_DPI > 600:
             logger.error(
-                f"Invalid PDF_DPI: {self.PDF_DPI}. " "Recommended range: 72-600"
+                f"Invalid PDF_DPI: {self.PDF_DPI}. Recommended range: 72-600"
             )
             valid = False
 
@@ -415,11 +419,7 @@ class Settings:
 
         return valid
 
-    def _validate_boolean_settings(self) -> bool:
-        """Validate boolean configuration settings."""
-        # Boolean settings are validated during parsing by _parse_bool_env
-        # This method can be extended for additional boolean-specific validations
-        return True
+
 
     def _validate_terminology(self) -> bool:
         """Validate terminology and translation settings."""
@@ -454,8 +454,7 @@ class Settings:
             # Log without traceback at error level for expected validation failures
             logger.error("Directory not writable: '%s'", directory)
             # Emit traceback only in debug mode for diagnostics
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(
-                    "Directory check error for '%s': %s", directory, err, exc_info=True
-                )
+            logger.debug(
+                "Directory check error for '%s': %s", directory, err, exc_info=True
+            )
             return False

@@ -8,7 +8,7 @@ with significant performance improvements for large documents.
 
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 from services.parallel_translation_service import (
     BatchProgress,

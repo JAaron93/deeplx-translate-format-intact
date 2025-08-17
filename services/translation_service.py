@@ -57,9 +57,8 @@ class LingoTranslator(BaseTranslator):
         If api_key is not provided, read from the LINGO_API_KEY environment variable.
         Passing an empty string explicitly is treated as invalid.
         """
-        if api_key == "":
-            raise ValueError("LINGO_API_KEY is required")
-        api_key = api_key if api_key is not None else os.getenv("LINGO_API_KEY")
+        if api_key is None:
+            api_key = os.getenv("LINGO_API_KEY")
         if not api_key:
             raise ValueError("LINGO_API_KEY is required")
 
@@ -208,12 +207,14 @@ class TranslationService:
                             os.getenv("LINGO_MCP_STARTUP_TIMEOUT", "20")
                         )
                     except ValueError:
+                        logger.warning("Invalid LINGO_MCP_STARTUP_TIMEOUT value, using default 20.0")
                         startup_timeout = 20.0
                     try:
                         call_timeout: float = float(
                             os.getenv("LINGO_MCP_CALL_TIMEOUT", "60")
                         )
                     except ValueError:
+                        logger.warning("Invalid LINGO_MCP_CALL_TIMEOUT value, using default 60.0")
                         call_timeout = 60.0
 
                     cfg: McpLingoConfig = McpLingoConfig(

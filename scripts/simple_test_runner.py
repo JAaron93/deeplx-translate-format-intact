@@ -8,8 +8,9 @@ regardless of the execution location.
 
 import sys
 import traceback
+import json
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Optional
 
 
 # Dynamically resolve the project root directory based on script location
@@ -29,7 +30,7 @@ def setup_project_path() -> str:
 
 
 # Set up the project path
-PROJECT_ROOT: str = setup_project_path()
+PROJECT_ROOT: str = setup_project_path()  # side-effect: ensure repo root is on sys.path
 
 
 def run_test(test_name: str, test_func: Callable[[], None]) -> bool:
@@ -405,8 +406,9 @@ def test_neologism_models() -> None:
     # Test DetectedNeologism to_json method
     neologism_json: str = detected_neologism.to_json()
     assert isinstance(neologism_json, str), "to_json should return a string"
-    assert "Wirklichkeitsbewusstsein" in neologism_json, "JSON should contain the term"
-    assert "0.85" in neologism_json, "JSON should contain the confidence value"
+    data = json.loads(neologism_json)
+    assert data.get("term") == "Wirklichkeitsbewusstsein", "JSON should contain the term"
+    assert abs(float(data.get("confidence", -1)) - 0.85) < 1e-9, "JSON should contain the confidence value"
     print("✓ DetectedNeologism creation and validation passed")
 
     print("Neologism models test completed successfully")

@@ -151,7 +151,11 @@ async def save_user_choice(choice_data: ChoiceData) -> Dict[str, Any]:
 
     except HTTPException as he:
         # Preserve client-facing HTTP errors (e.g., 400 validation)
-        logger.warning("HTTP error saving user choice: %s", getattr(he, "detail", he))
+        logger.warning(
+            "HTTP %s error saving user choice: %r",
+            getattr(he, "status_code", "error"),
+            getattr(he, "detail", he),
+        )
         raise he
     except Exception as e:
         logger.error("Error saving user choice: %s", e)
@@ -169,7 +173,7 @@ async def get_detected_neologisms(
     """
     try:
         # Return neologisms from state
-        neologisms: List[Any] = (
+        neologisms: List[DetectedNeologism] = (
             state.neologism_analysis.get("detected_neologisms", [])
             if state.neologism_analysis
             else []
@@ -338,14 +342,10 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
         metadata: Any = content.get("metadata")
         metadata_dict: Optional[Dict[str, Any]] = None
         if metadata:
-            if hasattr(metadata, "__dict__"):
-                metadata_dict = metadata.__dict__
-            elif isinstance(metadata, dict):
+            if isinstance(metadata, dict):
                 metadata_dict = metadata
-            else:
-                metadata_dict = None
-        else:
-            metadata_dict = None
+            elif hasattr(metadata, "__dict__"):
+                metadata_dict = metadata.__dict__
 
         # Do not expose server filesystem paths. Use a safe identifier (basename) instead.
         upload_id: str = Path(file_path).name

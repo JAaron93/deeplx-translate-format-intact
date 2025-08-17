@@ -11,6 +11,9 @@ files.
 import sys
 from pathlib import Path
 
+import logging
+logger = logging.getLogger(__name__)
+
 # Always work with an absolute, canonicalised path
 project_root = Path(__file__).resolve().parent.parent
 project_root_str = str(project_root)
@@ -46,7 +49,7 @@ def get_default_categories() -> list[str]:
 def get_categories_from_config(config_path: str) -> list[str]:
     """Get compound categories from configuration file."""
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             config = json.load(f)
             return config.get("compound_categories", get_default_categories())
     except (FileNotFoundError, json.JSONDecodeError, KeyError):

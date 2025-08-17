@@ -13,6 +13,7 @@ Usage:
 """
 
 import os
+import tempfile
 from typing import Any, Dict, List, Tuple
 
 from models.user_choice_models import ChoiceScope, ChoiceType, ConflictResolution
@@ -24,17 +25,20 @@ def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     """Set up the example environment with sample data."""
     print("Setting up User Choice Management System example...")
 
+    # Use a temporary directory for the example database
+    temp_dir = tempfile.gettempdir()
+    db_path = os.path.join(temp_dir, "example_choices.db")
+
     # Create a user choice manager
     manager: UserChoiceManager = UserChoiceManager(
-        db_path="example_choices.db",
+        db_path=db_path,
         auto_resolve_conflicts=True,
         session_expiry_hours=24,
     )
 
     # Create a neologism detector
     detector: NeologismDetector = NeologismDetector(
-        terminology_path="config/klages_terminology.json",
-        philosophical_threshold=0.3
+        terminology_path="config/klages_terminology.json", philosophical_threshold=0.3
     )
 
     print("✓ User Choice Manager and Neologism Detector initialized")
@@ -185,8 +189,7 @@ def demonstrate_choice_reuse(
     for neologism, suggested_choice in results:
         if suggested_choice:
             print(
-                f"  → {neologism.term}: Auto-applied "
-                f"'{suggested_choice.translation_result}'"
+                f"  → {neologism.term}: Auto-applied '{suggested_choice.translation_result}'"
             )
             applied_count += 1
         else:

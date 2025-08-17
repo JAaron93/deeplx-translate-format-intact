@@ -200,19 +200,20 @@ async def main() -> None:
     local_fallback_success: bool = await run_test_local_fallback()
 
     print("\n" + "=" * 40)
-    if modal_success and local_fallback_success:
-        print("✅ All tests passed! Modal deployment and local fallback are working.")
-    elif modal_success and not local_fallback_success:
-        print("⚠️  Modal deployment is working, but local fallback failed.")
-        print("   This may not be critical if local service is not required.")
-    elif not modal_success and local_fallback_success:
-        print("❌ Modal deployment failed, but local fallback is working.")
-        print("   Check the Modal deployment configuration.")
-        sys.exit(1)
-    else:
-        print("❌ Both Modal deployment and local fallback failed.")
-        print("   Check both Modal deployment and local service configuration.")
-        sys.exit(1)
+    match (modal_success, local_fallback_success):
+        case (True, True):
+            print("✅ All tests passed! Modal deployment and local fallback are working.")
+        case (True, False):
+            print("⚠️  Modal deployment is working, but local fallback failed.")
+            print("   This may not be critical if local service is not required.")
+        case (False, True):
+            print("❌ Modal deployment failed, but local fallback is working.")
+            print("   Check the Modal deployment configuration.")
+            sys.exit(1)
+        case (False, False):
+            print("❌ Both Modal deployment and local fallback failed.")
+            print("   Check both Modal deployment and local service configuration.")
+            sys.exit(1)
 
 
 if __name__ == "__main__":

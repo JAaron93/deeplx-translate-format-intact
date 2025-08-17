@@ -26,12 +26,20 @@ def create_sample_document() -> dict[str, Any]:
     return {
         "pages": {
             1: [
-                {"text": "Die Philosophie beschäftigt sich mit grundlegenden Fragen des Seins."},
-                {"text": "Bewusstsein ist ein komplexes Phänomen der menschlichen Erfahrung."},
+                {
+                    "text": "Die Philosophie beschäftigt sich mit grundlegenden Fragen des Seins."
+                },
+                {
+                    "text": "Bewusstsein ist ein komplexes Phänomen der menschlichen Erfahrung."
+                },
             ],
             2: [
-                {"text": "Erkenntnistheorie untersucht die Bedingungen möglicher Erkenntnis."},
-                {"text": "Wirklichkeit und Wahrheit sind zentrale Begriffe der Metaphysik."},
+                {
+                    "text": "Erkenntnistheorie untersucht die Bedingungen möglicher Erkenntnis."
+                },
+                {
+                    "text": "Wirklichkeit und Wahrheit sind zentrale Begriffe der Metaphysik."
+                },
             ],
         }
     }

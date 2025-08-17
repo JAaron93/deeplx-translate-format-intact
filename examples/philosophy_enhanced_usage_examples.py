@@ -7,7 +7,7 @@ for various translation scenarios involving philosophical texts with neologisms.
 """
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from models.user_choice_models import ChoiceSession, ChoiceType
 from services.philosophy_enhanced_document_processor import (
@@ -74,7 +74,7 @@ class PhilosophyTranslationExamples:
             print("Detected neologisms:")
             for neologism in result.neologism_analysis.detected_neologisms:
                 conf = f"{neologism.confidence:.2f}"
-                print(f"  - {neologism.term} (confidence: {conf})")
+                print(f"  - {neologism.term} (confidence: {neologism.confidence:.2f})")
 
         return result
 
@@ -246,6 +246,29 @@ class PhilosophyTranslationExamples:
             },
         }
 
+        # Validate required document fields before processing
+        required_fields = ["type", "title", "content", "metadata"]
+        missing_fields = [
+            field for field in required_fields 
+            if field not in document_content
+        ]
+        if missing_fields:
+            raise ValueError(
+                f"Missing required document fields: {missing_fields}"
+            )
+
+        # Validate metadata contains required fields
+        if "metadata" in document_content:
+            required_metadata = ["author", "genre", "language"]
+            missing_metadata = [
+                field for field in required_metadata 
+                if field not in document_content["metadata"]
+            ]
+            if missing_metadata:
+                raise ValueError(
+                    f"Missing required metadata fields: {missing_metadata}"
+                )
+
         print("Processing document with philosophy awareness...")
 
         # Process document
@@ -317,10 +340,10 @@ class PhilosophyTranslationExamples:
         # Measure performance
         import time
 
-        start_time: float = time.time()
+        start_time: float = time.perf_counter()
 
         results: List[Any] = self.service.translate_batch_with_neologism_handling(
-            texts=large_texts[:10],  # Limit for example
+            texts=large_texts[:10],  # Limited to 10 texts for quick demonstration; adjust for actual performance testing
             source_lang="en",
             target_lang="de",
             provider="auto",
@@ -328,7 +351,7 @@ class PhilosophyTranslationExamples:
             batch_size=5,  # Optimize batch size
         )
 
-        end_time: float = time.time()
+        end_time: float = time.perf_counter()
         processing_time: float = end_time - start_time
 
         print(f"Processed {len(results)} texts in {processing_time:.2f} seconds")

@@ -51,14 +51,35 @@ class PerformanceOptimizer:
         # MB
         self.initial_memory = self.process.memory_info().rss / 1024 / 1024
         self.peak_memory = self.initial_memory
+        # Track start time for processing time calculation
+        self.start_time = time.perf_counter()
 
     def get_current_metrics(self) -> dict[str, float]:
         """Get current performance metrics."""
+        # Current process memory usage (MB)
+        mem_mb = self.process.memory_info().rss / 1024 / 1024
+        
+        # Track peak memory
+        self.peak_memory = max(self.peak_memory, mem_mb)
+        
+        # Per-process CPU percent since last call (non-blocking)
+        cpu = float(self.process.cpu_percent(interval=None))
+        
+        # Elapsed time since optimizer init (seconds)
+        processing_time = float(
+            time.perf_counter() - self.start_time
+        )
+        
         return {
-            "memory_usage_mb": self._get_memory_usage(),
-            "processing_time_seconds": self._get_processing_time(),
-            "cache_hit_rate": self._get_cache_hit_rate(),
-            "active_connections": self._get_active_connections(),
+            # Backward-compatible keys expected by callers
+            "memory_mb": float(mem_mb),
+            "cpu_percent": cpu,
+            "peak_memory_mb": float(self.peak_memory),
+            # New keys retained for forward-looking metrics
+            "memory_usage_mb": float(mem_mb),
+            "processing_time_seconds": processing_time,
+            "cache_hit_rate": 0.0,  # Placeholder
+            "active_connections": 0.0,  # Placeholder
         }
 
     def log_performance_status(self, stage: str, additional_info: Optional[str] = None):
