@@ -151,9 +151,7 @@ async def save_user_choice(choice_data: ChoiceData) -> Dict[str, Any]:
 
     except HTTPException as he:
         # Preserve client-facing HTTP errors (e.g., 400 validation)
-        logger.warning(
-            "HTTP error saving user choice: %s", getattr(he, "detail", he)
-        )
+        logger.warning("HTTP error saving user choice: %s", getattr(he, "detail", he))
         raise he
     except Exception as e:
         logger.error("Error saving user choice: %s", e)
@@ -216,16 +214,16 @@ async def get_philosophy_progress() -> ProgressResponse:
 
 @api_router.post("/philosophy/export-choices")
 async def export_user_choices(
-    export_data: ExportData
+    export_data: ExportData,
 ) -> Union[FileResponse, Dict[str, Any]]:
     """Export user choices to JSON."""
     try:
         session_id: Optional[str] = export_data.get("session_id")
 
         if session_id:
-            export_file_path: Optional[str] = user_choice_manager.export_session_choices(
-                session_id
-            )
+            export_file_path: Optional[
+                str
+            ] = user_choice_manager.export_session_choices(session_id)
         else:
             export_file_path: Optional[str] = user_choice_manager.export_all_choices()
 
@@ -261,9 +259,7 @@ async def import_user_choices(import_data: ImportData) -> Dict[str, Any]:
             )
 
         # Use the new dictionary-accepting method
-        count: int = user_choice_manager.import_choices_from_dict(
-            choices, session_id
-        )
+        count: int = user_choice_manager.import_choices_from_dict(choices, session_id)
 
         return {
             "success": True,

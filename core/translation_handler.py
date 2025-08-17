@@ -29,8 +29,12 @@ from utils.language_utils import extract_text_sample_for_language_detection
 from utils.validators import FileValidator
 
 # PDF preprocessing constants
-PDF_PREPROCESSING_DPI: int = 300  # Standard high-resolution DPI for PDF-to-image conversion
-PDF_ESTIMATED_MB_PER_PAGE: float = 2.5  # Rough estimate of MB per page for image conversion
+PDF_PREPROCESSING_DPI: int = (
+    300  # Standard high-resolution DPI for PDF-to-image conversion
+)
+PDF_ESTIMATED_MB_PER_PAGE: float = (
+    2.5  # Rough estimate of MB per page for image conversion
+)
 
 # Configure logging
 logger: logging.Logger = logging.getLogger(__name__)
@@ -229,9 +233,7 @@ async def start_translation(
         try:
             state.max_pages = int(max_pages) if max_pages else 0
         except (TypeError, ValueError) as e:
-            logger.warning(
-                f"Failed to convert max_pages to int: {e}, using default 0"
-            )
+            logger.warning(f"Failed to convert max_pages to int: {e}, using default 0")
             state.max_pages = 0
 
         # Create session for philosophy mode
@@ -339,11 +341,15 @@ async def translate_content(
                 ]
 
                 for start in range(0, len(indices_to_translate), batch_size):
-                    batch_indices: List[int] = indices_to_translate[start : start + batch_size]
+                    batch_indices: List[int] = indices_to_translate[
+                        start : start + batch_size
+                    ]
                     batch_texts: List[str] = [page_texts[idx] for idx in batch_indices]
 
                     try:
-                        batch_translated: List[str] = await translation_service.translate_batch(
+                        batch_translated: List[
+                            str
+                        ] = await translation_service.translate_batch(
                             batch_texts, source_language, target_language
                         )
                     except Exception as e:
@@ -351,7 +357,9 @@ async def translate_content(
                             f"Batch translation failed for page {page_num} "
                             f"(indices {batch_indices}): {e}"
                         )
-                        batch_translated: List[str] = batch_texts  # Fallback to original
+                        batch_translated: List[
+                            str
+                        ] = batch_texts  # Fallback to original
 
                     # Map translated texts back to their original positions
                     for idx, translated in zip(batch_indices, batch_translated):
@@ -387,7 +395,7 @@ async def _translate_page_texts_concurrently(
     source_language: str,
     target_language: str,
     session_id: str,
-) -> List[str]:
+) -> list[str]:
     """Translate page texts concurrently with bounded concurrency and safe fallbacks.
 
     - Respects settings.translation_concurrency_limit (fallback 8)
@@ -413,14 +421,14 @@ async def _translate_page_texts_concurrently(
             raise asyncio.CancelledError()
         try:
             async with sem:
-                result: Dict[str, Any] = await (
-                    philosophy_translation_service.translate_text_with_neologism_handling_async(
-                        text=text,
-                        source_lang=source_language,
-                        target_lang=target_language,
-                        provider="auto",
-                        session_id=session_id,
-                    )
+                result: Dict[
+                    str, Any
+                ] = await philosophy_translation_service.translate_text_with_neologism_handling_async(
+                    text=text,
+                    source_lang=source_language,
+                    target_lang=target_language,
+                    provider="auto",
+                    session_id=session_id,
                 )
                 return idx, result.get("translated_text", text)
         except asyncio.CancelledError:

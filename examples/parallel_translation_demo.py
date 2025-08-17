@@ -16,36 +16,28 @@ from services.parallel_translation_service import ParallelTranslationConfig
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-def create_sample_document() -> Dict[str, Any]:
+def create_sample_document() -> dict[str, Any]:
     """Create a sample document with multiple pages for testing."""
     return {
         "pages": {
-            "1": {
-                "paragraph_1": "Die Philosophie der Bewusstseinsforschung beschäftigt sich mit fundamentalen Fragen des menschlichen Geistes.",
-                "paragraph_2": "Wirklichkeitsbewusstsein ist ein zentraler Begriff in der modernen Erkenntnistheorie.",
-                "paragraph_3": "Die Lebensweltthematik spielt eine wichtige Rolle in der phänomenologischen Tradition.",
-            },
-            "2": {
-                "paragraph_1": "Bewusstseinsphilosophie untersucht die Struktur und Dynamik des bewussten Erlebens.",
-                "paragraph_2": "Erkenntnistheoretische Überlegungen führen zu neuen Einsichten über die Natur des Wissens.",
-                "paragraph_3": "Die Weltanschauung eines Denkers prägt seine philosophischen Grundannahmen.",
-            },
-            "3": {
-                "paragraph_1": "Morphologische Analysen zeigen die Komplexität deutscher Komposita.",
-                "paragraph_2": "Neologismen entstehen durch kreative Wortbildungsprozesse.",
-                "paragraph_3": "Terminologische Konsistenz ist wichtig für wissenschaftliche Texte.",
-            },
+            1: [
+                {"text": "Die Philosophie beschäftigt sich mit grundlegenden Fragen des Seins."},
+                {"text": "Bewusstsein ist ein komplexes Phänomen der menschlichen Erfahrung."},
+            ],
+            2: [
+                {"text": "Erkenntnistheorie untersucht die Bedingungen möglicher Erkenntnis."},
+                {"text": "Wirklichkeit und Wahrheit sind zentrale Begriffe der Metaphysik."},
+            ],
         }
     }
 
 
-def create_large_text_batch() -> List[str]:
+def create_large_text_batch() -> list[str]:
     """Create a large batch of texts for performance testing."""
     base_texts: List[str] = [
         "Die Philosophie beschäftigt sich mit grundlegenden Fragen des Seins.",
@@ -114,9 +106,7 @@ async def demo_basic_parallel_translation() -> None:
 
     # Configure for demonstration (lower concurrency for API safety)
     config: ParallelTranslationConfig = ParallelTranslationConfig(
-        max_concurrent_requests=3, 
-        max_requests_per_second=2.0, 
-        batch_size=10
+        max_concurrent_requests=3, max_requests_per_second=2.0, batch_size=10
     )
 
     service: EnhancedTranslationService = EnhancedTranslationService()
@@ -158,9 +148,7 @@ async def demo_large_document_processing() -> None:
 
     # Configure for high-performance processing
     config: ParallelTranslationConfig = ParallelTranslationConfig(
-        max_concurrent_requests=5, 
-        max_requests_per_second=3.0, 
-        batch_size=20
+        max_concurrent_requests=5, max_requests_per_second=3.0, batch_size=20
     )
 
     service: EnhancedTranslationService = EnhancedTranslationService()
@@ -247,8 +235,7 @@ async def demo_batch_performance_comparison() -> None:
             rate: float = len(test_texts) / elapsed if elapsed > 0 else 0
 
             logger.info(
-                "Batch size %d: %.2f seconds, %.1f texts/sec", 
-                batch_size, elapsed, rate
+                "Batch size %d: %.2f seconds, %.1f texts/sec", batch_size, elapsed, rate
             )
 
         except Exception as e:

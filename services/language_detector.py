@@ -12,7 +12,7 @@ from __future__ import annotations
 import importlib
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 # Optional dependency detection without importing at module import time
 LANGDETECT_AVAILABLE: bool = importlib.util.find_spec("langdetect") is not None
@@ -25,7 +25,7 @@ DOCX_AVAILABLE: bool = False
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-LANGUAGE_MAP: Dict[str, str] = {
+LANGUAGE_MAP: dict[str, str] = {
     "en": "English",
     "es": "Spanish",
     "fr": "French",
@@ -54,13 +54,13 @@ class LanguagePattern(TypedDict):
         char_weight: Weight applied to character matches in scoring.
     """
 
-    words: List[str]
-    chars: List[str]
+    words: list[str]
+    chars: list[str]
     word_weight: float
     char_weight: float
 
 
-LANGUAGE_PATTERNS: Dict[str, LanguagePattern] = {
+LANGUAGE_PATTERNS: dict[str, LanguagePattern] = {
     "German": {
         "words": [
             "der",
@@ -137,7 +137,7 @@ class LanguageDetector:
 
     def __init__(self) -> None:
         """Initialize detector with module-level language mappings."""
-        self.language_map: Dict[str, str] = LANGUAGE_MAP
+        self.language_map: dict[str, str] = LANGUAGE_MAP
         # Caches for optional langdetect dependency
         self._langdetect_initialized: bool = False
         self._langdetect_mod: Optional[Any] = None
@@ -158,7 +158,9 @@ class LanguageDetector:
         try:
             mod: Any = importlib.import_module("langdetect")
             exc_mod: Any = importlib.import_module("langdetect.lang_detect_exception")
-            fallback_exc: type = type("FallbackLangDetectException", (RuntimeError,), {})
+            fallback_exc: type = type(
+                "FallbackLangDetectException", (RuntimeError,), {}
+            )
             exc: Any = getattr(exc_mod, "LangDetectException", fallback_exc)
             detect_func: Optional[Any] = getattr(mod, "detect", None)
             self._langdetect_mod = mod
@@ -262,21 +264,21 @@ class LanguageDetector:
             return "Unknown"
 
         text = text.lower()
-        words: List[str] = text.split()
+        words: list[str] = text.split()
         word_count: int = len(words)
 
         if word_count == 0:
             return "Unknown"
 
         # Use precomputed language patterns defined at module scope
-        language_patterns: Dict[str, LanguagePattern] = LANGUAGE_PATTERNS
+        language_patterns: dict[str, LanguagePattern] = LANGUAGE_PATTERNS
 
         # Calculate normalized scores
-        scores: Dict[str, float] = {}
+        scores: dict[str, float] = {}
         for lang, patterns in language_patterns.items():
             # Count matching words and characters
-            pattern_words: List[str] = patterns["words"]
-            pattern_chars: List[str] = patterns["chars"]
+            pattern_words: list[str] = patterns["words"]
+            pattern_chars: list[str] = patterns["chars"]
             word_weight: float = patterns["word_weight"]
             char_weight: float = patterns["char_weight"]
 
@@ -341,7 +343,7 @@ class LanguageDetector:
         # Fallback to simple heuristics
         return self._simple_language_detection(text)
 
-    def get_supported_languages(self) -> List[str]:
+    def get_supported_languages(self) -> list[str]:
         """Get list of supported languages.
 
         Returns:

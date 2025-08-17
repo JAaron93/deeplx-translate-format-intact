@@ -9,7 +9,7 @@ for various translation scenarios involving philosophical texts with neologisms.
 import logging
 from typing import Any, Dict, List, Tuple
 
-from models.user_choice_models import ChoiceType, ChoiceSession
+from models.user_choice_models import ChoiceSession, ChoiceType
 from services.philosophy_enhanced_document_processor import (
     create_philosophy_enhanced_document_processor,
     process_document_with_philosophy_awareness,
@@ -24,8 +24,7 @@ from services.user_choice_manager import UserChoiceManager
 def _configure_logging() -> None:
     """Configure logging for the examples."""
     logging.basicConfig(
-        level=logging.INFO, 
-        format="%(asctime)s - %(levelname)s - %(message)s"
+        level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
     )
 
 
@@ -79,7 +78,7 @@ class PhilosophyTranslationExamples:
 
         return result
 
-    def example_2_batch_translation(self) -> List[Any]:
+    def example_2_batch_translation(self) -> list[Any]:
         """Example 2: Batch translation of multiple philosophical texts."""
         print("\n" + "=" * 80)
         print("EXAMPLE 2: Batch Translation with Neologism Handling")
@@ -113,7 +112,7 @@ class PhilosophyTranslationExamples:
 
         return results
 
-    def example_3_user_choice_management(self) -> Tuple[Any, ChoiceSession]:
+    def example_3_user_choice_management(self) -> tuple[Any, ChoiceSession]:
         """Example 3: Managing user choices for neologism handling."""
         print("\n" + "=" * 80)
         print("EXAMPLE 3: User Choice Management for Neologisms")
@@ -256,7 +255,7 @@ class PhilosophyTranslationExamples:
             processor=processor,
         )
 
-        print(f"Document processed successfully")
+        print("Document processed successfully")
         print(f"Translated content: {len(result.translated_content)} sections")
         print(f"Neologisms handled: {result.neologism_summary.total_detections}")
 
@@ -317,6 +316,7 @@ class PhilosophyTranslationExamples:
 
         # Measure performance
         import time
+
         start_time: float = time.time()
 
         results: List[Any] = self.service.translate_batch_with_neologism_handling(
@@ -332,7 +332,7 @@ class PhilosophyTranslationExamples:
         processing_time: float = end_time - start_time
 
         print(f"Processed {len(results)} texts in {processing_time:.2f} seconds")
-        avg_time = processing_time/len(results)
+        avg_time = processing_time / len(results)
         print(f"Average time per text: {avg_time:.3f} seconds")
 
     def run_all_examples(self) -> None:
@@ -362,7 +362,7 @@ class PhilosophyTranslationExamples:
 def main() -> None:
     """Main function to run the examples."""
     _configure_logging()
-    
+
     examples = PhilosophyTranslationExamples()
     examples.run_all_examples()
 

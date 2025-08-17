@@ -52,19 +52,13 @@ class PerformanceOptimizer:
         self.initial_memory = self.process.memory_info().rss / 1024 / 1024
         self.peak_memory = self.initial_memory
 
-    def get_current_metrics(self) -> Dict[str, float]:
-        """Get current system performance metrics."""
-        memory_info = self.process.memory_info()
-        memory_mb = memory_info.rss / 1024 / 1024
-        cpu_percent = self.process.cpu_percent()
-
-        # Update peak memory
-        self.peak_memory = max(self.peak_memory, memory_mb)
-
+    def get_current_metrics(self) -> dict[str, float]:
+        """Get current performance metrics."""
         return {
-            "memory_mb": memory_mb,
-            "cpu_percent": cpu_percent,
-            "peak_memory_mb": self.peak_memory,
+            "memory_usage_mb": self._get_memory_usage(),
+            "processing_time_seconds": self._get_processing_time(),
+            "cache_hit_rate": self._get_cache_hit_rate(),
+            "active_connections": self._get_active_connections(),
         }
 
     def log_performance_status(self, stage: str, additional_info: Optional[str] = None):
@@ -316,11 +310,11 @@ class ParallelProcessingOptimizer:
 
     async def process_multiple_documents_parallel(
         self,
-        document_paths: List[str],
+        document_paths: list[str],
         source_lang: str,
         target_lang: str,
         provider: str = "auto",
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Process multiple documents in parallel."""
         logger.info(
             f"Processing {len(document_paths)} documents in parallel "

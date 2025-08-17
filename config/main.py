@@ -268,7 +268,9 @@ class Config:
                     validation_passed = False
 
         # Validate numeric settings
-        numeric_validations: dict[str, tuple[int | float, int | float, int | float, str]] = {
+        numeric_validations: dict[
+            str, tuple[int | float, int | float, int | float, str]
+        ] = {
             "PDF_DPI": (cls.PDF_DPI, 72, 600, "DPI must be between 72 and 600"),
             "MEMORY_THRESHOLD_MB": (
                 cls.MEMORY_THRESHOLD_MB,

@@ -6,7 +6,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from models.user_choice_models import (
     ChoiceConflict,
@@ -462,7 +462,7 @@ class ChoiceDatabase:
 
     def get_choices_by_term(
         self, neologism_term: str, limit: int = 100
-    ) -> List[UserChoice]:
+    ) -> list[UserChoice]:
         """Get all choices for a specific neologism term."""
         try:
             with self._get_connection() as conn:
@@ -482,7 +482,7 @@ class ChoiceDatabase:
             logger.error(f"Error getting choices by term: {e}")
             return []
 
-    def get_choices_by_session(self, session_id: str) -> List[UserChoice]:
+    def get_choices_by_session(self, session_id: str) -> list[UserChoice]:
         """Get all choices for a specific session."""
         try:
             with self._get_connection() as conn:
@@ -503,7 +503,7 @@ class ChoiceDatabase:
 
     def search_similar_choices(
         self, context: TranslationContext, limit: int = 10
-    ) -> List[UserChoice]:
+    ) -> list[UserChoice]:
         """Search for choices with similar contexts."""
         try:
             with self._get_connection() as conn:
@@ -675,7 +675,7 @@ class ChoiceDatabase:
             logger.error(f"Error getting session: {e}")
             return None
 
-    def get_active_sessions(self) -> List[ChoiceSession]:
+    def get_active_sessions(self) -> list[ChoiceSession]:
         """Get all active sessions."""
         try:
             with self._get_connection() as conn:
@@ -693,7 +693,7 @@ class ChoiceDatabase:
             logger.error(f"Error getting active sessions: {e}")
             return []
 
-    def get_user_sessions(self, user_id: str, limit: int = 50) -> List[ChoiceSession]:
+    def get_user_sessions(self, user_id: str, limit: int = 50) -> list[ChoiceSession]:
         """Get sessions for a specific user."""
         try:
             with self._get_connection() as conn:
@@ -811,7 +811,7 @@ class ChoiceDatabase:
             logger.error(f"Error saving conflict: {e}")
             return False
 
-    def get_unresolved_conflicts(self) -> List[ChoiceConflict]:
+    def get_unresolved_conflicts(self) -> list[ChoiceConflict]:
         """Get all unresolved conflicts."""
         try:
             with self._get_connection() as conn:
@@ -1004,7 +1004,7 @@ class ChoiceDatabase:
             logger.error(f"Error cleaning up expired sessions: {e}")
             return 0
 
-    def get_database_statistics(self) -> Dict[str, Any]:
+    def get_database_statistics(self) -> dict[str, Any]:
         """Get database statistics."""
         try:
             with self._get_connection() as conn:
@@ -1164,7 +1164,7 @@ class ChoiceDatabase:
             return 0
 
     def _validate_and_reconstruct_choice(
-        self, choice_data: Dict[str, Any], session_id: Optional[str] = None
+        self, choice_data: dict[str, Any], session_id: Optional[str] = None
     ) -> UserChoice:
         """Validate and reconstruct a UserChoice object from JSON data.
 
@@ -1275,7 +1275,7 @@ class ChoiceDatabase:
 
         return choice
 
-    def _bulk_import_choices(self, choices: List[UserChoice]) -> int:
+    def _bulk_import_choices(self, choices: list[UserChoice]) -> int:
         """Perform bulk import of validated choices using high-performance database operations.
 
         Args:
@@ -1328,7 +1328,7 @@ class ChoiceDatabase:
             return 0
 
     def _import_choice_batch(
-        self, conn: sqlite3.Connection, batch: List[UserChoice]
+        self, conn: sqlite3.Connection, batch: list[UserChoice]
     ) -> int:
         """Import a batch of choices using executemany for optimal performance.
 
@@ -1422,7 +1422,7 @@ class ChoiceDatabase:
 
     # Additional methods for data integrity validation
 
-    def get_all_choices(self) -> List[UserChoice]:
+    def get_all_choices(self) -> list[UserChoice]:
         """Get all choices from the database."""
         try:
             with self._get_connection() as conn:
@@ -1432,7 +1432,7 @@ class ChoiceDatabase:
             logger.error(f"Error getting all choices: {e}")
             return []
 
-    def get_all_sessions(self) -> List[ChoiceSession]:
+    def get_all_sessions(self) -> list[ChoiceSession]:
         """Get all sessions from the database."""
         try:
             with self._get_connection() as conn:
@@ -1444,7 +1444,7 @@ class ChoiceDatabase:
             logger.error(f"Error getting all sessions: {e}")
             return []
 
-    def get_all_context_hashes(self) -> List[str]:
+    def get_all_context_hashes(self) -> list[str]:
         """Get all unique context hashes from the database."""
         try:
             with self._get_connection() as conn:
@@ -1456,7 +1456,7 @@ class ChoiceDatabase:
             logger.error(f"Error getting all context hashes: {e}")
             return []
 
-    def get_choices_by_context_hash(self, context_hash: str) -> List[UserChoice]:
+    def get_choices_by_context_hash(self, context_hash: str) -> list[UserChoice]:
         """Get choices by context hash."""
         try:
             with self._get_connection() as conn:

@@ -250,7 +250,7 @@ def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
 
 def parse_dolphin_output(
     raw_output: str, page_width: int, page_height: int
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Parse Dolphin OCR output into structured text blocks.
 
     The parser is defensive and supports multiple shapes:
@@ -265,7 +265,7 @@ def parse_dolphin_output(
     import logging as _logging
     import re as _re
 
-    def _clip_bbox(b: List[float]) -> List[float]:
+    def _clip_bbox(b: list[float]) -> list[float]:
         x1, y1, x2, y2 = b
         x1 = max(0.0, min(float(x1), float(page_width)))
         y1 = max(0.0, min(float(y1), float(page_height)))

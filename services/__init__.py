@@ -4,13 +4,12 @@ And language detection functionality.
 """
 
 import logging
-from typing import List, Dict
 
 logger: logging.Logger = logging.getLogger(__name__)
 
 # Conditional imports with external dependency handling
-_available_services: List[str] = []
-_service_availability: Dict[str, bool] = {}
+_available_services: list[str] = []
+_service_availability: dict[str, bool] = {}
 
 # Always available services (no external dependencies)
 try:
@@ -20,9 +19,7 @@ try:
     _service_availability["NEOLOGISM_DETECTOR_AVAILABLE"] = True
     logger.debug("NeologismDetector imported successfully")
 except ImportError as e:
-    logger.warning(
-        f"Failed to import NeologismDetector: {e}"
-    )
+    logger.warning(f"Failed to import NeologismDetector: {e}")
     _service_availability["NEOLOGISM_DETECTOR_AVAILABLE"] = False
 
 # Services with external dependencies
@@ -57,7 +54,7 @@ except ImportError as e:
     _service_availability["ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE"] = False
 
 # Dynamically build __all__ list based on successfully imported services
-__all__: List[str] = _available_services.copy()
+__all__: list[str] = _available_services.copy()
 
 # Export availability flags for runtime dependency checking
 NEOLOGISM_DETECTOR_AVAILABLE: bool = _service_availability[
@@ -66,9 +63,7 @@ NEOLOGISM_DETECTOR_AVAILABLE: bool = _service_availability[
 TRANSLATION_SERVICE_AVAILABLE: bool = _service_availability[
     "TRANSLATION_SERVICE_AVAILABLE"
 ]
-LANGUAGE_DETECTOR_AVAILABLE: bool = _service_availability[
-    "LANGUAGE_DETECTOR_AVAILABLE"
-]
+LANGUAGE_DETECTOR_AVAILABLE: bool = _service_availability["LANGUAGE_DETECTOR_AVAILABLE"]
 ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE: bool = _service_availability[
     "ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE"
 ]

@@ -15,9 +15,7 @@ def demonstrate_web_eval_agent() -> None:
     """Demonstrate the web-eval-agent capabilities."""
     api_key: str = os.getenv("OP_API_KEY", "[API_KEY_NOT_SET]")
     # Resolve demo URL from environment with sensible default
-    default_demo_url: str = (
-        "http://localhost:8000/static/demos/web-eval/demo.html"
-    )
+    default_demo_url: str = "http://localhost:8000/static/demos/web-eval/demo.html"
     demo_url: str = os.getenv("WEB_EVAL_DEMO_URL", default_demo_url)
     print("🚀 Web Eval Agent MCP Server Demonstration")
     print("=" * 50)

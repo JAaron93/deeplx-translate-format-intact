@@ -11,7 +11,6 @@ import os
 import sys
 from typing import List, Tuple
 
-
 # Optional (non-fatal) environment variables recognized by deployment.
 # DOLPHIN_ENDPOINT can be provided here for convenience during validation,
 # but it is still validated as required in validate_environment_variables.
@@ -28,7 +27,9 @@ OPTIONAL_ENV_VARS: List[str] = [
 ]
 
 
-def validate_environment_variables() -> Tuple[List[str], List[str], List[str], List[str]]:
+def validate_environment_variables() -> (
+    Tuple[List[str], List[str], List[str], List[str]]
+):
     """Validate environment variables and return validation results.
 
     Returns:
@@ -42,9 +43,7 @@ def validate_environment_variables() -> Tuple[List[str], List[str], List[str], L
         "DOLPHIN_ENDPOINT",
     ]
 
-    optional_vars: List[str] = [
-        v for v in OPTIONAL_ENV_VARS if v not in required_vars
-    ]
+    optional_vars: List[str] = [v for v in OPTIONAL_ENV_VARS if v not in required_vars]
 
     missing_required: List[str] = []
     empty_required: List[str] = []
@@ -227,8 +226,7 @@ def deploy_dolphin_service() -> bool:
         return False
     except subprocess.TimeoutExpired as err:
         print(
-            f"❌ Modal CLI deploy timed out after {err.timeout} seconds", 
-            file=sys.stderr
+            f"❌ Modal CLI deploy timed out after {err.timeout} seconds", file=sys.stderr
         )
         if getattr(err, "output", None):
             print("CLI Output:", err.output, file=sys.stderr)

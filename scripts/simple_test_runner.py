@@ -9,7 +9,7 @@ regardless of the execution location.
 import sys
 import traceback
 from pathlib import Path
-from typing import Any, Callable, List, Tuple, Dict
+from typing import Any, Callable, Dict, List, Tuple
 
 
 # Dynamically resolve the project root directory based on script location

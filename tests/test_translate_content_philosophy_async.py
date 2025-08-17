@@ -57,7 +57,7 @@ async def test_preserves_order_with_varied_latencies(monkeypatch: pytest.MonkeyP
 
     async def _fake_translate_text_with_neologism_handling(
         *, text: str, **kwargs: Any
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         res = await fake.translate(text, **kwargs)
         return {"translated_text": res}
 
@@ -100,7 +100,7 @@ async def test_skips_empty_inputs(monkeypatch: pytest.MonkeyPatch):
 
     async def _fake_translate_text_with_neologism_handling(
         *, text: str, **kwargs: Any
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         res = await fake.translate(text, **kwargs)
         return {"translated_text": res}
 
@@ -141,7 +141,7 @@ async def test_per_item_failure_falls_back(monkeypatch: pytest.MonkeyPatch):
 
     async def _fake_translate_text_with_neologism_handling(
         *, text: str, **kwargs: Any
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         res = await fake.translate(text, **kwargs)
         return {"translated_text": res}
 
@@ -184,7 +184,7 @@ async def test_respects_concurrency_limit(monkeypatch: pytest.MonkeyPatch):
 
     async def _fake_translate_text_with_neologism_handling(
         *, text: str, **kwargs: Any
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         res = await fake.translate(text, **kwargs)
         return {"translated_text": res}
 
@@ -211,7 +211,7 @@ async def test_respects_concurrency_limit(monkeypatch: pytest.MonkeyPatch):
 @pytest.mark.asyncio
 async def test_non_philosophy_path_unchanged(monkeypatch: pytest.MonkeyPatch):
     # Arrange: verify non-philosophy path behavior: empties preserved, order restored
-    texts: List[str] = ["", "A", "  ", "B", "C", ""]
+    texts: list[str] = ["", "A", "  ", "B", "C", ""]
     content = {
         "type": "pdf_advanced",
         "text_by_page": {0: texts},
@@ -220,11 +220,11 @@ async def test_non_philosophy_path_unchanged(monkeypatch: pytest.MonkeyPatch):
     # Monkeypatch the batch translator to assert only non-empty are passed and in order
     import core.translation_handler as th
 
-    captured_batches: List[List[str]] = []
+    captured_batches: list[list[str]] = []
 
     async def _fake_batch(
-        texts: List[str], source_lang: str, target_lang: str
-    ) -> List[str]:
+        texts: list[str], source_lang: str, target_lang: str
+    ) -> list[str]:
         # record what we actually receive
         captured_batches.append(list(texts))
         # simulate work

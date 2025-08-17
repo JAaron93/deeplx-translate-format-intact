@@ -88,11 +88,11 @@ class EnhancedTranslationService(TranslationService):
 
     async def _translate_batch_parallel(
         self,
-        texts: List[str],
+        texts: list[str],
         source_lang: str,
         target_lang: str,
         progress_callback: Optional[Callable[[int, int], None]] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         """Translate texts using parallel processing."""
         parallel_service = await self._get_parallel_service()
 
@@ -108,12 +108,12 @@ class EnhancedTranslationService(TranslationService):
 
     async def translate_document_enhanced(
         self,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         source_lang: str,
         target_lang: str,
         provider: str = "auto",
         progress_callback: Optional[Callable[[int], None]] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Enhanced document translation with parallel processing."""
         start_time = time.time()
 
@@ -153,11 +153,11 @@ class EnhancedTranslationService(TranslationService):
 
     async def _translate_document_parallel(
         self,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         source_lang: str,
         target_lang: str,
         progress_callback: Optional[Callable[[int], None]] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Translate document using parallel processing."""
         parallel_service = await self._get_parallel_service()
 
@@ -173,7 +173,7 @@ class EnhancedTranslationService(TranslationService):
                 content, source_lang, target_lang, parallel_progress_callback
             )
 
-    def _extract_text_blocks_for_analysis(self, content: Dict[str, Any]) -> List[str]:
+    def _extract_text_blocks_for_analysis(self, content: dict[str, Any]) -> list[str]:
         """Extract text blocks for analysis (without IDs)."""
         text_blocks = []
 

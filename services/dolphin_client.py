@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 import httpx
 
@@ -28,7 +28,7 @@ DEFAULT_LOCAL_ENDPOINT: str = "http://localhost:8501/layout"
 DEFAULT_TIMEOUT: int = 300  # seconds (increased for Modal processing)
 
 
-async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:
+async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
     """Send *pdf_path* to the Dolphin service and return the JSON payload.
 
     Parameters
@@ -62,7 +62,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:
     # Use streaming upload to avoid loading big PDFs fully into memory.
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
         with pdf_path.open("rb") as fp:
-            files: Dict[str, tuple[str, Any, str]] = {
+            files: dict[str, tuple[str, Any, str]] = {
                 "file": (pdf_path.name, fp, "application/pdf")
             }
             response: httpx.Response = await client.post(endpoint, files=files)
@@ -70,7 +70,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:
     response.raise_for_status()
 
     try:
-        data: Dict[str, Any] = response.json()
+        data: dict[str, Any] = response.json()
     except ValueError as e:
         raise ValueError(f"Invalid JSON response from Dolphin service: {e}") from e
 
@@ -91,7 +91,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:
             raise ValueError(f"Page {i} is not a dictionary")
 
         # Check for required page-level fields (updated for Modal format)
-        required_fields: List[str] = ["page_number", "width", "height", "text_blocks"]
+        required_fields: list[str] = ["page_number", "width", "height", "text_blocks"]
         for field in required_fields:
             if field not in page:
                 raise ValueError(f"Page {i} is missing required field: {field}")
@@ -106,7 +106,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:
                 raise ValueError(f"Text block {j} in page {i} is not a dictionary")
 
             # Check for required text block fields (Modal format)
-            block_required: List[str] = ["text", "bbox", "confidence", "block_type"]
+            block_required: list[str] = ["text", "bbox", "confidence", "block_type"]
             for field in block_required:
                 if field not in block:
                     raise ValueError(
@@ -114,7 +114,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> Dict[str, Any]:
                     )
 
             # Validate bbox format [x0, y0, x1, y1]
-            bbox: List[Union[int, float]] = block.get("bbox", [])
+            bbox: list[Union[int, float]] = block.get("bbox", [])
             if not (
                 isinstance(bbox, list)
                 and len(bbox) == 4

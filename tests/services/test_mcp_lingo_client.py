@@ -51,7 +51,7 @@ def make_client():
     return _make
 
 
-def _arg_keys(records: List[CallRecord]) -> List[set]:
+def _arg_keys(records: list[CallRecord]) -> list[set]:
     return [set(r.arguments.keys()) for r in records]
 
 

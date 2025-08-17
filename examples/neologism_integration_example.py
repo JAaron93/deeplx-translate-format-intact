@@ -9,7 +9,7 @@ import json
 import logging
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 # Project imports - now work with installable package
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
@@ -30,8 +30,7 @@ project_root: Path = find_project_root()
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, 
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -60,8 +59,7 @@ class PhilosophyEnhancedTranslator:
 
         # Initialize core components
         self.neologism_detector: NeologismDetector = NeologismDetector(
-            terminology_path=terminology_path, 
-            philosophical_threshold=min_confidence
+            terminology_path=terminology_path, philosophical_threshold=min_confidence
         )
 
         self.translation_service: TranslationService = TranslationService(
@@ -76,7 +74,7 @@ class PhilosophyEnhancedTranslator:
         source_lang: str = "de",
         target_lang: str = "en",
         provider: str = "auto",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Translate text with integrated neologism detection and preservation.
 
@@ -94,13 +92,13 @@ class PhilosophyEnhancedTranslator:
         )
 
         # Step 1: Detect neologisms in the source text
-        neologism_analysis: NeologismAnalysis = (
-            self.neologism_detector.analyze_text(text, "source_text")
+        neologism_analysis: NeologismAnalysis = self.neologism_detector.analyze_text(
+            text, "source_text"
         )
 
         # Step 2: Prepare text for translation
         prepared_text: str
-        neologism_map: Dict[str, DetectedNeologism]
+        neologism_map: dict[str, DetectedNeologism]
         prepared_text, neologism_map = self._prepare_text_for_translation(
             text, neologism_analysis
         )
@@ -116,9 +114,9 @@ class PhilosophyEnhancedTranslator:
         )
 
         # Step 5: Generate translation suggestions for neologisms
-        neologism_suggestions: List[Dict[str, Any]] = (
-            self._generate_neologism_suggestions(neologism_analysis, target_lang)
-        )
+        neologism_suggestions: list[
+            dict[str, Any]
+        ] = self._generate_neologism_suggestions(neologism_analysis, target_lang)
 
         return {
             "original_text": text,
@@ -141,7 +139,7 @@ class PhilosophyEnhancedTranslator:
 
     def _prepare_text_for_translation(
         self, text: str, analysis: NeologismAnalysis
-    ) -> Tuple[str, Dict[str, DetectedNeologism]]:
+    ) -> tuple[str, dict[str, DetectedNeologism]]:
         """
         Prepare text for translation by marking neologisms for preservation.
 
@@ -153,13 +151,13 @@ class PhilosophyEnhancedTranslator:
             Tuple of (prepared_text, neologism_map)
         """
         prepared_text: str = text
-        neologism_map: Dict[str, DetectedNeologism] = {}
+        neologism_map: dict[str, DetectedNeologism] = {}
 
         if not self.preserve_neologisms:
             return prepared_text, neologism_map
 
         # Sort neologisms by position (reverse order to avoid position shifts)
-        high_confidence_neologisms: List[DetectedNeologism] = sorted(
+        high_confidence_neologisms: list[DetectedNeologism] = sorted(
             analysis.get_high_confidence_neologisms(),
             key=lambda n: n.start_pos,
             reverse=True,
@@ -182,7 +180,7 @@ class PhilosophyEnhancedTranslator:
         return prepared_text, neologism_map
 
     def _post_process_translation(
-        self, translated_text: str, neologism_map: Dict[str, DetectedNeologism]
+        self, translated_text: str, neologism_map: dict[str, DetectedNeologism]
     ) -> str:
         """
         Post-process translation to handle preserved neologisms.
@@ -213,7 +211,7 @@ class PhilosophyEnhancedTranslator:
 
     def _generate_neologism_suggestions(
         self, analysis: NeologismAnalysis, target_lang: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Generate translation suggestions for detected neologisms.
 
@@ -224,20 +222,20 @@ class PhilosophyEnhancedTranslator:
         Returns:
             List of suggestion dictionaries
         """
-        suggestions: List[Dict[str, Any]] = []
+        suggestions: list[dict[str, Any]] = []
 
         for neologism in analysis.get_high_confidence_neologisms():
             # Generate morphological breakdown
-            morphological_breakdown: Dict[str, Any] = (
-                self._generate_morphological_breakdown(neologism)
-            )
+            morphological_breakdown: dict[
+                str, Any
+            ] = self._generate_morphological_breakdown(neologism)
 
             # Generate contextual suggestions
-            contextual_suggestions: List[str] = self._generate_contextual_suggestions(
+            contextual_suggestions: list[str] = self._generate_contextual_suggestions(
                 neologism, target_lang
             )
 
-            suggestion: Dict[str, Any] = {
+            suggestion: dict[str, Any] = {
                 "term": neologism.term,
                 "confidence": neologism.confidence,
                 "type": neologism.neologism_type.value,
@@ -256,11 +254,11 @@ class PhilosophyEnhancedTranslator:
 
     def _generate_morphological_breakdown(
         self, neologism: DetectedNeologism
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate morphological breakdown for a neologism."""
         morphological = neologism.morphological_analysis
 
-        breakdown: Dict[str, Any] = {
+        breakdown: dict[str, Any] = {
             "is_compound": morphological.is_compound,
             "compound_parts": morphological.compound_parts,
             "root_words": morphological.root_words,
@@ -279,13 +277,13 @@ class PhilosophyEnhancedTranslator:
 
     def _generate_contextual_suggestions(
         self, neologism: DetectedNeologism, target_lang: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Generate contextual translation suggestions."""
-        suggestions: List[str] = []
+        suggestions: list[str] = []
 
         # Basic morphological suggestions
         if neologism.morphological_analysis.is_compound:
-            parts: List[str] = neologism.morphological_analysis.compound_parts
+            parts: list[str] = neologism.morphological_analysis.compound_parts
             if len(parts) >= 2:
                 suggestions.append(f"compound of: {' + '.join(parts)}")
 
@@ -295,15 +293,15 @@ class PhilosophyEnhancedTranslator:
             suggestions.append(f"philosophical term in {semantic_field}")
 
         # Context-based suggestions
-        philosophical_keywords: List[str] = (
-            neologism.philosophical_context.philosophical_keywords
-        )
+        philosophical_keywords: list[
+            str
+        ] = neologism.philosophical_context.philosophical_keywords
         if philosophical_keywords:
             suggestions.append(f"related to: {', '.join(philosophical_keywords[:3])}")
 
         return suggestions[:5]  # Limit to top 5 suggestions
 
-    def get_detector_statistics(self) -> Dict[str, Any]:
+    def get_detector_statistics(self) -> dict[str, Any]:
         """Get statistics from the neologism detector."""
         return self.neologism_detector.get_statistics()
 
@@ -340,7 +338,7 @@ def main() -> None:
 
     # Perform translation with neologism detection
     print("2. Performing translation with neologism detection...")
-    result: Dict[str, Any] = translator.translate_with_neologism_detection(
+    result: dict[str, Any] = translator.translate_with_neologism_detection(
         text=sample_text, source_lang="de", target_lang="en", provider="auto"
     )
 
@@ -393,7 +391,7 @@ def main() -> None:
 
     print("\n7. System Statistics:")
     print("=" * 50)
-    stats: Dict[str, Any] = translator.get_detector_statistics()
+    stats: dict[str, Any] = translator.get_detector_statistics()
     print(f"Total analyses performed: {stats['total_analyses']}")
     print(f"Cache hit rate: {stats['cache_hit_rate']:.3f}")
     print(f"Terminology entries: {stats['terminology_entries']}")

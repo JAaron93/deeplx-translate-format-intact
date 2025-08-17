@@ -387,8 +387,7 @@ class Settings:
 
         if self.PDF_DPI < 72 or self.PDF_DPI > 600:
             logger.error(
-                f"Invalid PDF_DPI: {self.PDF_DPI}. "
-                "Recommended range: 72-600"
+                f"Invalid PDF_DPI: {self.PDF_DPI}. " "Recommended range: 72-600"
             )
             valid = False
 
@@ -457,7 +456,6 @@ class Settings:
             # Emit traceback only in debug mode for diagnostics
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(
-                    "Directory check error for '%s': %s", 
-                    directory, err, exc_info=True
+                    "Directory check error for '%s': %s", directory, err, exc_info=True
                 )
             return False

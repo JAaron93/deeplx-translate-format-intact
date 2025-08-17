@@ -368,9 +368,9 @@ class ParallelLingoTranslator:
 
     async def translate_batch_parallel(
         self,
-        tasks: List[TranslationTask],
+        tasks: list[TranslationTask],
         progress_callback: Optional[Callable[[BatchProgress], None]] = None,
-    ) -> List[TranslationResult]:
+    ) -> list[TranslationResult]:
         """Translate multiple tasks in parallel with bounded concurrency.
 
         - Concurrency is bounded by an asyncio.Semaphore; per-second throughput
@@ -439,11 +439,11 @@ class ParallelLingoTranslator:
 
     async def translate_texts_parallel(
         self,
-        texts: List[str],
+        texts: list[str],
         source_lang: str,
         target_lang: str,
         progress_callback: Optional[Callable[[BatchProgress], None]] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         """Translate a list of texts in parallel (simplified interface)."""
         if not texts:
             return []
@@ -512,7 +512,7 @@ class ParallelLingoTranslator:
 
         return translated_content
 
-    def _extract_text_blocks(self, content: Dict[str, Any]) -> List[Tuple[str, str]]:
+    def _extract_text_blocks(self, content: dict[str, Any]) -> list[tuple[str, str]]:
         """Extract text blocks from document content for translation."""
         text_blocks = []
 
@@ -531,8 +531,8 @@ class ParallelLingoTranslator:
         return text_blocks
 
     def _apply_translations_to_content(
-        self, content: Dict[str, Any], results: List[TranslationResult]
-    ) -> Dict[str, Any]:
+        self, content: dict[str, Any], results: list[TranslationResult]
+    ) -> dict[str, Any]:
         """Apply translation results back to document content."""
         import copy
 
@@ -600,11 +600,11 @@ class ParallelTranslationService:
 
     async def translate_batch_texts(
         self,
-        texts: List[str],
+        texts: list[str],
         source_lang: str,
         target_lang: str,
         progress_callback: Optional[Callable[[BatchProgress], None]] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         """Translate batch of texts with parallel processing."""
         if not self._translator:
             raise RuntimeError("Service not initialized. Use async context manager.")

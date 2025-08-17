@@ -20,7 +20,7 @@ from services.neologism_detector import NeologismDetector
 from services.user_choice_manager import UserChoiceManager, create_session_for_document
 
 
-def setup_example_environment() -> Tuple[UserChoiceManager, NeologismDetector]:
+def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     """Set up the example environment with sample data."""
     print("Setting up User Choice Management System example...")
 
@@ -33,7 +33,7 @@ def setup_example_environment() -> Tuple[UserChoiceManager, NeologismDetector]:
 
     # Create a neologism detector
     detector: NeologismDetector = NeologismDetector(
-        terminology_path="config/klages_terminology.json", 
+        terminology_path="config/klages_terminology.json",
         philosophical_threshold=0.3
     )
 
@@ -43,7 +43,7 @@ def setup_example_environment() -> Tuple[UserChoiceManager, NeologismDetector]:
 
 def demonstrate_basic_choice_workflow(
     manager: UserChoiceManager, detector: NeologismDetector
-) -> Tuple[Any, List[Any]]:
+) -> tuple[Any, list[Any]]:
     """Demonstrate basic choice workflow."""
     print("\n=== Basic Choice Workflow ===")
 
@@ -149,7 +149,7 @@ def demonstrate_basic_choice_workflow(
 
 def demonstrate_choice_reuse(
     manager: UserChoiceManager, detector: NeologismDetector
-) -> Tuple[Any, Dict[str, Any]]:
+) -> tuple[Any, Dict[str, Any]]:
     """Demonstrate choice reuse and context matching."""
     print("\n=== Choice Reuse and Context Matching ===")
 
@@ -283,8 +283,8 @@ def demonstrate_conflict_resolution(
 
 
 def demonstrate_terminology_import_export(
-    manager: UserChoiceManager
-) -> Tuple[Any, Any]:
+    manager: UserChoiceManager,
+) -> tuple[Any, Any]:
     """Demonstrate terminology import and export."""
     print("\n=== Terminology Import/Export ===")
 
@@ -401,7 +401,7 @@ def demonstrate_statistics_and_analytics(manager: UserChoiceManager) -> None:
 
 def demonstrate_advanced_features(
     manager: UserChoiceManager, detector: NeologismDetector
-) -> Tuple[Any, List[Dict[str, Any]]]:
+) -> tuple[Any, list[Dict[str, Any]]]:
     """Demonstrate advanced features."""
     print("\n=== Advanced Features ===")
 
@@ -452,7 +452,9 @@ def demonstrate_advanced_features(
             # Make new choice based on neologism characteristics
             if neologism.confidence > 0.8:
                 choice_type: ChoiceType = ChoiceType.TRANSLATE
-                translation: str = f"[{neologism.term.lower()}]"  # Placeholder translation
+                translation: str = (
+                    f"[{neologism.term.lower()}]"  # Placeholder translation
+                )
             else:
                 choice_type = ChoiceType.PRESERVE
                 translation = ""
@@ -500,23 +502,23 @@ def main() -> None:
 
         # Demonstrate features
         session1: Any
-        choices1: List[Any]
+        choices1: list[Any]
         session1, choices1 = demonstrate_basic_choice_workflow(manager, detector)
-        
+
         session2: Any
         results2: Dict[str, Any]
         session2, results2 = demonstrate_choice_reuse(manager, detector)
-        
+
         session3: Any = demonstrate_conflict_resolution(manager, detector)
-        
+
         session4: Any
         session5: Any
         session4, session5 = demonstrate_terminology_import_export(manager)
-        
+
         demonstrate_statistics_and_analytics(manager)
-        
+
         session6: Any
-        recommendations: List[Dict[str, Any]]
+        recommendations: list[Dict[str, Any]]
         session6, recommendations = demonstrate_advanced_features(manager, detector)
 
         print("\n" + "=" * 60)

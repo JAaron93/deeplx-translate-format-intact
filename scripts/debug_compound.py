@@ -29,40 +29,28 @@ from typing import Any, Dict, List, Optional, Union  # noqa: E402
 from services.neologism_detector import NeologismDetector  # noqa: E402
 
 
-def get_default_categories() -> List[str]:
-    """Get the default word categories.
+def get_default_categories() -> list[str]:
+    """Get default compound categories."""
+    return [
+        "noun+noun",
+        "adjective+noun",
+        "verb+noun",
+        "noun+verb",
+        "adjective+adjective",
+        "prefix+word",
+        "word+suffix",
+        "mixed",
+    ]
 
-    Returns:
-        List of default category names
-    """
-    return ["compound_words", "simple_words", "neologisms"]
 
-
-def get_categories_from_config(config_path: str) -> List[str]:
-    """Extract available categories from a configuration file.
-
-    Args:
-        config_path: Path to the configuration file
-
-    Returns:
-        List of category names found in the configuration file
-    """
-    if not config_path:
-        return get_default_categories()
-
+def get_categories_from_config(config_path: str) -> list[str]:
+    """Get compound categories from configuration file."""
     try:
-        with open(config_path, encoding="utf-8") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             config = json.load(f)
-
-        # Return all top-level keys that contain lists (word categories)
-        categories = []
-        for key, value in config.items():
-            if isinstance(value, list):
-                categories.append(key)
-
-        return categories if categories else get_default_categories()
-    except (FileNotFoundError, json.JSONDecodeError, PermissionError, OSError) as e:
-        print(f"⚠️  Warning: Could not read config file {config_path}: {e}")
+            return config.get("compound_categories", get_default_categories())
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        logger.warning(f"Could not load categories from {config_path}, using defaults")
         return get_default_categories()
 
 
@@ -304,7 +292,7 @@ def debug_compound_detection(
         sys.exit(1)
 
 
-def get_available_categories(config_path: Optional[str] = None) -> List[str]:
+def get_available_categories(config_path: Optional[str] = None) -> list[str]:
     """Get available categories for command line argument choices.
 
     Args:
