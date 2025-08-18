@@ -345,7 +345,7 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
         # Clean metadata access pattern with comprehensive object-to-dict conversion
         metadata: Any = content.get("metadata")
         metadata_dict: Dict[str, Any] = {}
-        
+
         if metadata is not None:
             # Pydantic v2 model_dump() method
             if hasattr(metadata, "model_dump"):
@@ -359,10 +359,9 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
             # Fallback to __dict__ for other objects
             elif hasattr(metadata, "__dict__"):
                 metadata_dict = {
-                    k: v for k, v in metadata.__dict__.items() 
-                    if not k.startswith("_")
+                    k: v for k, v in metadata.__dict__.items() if not k.startswith("_")
                 }
-            
+
             # Drop sensitive/path-like fields if present
             if metadata_dict:
                 for key in list(metadata_dict.keys()):

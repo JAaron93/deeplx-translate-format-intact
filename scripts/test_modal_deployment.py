@@ -17,9 +17,7 @@ sys.path.insert(0, str(project_root))
 try:
     from services.dolphin_client import get_layout
 except ImportError:
-    print(
-        "❌ Could not import dolphin_client. Ensure the project is properly set up."
-    )
+    print("❌ Could not import dolphin_client. Ensure the project is properly set up.")
     sys.exit(1)
 
 # ---------------------------------------------------------------------------

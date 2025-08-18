@@ -9,9 +9,9 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from examples.performance_optimization_examples import (
-    get_cache_stats,
-    get_cache_hit_rate,
     get_active_connections,
+    get_cache_hit_rate,
+    get_cache_stats,
     instrument_cache,
     track_async_connection,
     track_connection,

@@ -164,8 +164,8 @@ class LanguageDetector:
             logger.debug("langdetect import failed: %s", err)
 
     def detect_language(
-        self, 
-        file_path: str, 
+        self,
+        file_path: str,
         text_extractor: Optional[Callable[[str], str]] = None,
         pre_extracted_text: Optional[str] = None,
     ) -> str:
@@ -205,13 +205,15 @@ class LanguageDetector:
             sample_text = self._extract_sample_text(file_path)
 
         # Check for OCR environment flag to lower threshold when text is provided
-        ocr_text_available = (
-            os.getenv("OCR_TEXT_AVAILABLE", "").lower() in ("true", "1", "yes")
+        ocr_text_available = os.getenv("OCR_TEXT_AVAILABLE", "").lower() in (
+            "true",
+            "1",
+            "yes",
         )
-        
+
         # Adjust minimum length based on whether OCR text is expected
         min_length = 10 if ocr_text_available else 50
-        
+
         if not sample_text or len(sample_text.strip()) < min_length:
             return "Unknown"
 
@@ -257,7 +259,7 @@ class LanguageDetector:
                     text_file_path = Path(ocr_output_dir) / f"{pdf_name}.txt"
                     if text_file_path.exists():
                         try:
-                            with open(text_file_path, "r", encoding="utf-8") as f:
+                            with open(text_file_path, encoding="utf-8") as f:
                                 text = f.read().strip()
                                 if text:
                                     logger.debug(

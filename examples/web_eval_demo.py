@@ -8,7 +8,7 @@ evaluation.
 import json
 import os
 import time
-from typing import List, TypedDict
+from typing import Final, List, TypedDict
 
 # Default demo URL for web evaluation demonstration
 DEFAULT_DEMO_URL: Final[str] = "http://localhost:8000/static/demos/web-eval/demo.html"
@@ -38,9 +38,13 @@ def demonstrate_web_eval_agent() -> None:
     print("  • Server Name: github.com/Operative-Sh/web-eval-agent")
     # Show only the first 4 chars for confirmation
     print(
-    "  • API Key: "
-    + ("set" if os.getenv("OP_API_KEY") not in (None, "", "[API_KEY_NOT_SET]") else "not set")
-)
+        "  • API Key: "
+        + (
+            "set"
+            if os.getenv("OP_API_KEY") not in (None, "", "[API_KEY_NOT_SET]")
+            else "not set"
+        )
+    )
     print(
         "  • Command: "
         "uvx --refresh-package webEvalAgent --from "

@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
-from typing import Any, Union, IO
+from typing import IO, Any, Union
 
 import httpx
 
@@ -22,16 +22,16 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 # Canonical set of allowed block types for validation
 ALLOWED_BLOCK_TYPES = {
-    "text",      # Regular text content
-    "title",     # Document titles and headings
-    "header",    # Page headers
-    "footer",    # Page footers
-    "image",     # Image content
-    "table",     # Tabular data
-    "figure",    # Figures and diagrams
-    "caption",   # Figure/table captions
-    "list",      # List items
-    "paragraph", # Paragraph blocks
+    "text",  # Regular text content
+    "title",  # Document titles and headings
+    "header",  # Page headers
+    "footer",  # Page footers
+    "image",  # Image content
+    "table",  # Tabular data
+    "figure",  # Figures and diagrams
+    "caption",  # Figure/table captions
+    "list",  # List items
+    "paragraph",  # Paragraph blocks
 }
 
 # Default endpoints - Modal Labs takes priority
@@ -164,7 +164,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
                 )
 
             x0, y0, x1, y1 = bbox_coords
-            
+
             # Validate bbox extents are positive
             if x1 <= x0 or y1 <= y0:
                 raise ValueError(
@@ -174,7 +174,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
             # Validate bbox coordinates are within page bounds when available
             page_width = page.get("width")
             page_height = page.get("height")
-            
+
             if page_width is not None and page_height is not None:
                 if not (0 <= x0 <= page_width and 0 <= x1 <= page_width):
                     raise ValueError(
