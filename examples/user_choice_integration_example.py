@@ -21,7 +21,6 @@ from models.user_choice_models import ChoiceScope, ChoiceType, ConflictResolutio
 from services.neologism_detector import NeologismDetector
 from services.user_choice_manager import UserChoiceManager, create_session_for_document
 
-
 # Module-level storage for the example database path so cleanup can remove it
 _EXAMPLE_DB_PATH: str | None = None
 

@@ -11,15 +11,28 @@ so the rest of the codebase doesn't need to know the wire format.
 
 from __future__ import annotations
 
-import io
 import logging
 import os
 import pathlib
-from typing import Any, Union
+from typing import Any, Union, IO
 
 import httpx
 
 logger: logging.Logger = logging.getLogger(__name__)
+
+# Canonical set of allowed block types for validation
+ALLOWED_BLOCK_TYPES = {
+    "text",      # Regular text content
+    "title",     # Document titles and headings
+    "header",    # Page headers
+    "footer",    # Page footers
+    "image",     # Image content
+    "table",     # Tabular data
+    "figure",    # Figures and diagrams
+    "caption",   # Figure/table captions
+    "list",      # List items
+    "paragraph", # Paragraph blocks
+}
 
 # Default endpoints - Modal Labs takes priority
 DEFAULT_MODAL_ENDPOINT: str = (
@@ -63,7 +76,7 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
     # Use streaming upload to avoid loading big PDFs fully into memory.
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
         with pdf_path.open("rb") as fp:
-            files: dict[str, tuple[str, io.BufferedReader, str]] = {
+            files: dict[str, tuple[str, IO[bytes], str]] = {
                 "file": (pdf_path.name, fp, "application/pdf")
             }
             response: httpx.Response = await client.post(endpoint, files=files)
@@ -113,10 +126,32 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
             missing = [f for f in block_required if f not in block]
             if missing:
                 raise ValueError(
-                    f"Text block {j} in page {i} is missing required fields: {', '.join(missing)}"
+                    f"Text block {j} in page {i} is missing required fields: "
+                    f"{', '.join(missing)}"
                 )
 
-            # Validate bbox format [x0, y0, x1, y1]
+            # Semantic validation: confidence must be numeric and between 0 and 1
+            confidence = block.get("confidence")
+            if not isinstance(confidence, (int, float)):
+                raise ValueError(
+                    f"Page {i}, block {j}: confidence must be numeric, got "
+                    f"{type(confidence).__name__} with value {confidence}"
+                )
+            if not (0.0 <= confidence <= 1.0):
+                raise ValueError(
+                    f"Page {i}, block {j}: confidence must be between 0 and 1, "
+                    f"got {confidence}"
+                )
+
+            # Semantic validation: block_type must be in allowed set
+            block_type = block.get("block_type")
+            if block_type not in ALLOWED_BLOCK_TYPES:
+                raise ValueError(
+                    f"Page {i}, block {j}: invalid block_type '{block_type}', "
+                    f"must be one of {sorted(ALLOWED_BLOCK_TYPES)}"
+                )
+
+            # Validate bbox format and bounds
             bbox_coords: list[Union[int, float]] = block.get("bbox", [])
             if not (
                 isinstance(bbox_coords, list)
@@ -124,13 +159,38 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
                 and all(isinstance(coord, (int, float)) for coord in bbox_coords)
             ):
                 raise ValueError(
-                    f"Element {j} in page {i} has invalid bbox format. "
+                    f"Page {i}, block {j}: invalid bbox format. "
                     f"Expected [x0, y0, x1, y1], got {bbox_coords}"
                 )
-            else:
-                x0, y0, x1, y1 = bbox
-                if x1 <= x0 or y1 <= y0:
+
+            x0, y0, x1, y1 = bbox_coords
+            
+            # Validate bbox extents are positive
+            if x1 <= x0 or y1 <= y0:
+                raise ValueError(
+                    f"Page {i}, block {j}: non-positive bbox extents: {bbox_coords}"
+                )
+
+            # Validate bbox coordinates are within page bounds when available
+            page_width = page.get("width")
+            page_height = page.get("height")
+            
+            if page_width is not None and page_height is not None:
+                if not (0 <= x0 <= page_width and 0 <= x1 <= page_width):
                     raise ValueError(
-                        f"Element {j} in page {i} has non-positive bbox extents: {bbox}"
+                        f"Page {i}, block {j}: bbox x-coordinates {x0}, {x1} "
+                        f"outside page width {page_width}: {bbox_coords}"
+                    )
+                if not (0 <= y0 <= page_height and 0 <= y1 <= page_height):
+                    raise ValueError(
+                        f"Page {i}, block {j}: bbox y-coordinates {y0}, {y1} "
+                        f"outside page height {page_height}: {bbox_coords}"
+                    )
+            else:
+                # If page dimensions not available, just ensure non-negative
+                if x0 < 0 or y0 < 0 or x1 < 0 or y1 < 0:
+                    raise ValueError(
+                        f"Page {i}, block {j}: negative bbox coordinates: "
+                        f"{bbox_coords}"
                     )
     return data

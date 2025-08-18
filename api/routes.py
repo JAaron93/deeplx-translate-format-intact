@@ -152,10 +152,13 @@ async def save_user_choice(choice_data: ChoiceData) -> Dict[str, Any]:
 
     except HTTPException as he:
         # Preserve client-facing HTTP errors (e.g., 400 validation)
+        # Avoid logging potentially sensitive user-provided detail wholesale
+        detail = getattr(he, "detail", None)
+        err_code = detail.get("error_code") if isinstance(detail, dict) else None
         logger.warning(
-            "HTTP %s error saving user choice: %r",
+            "HTTP %s error saving user choice%s",
             getattr(he, "status_code", "error"),
-            getattr(he, "detail", he),
+            f" (code={err_code})" if err_code else "",
         )
         raise he
     except Exception as e:
@@ -339,16 +342,27 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
             else None
         )
 
-        # Clean metadata access pattern
+        # Clean metadata access pattern with comprehensive object-to-dict conversion
         metadata: Any = content.get("metadata")
-        metadata_dict: Optional[Dict[str, Any]] = None
-        if metadata:
-            if isinstance(metadata, Mapping):
+        metadata_dict: Dict[str, Any] = {}
+        
+        if metadata is not None:
+            # Pydantic v2 model_dump() method
+            if hasattr(metadata, "model_dump"):
+                metadata_dict = metadata.model_dump()
+            # Pydantic v1 dict() method
+            elif hasattr(metadata, "dict"):
+                metadata_dict = metadata.dict()
+            # Standard Mapping interface
+            elif isinstance(metadata, Mapping):
                 metadata_dict = dict(metadata)
+            # Fallback to __dict__ for other objects
             elif hasattr(metadata, "__dict__"):
                 metadata_dict = {
-                    k: v for k, v in metadata.__dict__.items() if not k.startswith("_")
+                    k: v for k, v in metadata.__dict__.items() 
+                    if not k.startswith("_")
                 }
+            
             # Drop sensitive/path-like fields if present
             if metadata_dict:
                 for key in list(metadata_dict.keys()):

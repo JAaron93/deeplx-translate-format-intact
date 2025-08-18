@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import importlib
 import logging
+import os
 from pathlib import Path
-from typing import Any, Optional, TypedDict
+from typing import Any, Callable, Optional, TypedDict
 
 # Optional dependency detection without importing at module import time
 LANGDETECT_AVAILABLE: bool = importlib.util.find_spec("langdetect") is not None
@@ -162,7 +163,12 @@ class LanguageDetector:
         except (ModuleNotFoundError, ImportError, AttributeError) as err:
             logger.debug("langdetect import failed: %s", err)
 
-    def detect_language(self, file_path: str) -> str:
+    def detect_language(
+        self, 
+        file_path: str, 
+        text_extractor: Optional[Callable[[str], str]] = None,
+        pre_extracted_text: Optional[str] = None,
+    ) -> str:
         """Detect the language of a document from its file path.
 
         Extracts sample text from the document and uses language
@@ -172,6 +178,11 @@ class LanguageDetector:
         Args:
             file_path: Path to the document file to analyze. Supported
                 format is ``.pdf``.
+            text_extractor: Optional callable that takes a file path and returns
+                extracted text. If provided, this overrides the default extraction.
+            pre_extracted_text: Optional pre-extracted text to use instead of
+                extracting from the file. Useful when text is already available
+                from upstream OCR processing.
 
         Returns:
             str: Detected language name (e.g., "German", "English") or
@@ -185,10 +196,23 @@ class LanguageDetector:
             Errors are handled internally and result in "Unknown"
             rather than propagating to the caller.
         """
-        # Extract sample text from document
-        sample_text: str = self._extract_sample_text(file_path)
+        # Use pre-extracted text if provided, otherwise extract from file
+        if pre_extracted_text is not None:
+            sample_text = pre_extracted_text
+        elif text_extractor is not None:
+            sample_text = text_extractor(file_path)
+        else:
+            sample_text = self._extract_sample_text(file_path)
 
-        if not sample_text or len(sample_text.strip()) < 50:
+        # Check for OCR environment flag to lower threshold when text is provided
+        ocr_text_available = (
+            os.getenv("OCR_TEXT_AVAILABLE", "").lower() in ("true", "1", "yes")
+        )
+        
+        # Adjust minimum length based on whether OCR text is expected
+        min_length = 10 if ocr_text_available else 50
+        
+        if not sample_text or len(sample_text.strip()) < min_length:
             return "Unknown"
 
         if LANGDETECT_AVAILABLE:
@@ -211,8 +235,8 @@ class LanguageDetector:
         """Extract sample text for language detection from PDF files.
 
         The project is PDF-only. For ``.pdf`` files, language detection
-        relies on OCR upstream, so this method returns an empty string.
-        Other file types are unsupported and also return an empty string.
+        relies on OCR upstream. This method checks for configured OCR
+        output paths and environment variables to find pre-extracted text.
 
         Args:
             file_path: Path to the document file to extract text from
@@ -225,17 +249,48 @@ class LanguageDetector:
             file_ext: str = Path(file_path).suffix.lower()
 
             if file_ext == ".pdf":
-                # OCR-first pipeline: PDF text must be pre-extracted upstream
-                # Provide explicit guidance for operators on where to look
-                logger.info(
-                    (
-                        "PDF text not available locally; expecting upstream OCR. "
-                        "Verify OCR service/pipeline "
-                        "(env: OCR_SERVICE/OCR_PIPELINE) "
-                        "is configured and producing text for: %s"
-                    ),
-                    file_path,
-                )
+                # Check for OCR output path configuration
+                ocr_output_dir = os.getenv("OCR_OUTPUT_DIR")
+                if ocr_output_dir:
+                    # Look for corresponding text file in OCR output directory
+                    pdf_name = Path(file_path).stem
+                    text_file_path = Path(ocr_output_dir) / f"{pdf_name}.txt"
+                    if text_file_path.exists():
+                        try:
+                            with open(text_file_path, "r", encoding="utf-8") as f:
+                                text = f.read().strip()
+                                if text:
+                                    logger.debug(
+                                        "Found OCR text for %s in %s",
+                                        os.path.basename(file_path),
+                                        text_file_path,
+                                    )
+                                    return text
+                        except (OSError, UnicodeDecodeError) as e:
+                            logger.warning(
+                                "Failed to read OCR text file %s: %s",
+                                text_file_path,
+                                e,
+                            )
+
+                # Check for OCR text available flag
+                if os.getenv("OCR_TEXT_AVAILABLE", "").lower() in ("true", "1", "yes"):
+                    logger.debug(
+                        "OCR_TEXT_AVAILABLE flag set but no text found for %s",
+                        os.path.basename(file_path),
+                    )
+                else:
+                    # OCR-first pipeline: PDF text must be pre-extracted upstream
+                    # Provide explicit guidance for operators on where to look
+                    logger.debug(
+                        (
+                            "PDF text not available locally; expecting upstream OCR. "
+                            "Verify OCR service/pipeline "
+                            "(env: OCR_SERVICE/OCR_PIPELINE) "
+                            "is configured and producing text for: %s"
+                        ),
+                        os.path.basename(file_path),
+                    )
                 return ""
 
             return ""
@@ -267,6 +322,9 @@ class LanguageDetector:
         # Use precomputed language patterns defined at module scope
         language_patterns: dict[str, LanguagePattern] = LANGUAGE_PATTERNS
 
+        # Compute once to speed up membership checks
+        words_set: set[str] = set(words)
+
         # Calculate normalized scores
         scores: dict[str, float] = {}
         for lang, patterns in language_patterns.items():
@@ -275,8 +333,6 @@ class LanguageDetector:
             pattern_chars: list[str] = patterns["chars"]
             word_weight: float = patterns["word_weight"]
             char_weight: float = patterns["char_weight"]
-
-            words_set = set(words)
             word_matches: int = sum(1 for token in pattern_words if token in words_set)
             char_matches: int = sum(1 for ch in pattern_chars if ch in text)
 

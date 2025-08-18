@@ -11,7 +11,7 @@ import time
 from typing import List, TypedDict
 
 # Default demo URL for web evaluation demonstration
-DEFAULT_DEMO_URL: str = "http://localhost:8000/static/demos/web-eval/demo.html"
+DEFAULT_DEMO_URL: Final[str] = "http://localhost:8000/static/demos/web-eval/demo.html"
 
 
 class SampleReport(TypedDict):
@@ -29,7 +29,7 @@ def demonstrate_web_eval_agent() -> None:
     """Demonstrate the web-eval-agent capabilities."""
     api_key: str = os.getenv("OP_API_KEY", "[API_KEY_NOT_SET]")
     # Resolve demo URL from environment with sensible default
-    demo_url: str = os.getenv("WEB_EVAL_DEMO_URL", DEFAULT_DEMO_URL)
+    demo_url: str = os.getenv("WEB_EVAL_DEMO_URL") or DEFAULT_DEMO_URL
     print("🚀 Web Eval Agent MCP Server Demonstration")
     print("=" * 50)
 
@@ -37,7 +37,10 @@ def demonstrate_web_eval_agent() -> None:
     print("\n📋 Configuration:")
     print("  • Server Name: github.com/Operative-Sh/web-eval-agent")
     # Show only the first 4 chars for confirmation
-    print("  • API Key: " + ("set" if api_key != "[API_KEY_NOT_SET]" else "not set"))
+    print(
+    "  • API Key: "
+    + ("set" if os.getenv("OP_API_KEY") not in (None, "", "[API_KEY_NOT_SET]") else "not set")
+)
     print(
         "  • Command: "
         "uvx --refresh-package webEvalAgent --from "

@@ -444,7 +444,7 @@ async def _translate_page_texts_concurrently(
             return idx, text
 
     tasks: List[asyncio.Task[Tuple[int, str]]] = [
-        _translate_one(i, t) for i, t in enumerate(page_texts)
+        asyncio.create_task(_translate_one(i, t)) for i, t in enumerate(page_texts)
     ]
     try:
         results: List[Tuple[int, str]] = await asyncio.gather(*tasks)
@@ -469,18 +469,6 @@ async def perform_advanced_translation() -> None:
 
         content: ContentDict = state.current_content
         content["file_path"] = state.current_file
-
-        # Retrieve concurrency limit from settings with a defensive fallback.
-        # This avoids test flakiness if Settings are unavailable or misconfigured.
-        try:
-            concurrency_limit: int = int(
-                getattr(settings, "translation_concurrency_limit", 8)
-            )
-            if concurrency_limit < 1:
-                concurrency_limit = 8
-        except Exception:
-            concurrency_limit = 8
-        logger.debug(f"Using translation concurrency limit: {concurrency_limit}")
 
         # Define progress callback
         def update_progress(progress: int) -> None:

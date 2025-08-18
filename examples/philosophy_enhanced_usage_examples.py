@@ -42,7 +42,7 @@ class PhilosophyTranslationExamples:
 
     def example_1_basic_text_translation(self) -> Any:
         """Example 1: Basic text translation with neologism detection."""
-        print("\n" + "=" * 80)
+    def example_3_user_choice_management(self) -> tuple[Any, ChoiceSession]:
         print("EXAMPLE 1: Basic Text Translation with Neologism Detection")
         print("=" * 80)
 

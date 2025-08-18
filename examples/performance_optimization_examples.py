@@ -83,7 +83,7 @@ class MetricsCollector:
             return {
                 "hits": self._cache_hits,
                 "misses": self._cache_misses,
-                "total": self._cache_hits + self._cache_misses
+                "total": self._cache_hits + self._cache_misses,
             }
 
     def _maybe_reset_counters(self):
@@ -98,6 +98,32 @@ class MetricsCollector:
 
 # Global metrics collector instance
 _metrics_collector = MetricsCollector()
+
+
+# Public API functions for metrics access
+def increment_cache_hit():
+    """Increment cache hit counter."""
+    _metrics_collector.increment_cache_hit()
+
+
+def increment_cache_miss():
+    """Increment cache miss counter."""
+    _metrics_collector.increment_cache_miss()
+
+
+def get_cache_stats():
+    """Get current cache statistics."""
+    return _metrics_collector.get_cache_stats()
+
+
+def get_cache_hit_rate():
+    """Get current cache hit rate."""
+    return _metrics_collector.get_cache_hit_rate()
+
+
+def get_active_connections():
+    """Get current number of active connections."""
+    return _metrics_collector.get_active_connections()
 
 
 @contextmanager
@@ -122,6 +148,7 @@ async def track_async_connection():
 
 def instrument_cache(func):
     """Decorator to instrument cache operations with metrics."""
+
     def wrapper(*args, **kwargs):
         try:
             # Try to get result from cache
@@ -132,22 +159,44 @@ def instrument_cache(func):
             # Cache miss
             _metrics_collector.increment_cache_miss()
             raise
+
     return wrapper
 
 
 class PerformanceOptimizer:
     """Performance optimization utilities for large document processing."""
 
-    def __init__(self):
+    def __init__(self, enable_advanced_metrics: bool = True):
+        """
+        Initialize performance optimizer.
+        
+        Args:
+            enable_advanced_metrics: Whether to include cache and connection 
+                                   metrics. Set to False to disable experimental 
+                                   metrics.
+        """
         self.process = psutil.Process(os.getpid())
+        # Prime CPU measurement to avoid first-call 0.0
+        self.process.cpu_percent(None)
         # MB
         self.initial_memory = self.process.memory_info().rss / 1024 / 1024
         self.peak_memory = self.initial_memory
         # Track start time for processing time calculation
         self.start_time = time.perf_counter()
+        # Feature flag for experimental metrics
+        self.enable_advanced_metrics = enable_advanced_metrics
 
     def get_current_metrics(self) -> dict[str, float]:
-        """Get current performance metrics."""
+        """
+        Get current performance metrics.
+        
+        Note: 'memory_mb' and 'memory_usage_mb' are duplicates. 'memory_mb' is 
+        deprecated and will be removed in a future version. Use 'memory_usage_mb' 
+        for new code.
+        
+        Experimental metrics (cache_hit_rate, active_connections) are only 
+        included when enable_advanced_metrics=True was passed to __init__.
+        """
         # Current process memory usage (MB)
         mem_mb = self.process.memory_info().rss / 1024 / 1024
 
@@ -163,19 +212,27 @@ class PerformanceOptimizer:
         # Elapsed time since optimizer init (seconds)
         processing_time = float(time.perf_counter() - self.start_time)
 
-        return {
-            # Backward-compatible keys expected by callers
+        # Base metrics (always included)
+        metrics = {
+            # DEPRECATED: Use memory_usage_mb instead
             "memory_mb": float(mem_mb),
             "cpu_percent": cpu,
             "peak_memory_mb": float(self.peak_memory),
-            # New keys retained for forward-looking metrics
+            # Current memory usage (preferred)
             "memory_usage_mb": float(mem_mb),
             "processing_time_seconds": processing_time,
-            "cache_hit_rate": _metrics_collector.get_cache_hit_rate(),
-            "active_connections": float(
-                _metrics_collector.get_active_connections()
-            ),
         }
+        
+        # Experimental metrics (only if enabled)
+        if self.enable_advanced_metrics:
+            metrics.update({
+                "cache_hit_rate": _metrics_collector.get_cache_hit_rate(),
+                "active_connections": float(
+                    _metrics_collector.get_active_connections()
+                ),
+            })
+        
+        return metrics
 
     def log_performance_status(self, stage: str, additional_info: Optional[str] = None):
         """Log current performance status."""

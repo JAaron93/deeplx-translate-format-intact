@@ -14,7 +14,13 @@ from typing import Any, List, Optional
 project_root: Path = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from services.dolphin_client import get_layout
+try:
+    from services.dolphin_client import get_layout
+except ImportError:
+    print(
+        "❌ Could not import dolphin_client. Ensure the project is properly set up."
+    )
+    sys.exit(1)
 
 # ---------------------------------------------------------------------------
 # Test-data paths searched by the helper functions
@@ -113,7 +119,7 @@ async def run_test_local_fallback() -> bool:
         if not test_pdf:
             print("⚠️  No test PDF found for local testing")
             print_test_pdf_locations()
-            return True  # Not a failure, just skip
+            return False  # No test PDF available for testing
 
         await get_layout(test_pdf)
         print("✅ Local endpoint test successful!")
@@ -121,7 +127,7 @@ async def run_test_local_fallback() -> bool:
 
     except Exception as e:
         print(f"⚠️  Local endpoint not available: {e}")
-        return True  # Not a failure, local service might not be running
+        return False  # Local service is not available or failed
 
     finally:
         # Restore original endpoint
@@ -203,7 +209,8 @@ async def main() -> None:
     match (modal_success, local_fallback_success):
         case (True, True):
             print(
-                "✅ All tests passed! Modal deployment and local fallback are working."
+                "✅ All tests passed! Modal deployment and local fallback "
+                "are working."
             )
         case (True, False):
             print("⚠️  Modal deployment is working, but local fallback failed.")
