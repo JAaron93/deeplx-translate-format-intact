@@ -59,6 +59,11 @@ class LingoTranslator(BaseTranslator):
         """
         if api_key is None:
             api_key = os.getenv("LINGO_API_KEY")
+            if isinstance(api_key, str):
+                api_key = api_key.strip()
+        # Normalize any provided key as well
+        if isinstance(api_key, str):
+            api_key = api_key.strip()
         if not api_key:
             raise ValueError("LINGO_API_KEY is required")
 

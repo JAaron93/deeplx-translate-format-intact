@@ -58,7 +58,7 @@ except ImportError as e:
 __all__: list[str] = [
     *_available_services,
     "NEOLOGISM_DETECTOR_AVAILABLE",
-    "TRANSLATION_SERVICE_AVAILABLE", 
+    "TRANSLATION_SERVICE_AVAILABLE",
     "LANGUAGE_DETECTOR_AVAILABLE",
     "ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE",
     "services_count",

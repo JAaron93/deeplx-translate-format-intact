@@ -3,11 +3,11 @@
 import json
 import logging
 import sqlite3
+from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
-from collections.abc import Mapping, Sequence
 
 from models.user_choice_models import (
     ChoiceConflict,

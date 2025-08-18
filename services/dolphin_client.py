@@ -11,8 +11,8 @@ so the rest of the codebase doesn't need to know the wire format.
 
 from __future__ import annotations
 
-import logging
 import io
+import logging
 import os
 import pathlib
 from typing import Any, Union
@@ -95,7 +95,9 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
         required_fields: list[str] = ["page_number", "width", "height", "text_blocks"]
         missing = [f for f in required_fields if f not in page]
         if missing:
-            raise ValueError(f"Page {i} is missing required fields: {', '.join(missing)}")
+            raise ValueError(
+                f"Page {i} is missing required fields: {', '.join(missing)}"
+            )
 
         # Validate text_blocks array (Modal format uses text_blocks)
         if not isinstance(page["text_blocks"], list):

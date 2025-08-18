@@ -1,10 +1,10 @@
 """FastAPI route handlers for document translation API."""
 
 import logging
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-from collections.abc import Mapping
 
 from fastapi import (
     APIRouter,
@@ -346,7 +346,9 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
             if isinstance(metadata, Mapping):
                 metadata_dict = dict(metadata)
             elif hasattr(metadata, "__dict__"):
-                metadata_dict = {k: v for k, v in metadata.__dict__.items() if not k.startswith("_")}
+                metadata_dict = {
+                    k: v for k, v in metadata.__dict__.items() if not k.startswith("_")
+                }
             # Drop sensitive/path-like fields if present
             if metadata_dict:
                 for key in list(metadata_dict.keys()):

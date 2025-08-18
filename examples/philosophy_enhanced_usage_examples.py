@@ -73,9 +73,7 @@ class PhilosophyTranslationExamples:
         if result.neologism_analysis.detected_neologisms:
             print("Detected neologisms:")
             for neologism in result.neologism_analysis.detected_neologisms:
-                conf = f"{neologism.confidence:.2f}"
                 print(f"  - {neologism.term} (confidence: {neologism.confidence:.2f})")
-
         return result
 
     def example_2_batch_translation(self) -> list[Any]:

@@ -314,7 +314,9 @@ class ParallelLingoTranslator:
                         if response.status == 429:  # Rate limited
                             header_val = response.headers.get("Retry-After")
                             try:
-                                retry_after = max(1.0, float(header_val)) if header_val else 1.0
+                                retry_after = (
+                                    max(1.0, float(header_val)) if header_val else 1.0
+                                )
                             except (TypeError, ValueError):
                                 retry_after = 1.0
                             await asyncio.sleep(retry_after)

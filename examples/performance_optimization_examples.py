@@ -10,9 +10,10 @@ import asyncio
 import gc
 import logging
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
 
@@ -29,18 +30,109 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class PerformanceMetrics:
-    """Performance metrics for optimization analysis."""
+class MetricsCollector:
+    """Thread-safe metrics collector for performance monitoring."""
 
-    memory_usage_mb: float
-    cpu_percent: float
-    processing_time: float
-    pages_per_second: float
-    neologisms_per_second: float
-    total_pages: int
-    total_neologisms: int
-    peak_memory_mb: float
+    def __init__(self):
+        """Initialize metrics collector with thread-safe counters."""
+        self._lock = threading.Lock()
+        self._cache_hits = 0
+        self._cache_misses = 0
+        self._active_connections = 0
+        self._last_reset = time.time()
+        self._reset_interval = 3600  # Reset every hour
+
+    def increment_cache_hit(self):
+        """Increment cache hit counter."""
+        with self._lock:
+            self._cache_hits += 1
+            self._maybe_reset_counters()
+
+    def increment_cache_miss(self):
+        """Increment cache miss counter."""
+        with self._lock:
+            self._cache_misses += 1
+            self._maybe_reset_counters()
+
+    def acquire_connection(self):
+        """Increment active connections counter."""
+        with self._lock:
+            self._active_connections += 1
+
+    def release_connection(self):
+        """Decrement active connections counter."""
+        with self._lock:
+            self._active_connections = max(0, self._active_connections - 1)
+
+    def get_cache_hit_rate(self) -> float:
+        """Calculate current cache hit rate."""
+        with self._lock:
+            total = self._cache_hits + self._cache_misses
+            if total == 0:
+                return 0.0
+            return self._cache_hits / total
+
+    def get_active_connections(self) -> int:
+        """Get current number of active connections."""
+        with self._lock:
+            return self._active_connections
+
+    def get_cache_stats(self) -> Dict[str, int]:
+        """Get current cache statistics."""
+        with self._lock:
+            return {
+                "hits": self._cache_hits,
+                "misses": self._cache_misses,
+                "total": self._cache_hits + self._cache_misses
+            }
+
+    def _maybe_reset_counters(self):
+        """Reset counters periodically to prevent unbounded growth."""
+        current_time = time.time()
+        if current_time - self._last_reset > self._reset_interval:
+            self._cache_hits = 0
+            self._cache_misses = 0
+            self._last_reset = current_time
+            logger.debug("Cache counters reset")
+
+
+# Global metrics collector instance
+_metrics_collector = MetricsCollector()
+
+
+@contextmanager
+def track_connection():
+    """Context manager to track database connections."""
+    _metrics_collector.acquire_connection()
+    try:
+        yield
+    finally:
+        _metrics_collector.release_connection()
+
+
+@asynccontextmanager
+async def track_async_connection():
+    """Async context manager to track async connections."""
+    _metrics_collector.acquire_connection()
+    try:
+        yield
+    finally:
+        _metrics_collector.release_connection()
+
+
+def instrument_cache(func):
+    """Decorator to instrument cache operations with metrics."""
+    def wrapper(*args, **kwargs):
+        try:
+            # Try to get result from cache
+            result = func(*args, **kwargs)
+            _metrics_collector.increment_cache_hit()
+            return result
+        except KeyError:
+            # Cache miss
+            _metrics_collector.increment_cache_miss()
+            raise
+    return wrapper
 
 
 class PerformanceOptimizer:
@@ -63,7 +155,10 @@ class PerformanceOptimizer:
         self.peak_memory = max(self.peak_memory, mem_mb)
 
         # Per-process CPU percent since last call (non-blocking)
-        cpu = float(self.process.cpu_percent(interval=None))
+        try:
+            cpu = float(self.process.cpu_percent(interval=None))
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            cpu = 0.0
 
         # Elapsed time since optimizer init (seconds)
         processing_time = float(time.perf_counter() - self.start_time)
@@ -76,8 +171,10 @@ class PerformanceOptimizer:
             # New keys retained for forward-looking metrics
             "memory_usage_mb": float(mem_mb),
             "processing_time_seconds": processing_time,
-            "cache_hit_rate": 0.0,  # Placeholder
-            "active_connections": 0.0,  # Placeholder
+            "cache_hit_rate": _metrics_collector.get_cache_hit_rate(),
+            "active_connections": float(
+                _metrics_collector.get_active_connections()
+            ),
         }
 
     def log_performance_status(self, stage: str, additional_info: Optional[str] = None):
@@ -296,7 +393,7 @@ class LargeDocumentProcessor:
 
     def _calculate_final_metrics(
         self, total_pages: int, total_neologisms: int, processing_time: float
-    ) -> PerformanceMetrics:
+    ) -> Dict[str, Any]:
         """Calculate final performance metrics."""
         current_metrics = self.performance_optimizer.get_current_metrics()
 
@@ -308,16 +405,16 @@ class LargeDocumentProcessor:
         if processing_time > 0:
             neologisms_per_second = total_neologisms / processing_time
 
-        return PerformanceMetrics(
-            memory_usage_mb=current_metrics["memory_mb"],
-            cpu_percent=current_metrics["cpu_percent"],
-            processing_time=processing_time,
-            pages_per_second=pages_per_second,
-            neologisms_per_second=neologisms_per_second,
-            total_pages=total_pages,
-            total_neologisms=total_neologisms,
-            peak_memory_mb=current_metrics["peak_memory_mb"],
-        )
+        return {
+            "memory_usage_mb": current_metrics["memory_mb"],
+            "cpu_percent": current_metrics["cpu_percent"],
+            "processing_time": processing_time,
+            "pages_per_second": pages_per_second,
+            "neologisms_per_second": neologisms_per_second,
+            "total_pages": total_pages,
+            "total_neologisms": total_neologisms,
+            "peak_memory_mb": current_metrics["peak_memory_mb"],
+        }
 
 
 class ParallelProcessingOptimizer:

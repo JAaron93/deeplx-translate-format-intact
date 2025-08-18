@@ -22,6 +22,10 @@ from services.neologism_detector import NeologismDetector
 from services.user_choice_manager import UserChoiceManager, create_session_for_document
 
 
+# Module-level storage for the example database path so cleanup can remove it
+_EXAMPLE_DB_PATH: str | None = None
+
+
 def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     """Set up the example environment with sample data."""
     print("Setting up User Choice Management System example...")
@@ -29,6 +33,10 @@ def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     # Use a temporary directory for the example database
     temp_dir = tempfile.gettempdir()
     db_path = os.path.join(temp_dir, "example_choices.db")
+
+    # Remember the path so cleanup can remove the correct file
+    global _EXAMPLE_DB_PATH
+    _EXAMPLE_DB_PATH = db_path
 
     # Create a user choice manager
     manager: UserChoiceManager = UserChoiceManager(
@@ -42,14 +50,14 @@ def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     terminology_path = (
         Path(__file__).resolve().parents[1] / "config" / "klages_terminology.json"
     )
-    
+
     # Validate that the terminology file exists
     if not terminology_path.exists():
         raise FileNotFoundError(
             f"Terminology file not found: {terminology_path}. "
             "Ensure the file exists in the config directory."
         )
-    
+
     detector: NeologismDetector = NeologismDetector(
         terminology_path=str(terminology_path), philosophical_threshold=0.3
     )
@@ -496,7 +504,11 @@ def cleanup_example() -> None:
     """Clean up example files."""
     print("\n=== Cleanup ===")
 
-    files_to_remove: List[str] = ["example_choices.db", "exported_terminology.json"]
+    # Use the actual DB path created in setup; fall back to temp dir join
+    db_path = _EXAMPLE_DB_PATH or os.path.join(
+        tempfile.gettempdir(), "example_choices.db"
+    )
+    files_to_remove: List[str] = [db_path, "exported_terminology.json"]
 
     for file_path in files_to_remove:
         if os.path.exists(file_path):
