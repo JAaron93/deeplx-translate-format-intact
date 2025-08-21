@@ -15,10 +15,14 @@ payloads or full response bodies to minimize sensitive data exposure.
 """
 
 import asyncio
+import email.utils
+import inspect
 import logging
 import os
 import time
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
@@ -243,6 +247,46 @@ class ParallelLingoTranslator:
         """Async context manager exit."""
         await self.close()
 
+    def _parse_retry_after(self, header_val: Optional[str]) -> float:
+        """Parse Retry-After header value and return seconds to wait.
+
+        Handles both numeric seconds and RFC 7231 HTTP-date formats.
+        Returns a float >= 1.0.
+
+        Args:
+            header_val: The Retry-After header value (can be numeric seconds or HTTP date)
+
+        Returns:
+            float: Seconds to wait, guaranteed to be >= 1.0
+        """
+        if not header_val:
+            return 1.0
+
+        # Try parsing as numeric seconds first
+        try:
+            retry_seconds = float(header_val)
+            return max(1.0, retry_seconds)
+        except (ValueError, TypeError):
+            pass
+
+        # Try parsing as HTTP date
+        try:
+            # Parse RFC 7231 HTTP-date format
+            parsed_date = email.utils.parsedate_to_datetime(header_val)
+            if parsed_date.tzinfo is None:
+                # Assume UTC if no timezone specified
+                parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+
+            # Calculate seconds from now
+            now = datetime.now(timezone.utc)
+            seconds_diff = (parsed_date - now).total_seconds()
+
+            # Ensure minimum of 1.0 seconds
+            return max(1.0, seconds_diff)
+        except (ValueError, TypeError):
+            # Any parsing error falls back to 1.0 seconds
+            return 1.0
+
     async def _ensure_session(self) -> ClientSession:
         """Ensure aiohttp session is created."""
         if self._session is None or self._session.closed:
@@ -313,12 +357,7 @@ class ParallelLingoTranslator:
 
                         if response.status == 429:  # Rate limited
                             header_val = response.headers.get("Retry-After")
-                            try:
-                                retry_after = (
-                                    max(1.0, float(header_val)) if header_val else 1.0
-                                )
-                            except (TypeError, ValueError):
-                                retry_after = 1.0
+                            retry_after = self._parse_retry_after(header_val)
                             await asyncio.sleep(retry_after)
                             last_error = (
                                 f"Rate limited (429), retry after {retry_after}s"
@@ -340,11 +379,14 @@ class ParallelLingoTranslator:
             except Exception as e:  # pylint: disable=broad-except
                 last_error = f"Unexpected error: {e}"
 
-            # Wait before retry (exponential backoff)
+            # Wait before retry (exponential backoff, respect server retry-after)
             if attempt < self.config.max_retries:
                 delay = self.config.retry_delay * (
                     self.config.backoff_multiplier**attempt
                 )
+                # For 429 errors, use the maximum of server retry-after and exponential backoff
+                if response.status == 429 and "retry_after" in locals():
+                    delay = max(retry_after, delay)
                 await asyncio.sleep(delay)
 
         # All retries failed
@@ -562,10 +604,35 @@ class ParallelLingoTranslator:
             for i, layout in enumerate(translated_content["layouts"]):
                 translation_key = f"layout_{i}"
                 if translation_key in translations:
-                    if isinstance(layout, dict) and "text" in layout:
-                        layout["text"] = translations[translation_key]
+                    # Cache translation value to avoid repeated lookups
+                    translated_text = translations[translation_key]
+
+                    if isinstance(layout, MutableMapping) and "text" in layout:
+                        layout["text"] = translated_text
                     elif hasattr(layout, "text"):
-                        layout.text = translations[translation_key]
+                        # Check if the 'text' attribute is writable to avoid read-only properties
+                        try:
+                            # Use inspect to check if it's a settable attribute
+                            text_attr = inspect.getattr_static(
+                                layout.__class__, "text", None
+                            )
+                            if (
+                                text_attr is None
+                                or not isinstance(text_attr, property)
+                                or text_attr.fset is not None
+                            ):
+                                layout.text = translated_text
+                            else:
+                                logger.warning(
+                                    "Layout %s 'text' attribute is read-only, cannot apply translation",
+                                    i,
+                                )
+                        except (AttributeError, TypeError) as e:
+                            logger.warning(
+                                "Layout %s 'text' attribute assignment failed: %s",
+                                i,
+                                str(e),
+                            )
                     else:
                         logger.warning(
                             "Layout %s has no 'text' attribute/key to apply translation",

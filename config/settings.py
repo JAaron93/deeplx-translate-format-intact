@@ -2,6 +2,7 @@
 
 import logging
 import os
+import secrets
 from typing import Set
 
 from dotenv import load_dotenv
@@ -209,13 +210,69 @@ def _parse_bool_env(env_var: str, default: str = "false") -> bool:
             return False
         else:
             logger.error(
-                f"Invalid boolean value '{value}' for {env_var}. "
-                f"Valid values: true/false, 1/0, yes/no, on/off"
+                "Invalid boolean value '%s' for %s. Valid values: true/false, 1/0, yes/no, on/off",
+                value,
+                env_var,
             )
             raise ValueError(f"Invalid boolean value for {env_var}: {value}")
     except AttributeError as e:
         logger.exception("Error parsing boolean environment variable %s", env_var)
         raise ValueError(f"Error parsing {env_var}: {e}") from e
+
+
+def _parse_int_env(
+    env_var: str,
+    default: int,
+    min_value: int | None = None,
+    max_value: int | None = None,
+) -> int:
+    """Parse integer environment variable with error handling and value clamping.
+
+    Args:
+        env_var: Environment variable name to parse
+        default: Default value to return on error
+        min_value: Minimum allowed value (optional)
+        max_value: Maximum allowed value (optional)
+
+    Returns:
+        int: Parsed and validated integer value
+    """
+    try:
+        value_str: str = os.getenv(env_var, str(default))
+        result: int = int(value_str)
+
+        # Apply clamping if specified
+        if min_value is not None and result < min_value:
+            logger.warning(
+                "Environment variable %s value %d is below minimum %d, clamping to %d",
+                env_var,
+                result,
+                min_value,
+                min_value,
+            )
+            return min_value
+
+        if max_value is not None and result > max_value:
+            logger.warning(
+                "Environment variable %s value %d is above maximum %d, clamping to %d",
+                env_var,
+                result,
+                max_value,
+                max_value,
+            )
+            return max_value
+
+        return result
+
+    except (ValueError, TypeError) as e:
+        logger.error(
+            "Invalid integer value '%s' for %s, using default %d: %s",
+            os.getenv(env_var, str(default)),
+            env_var,
+            default,
+            str(e),
+        )
+        return default
 
 
 class Settings:
@@ -226,23 +283,25 @@ class Settings:
 
     # Server configuration
     HOST: str = os.getenv("HOST", "127.0.0.1")
-    PORT: int = int(os.getenv("PORT", "7860"))
+    PORT: int = _parse_int_env("PORT", default=7860, min_value=1, max_value=65535)
     DEBUG: bool = _parse_bool_env("DEBUG", "false")
 
     # Security
-    SECRET_KEY: str | None = os.getenv("SECRET_KEY")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
 
     # File handling
-    MAX_FILE_SIZE_MB: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
+    MAX_FILE_SIZE_MB: int = _parse_int_env("MAX_FILE_SIZE_MB", default=10, min_value=1)
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
     DOWNLOAD_DIR: str = os.getenv("DOWNLOAD_DIR", "downloads")
     TEMP_DIR: str = os.getenv("TEMP_DIR", "temp")
     IMAGE_CACHE_DIR: str = os.getenv("IMAGE_CACHE_DIR", "temp/images")
 
     # PDF processing
-    PDF_DPI: int = int(os.getenv("PDF_DPI", "300"))
+    PDF_DPI: int = _parse_int_env("PDF_DPI", default=300, min_value=72, max_value=600)
     PRESERVE_IMAGES: bool = _parse_bool_env("PRESERVE_IMAGES", "true")
-    MEMORY_THRESHOLD: int = int(os.getenv("MEMORY_THRESHOLD", "500"))  # MB
+    MEMORY_THRESHOLD: int = _parse_int_env(
+        "MEMORY_THRESHOLD", default=500, min_value=100
+    )  # MB
 
     # Translation settings
     SOURCE_LANGUAGE: str = "DE"
@@ -251,8 +310,8 @@ class Settings:
     # Maximum number of concurrent translation tasks.
     # Environment variable: TRANSLATION_CONCURRENCY_LIMIT
     # Default: 8 (must be >= 1)
-    TRANSLATION_CONCURRENCY_LIMIT: int = int(
-        os.getenv("TRANSLATION_CONCURRENCY_LIMIT", "8")
+    TRANSLATION_CONCURRENCY_LIMIT: int = _parse_int_env(
+        "TRANSLATION_CONCURRENCY_LIMIT", default=8, min_value=1
     )
 
     # Logging
@@ -260,8 +319,12 @@ class Settings:
     LOG_FILE: str = os.getenv("LOG_FILE", "app.log")
 
     # Cleanup settings
-    CLEANUP_INTERVAL_HOURS: int = int(os.getenv("CLEANUP_INTERVAL_HOURS", "24"))
-    MAX_FILE_AGE_HOURS: int = int(os.getenv("MAX_FILE_AGE_HOURS", "48"))
+    CLEANUP_INTERVAL_HOURS: int = _parse_int_env(
+        "CLEANUP_INTERVAL_HOURS", default=24, min_value=1
+    )
+    MAX_FILE_AGE_HOURS: int = _parse_int_env(
+        "MAX_FILE_AGE_HOURS", default=48, min_value=1
+    )
 
     def __init__(self) -> None:
         """Initialize settings and create required directories."""
@@ -279,21 +342,34 @@ class Settings:
             try:
                 os.makedirs(normalized_path, exist_ok=True)
                 logger.debug(
-                    f"Successfully created/verified directory: {normalized_path}"
+                    "Successfully created/verified directory: %s", normalized_path
                 )
             except PermissionError as e:
                 logger.error(
-                    f"Permission denied when creating directory "
-                    f"'{normalized_path}': {e}. "
-                    "Check file system permissions for the application."
+                    "Permission denied when creating directory '%s': %s. "
+                    "Check file system permissions for the application.",
+                    normalized_path,
+                    e,
                 )
                 raise
             except OSError as e:
                 logger.error(
-                    f"OS error when creating directory '{normalized_path}': {e}. "
-                    "Check path validity and available disk space."
+                    "OS error when creating directory '%s': %s. "
+                    "Check path validity and available disk space.",
+                    normalized_path,
+                    e,
                 )
                 raise
+
+        # Post-initialization setup
+        self.__post_init__()
+
+    def __post_init__(self) -> None:
+        """Post-initialization to handle auto-generated settings."""
+        # Auto-generate SECRET_KEY for DEBUG mode if not provided
+        if self.DEBUG and not self.SECRET_KEY:
+            self.SECRET_KEY = secrets.token_urlsafe(32)
+            logger.info("Auto-generated SECRET_KEY for DEBUG mode")
 
     def get_available_translators(self) -> list[str]:
         """Get list of available translation services."""
@@ -313,6 +389,7 @@ class Settings:
         """
         validation_results: list[bool] = [
             self._validate_api_key(),
+            self._validate_secret_key(),
             self._validate_language_settings(),
             self._validate_directories(),
             self._validate_numeric_settings(),
@@ -341,15 +418,15 @@ class Settings:
 
         if self.SOURCE_LANGUAGE.upper() not in VALID_LANGUAGE_CODES:
             logger.error(
-                f"Invalid SOURCE_LANGUAGE code: {self.SOURCE_LANGUAGE}. "
-                f"Must be a valid ISO 639-1 language code."
+                "Invalid SOURCE_LANGUAGE code: %s. Must be a valid ISO 639-1 language code.",
+                self.SOURCE_LANGUAGE,
             )
             valid = False
 
         if self.TARGET_LANGUAGE.upper() not in VALID_LANGUAGE_CODES:
             logger.error(
-                f"Invalid TARGET_LANGUAGE code: {self.TARGET_LANGUAGE}. "
-                f"Must be a valid ISO 639-1 language code."
+                "Invalid TARGET_LANGUAGE code: %s. Must be a valid ISO 639-1 language code.",
+                self.TARGET_LANGUAGE,
             )
             valid = False
 
@@ -377,13 +454,12 @@ class Settings:
         valid: bool = True
 
         if self.PORT < 1 or self.PORT > 65535:
-            logger.error(f"Invalid PORT: {self.PORT}. Must be between 1-65535")
+            logger.error("Invalid PORT: %s. Must be between 1-65535", self.PORT)
             valid = False
 
         if self.MAX_FILE_SIZE_MB <= 0:
             logger.error(
-                f"Invalid MAX_FILE_SIZE_MB: {self.MAX_FILE_SIZE_MB}. "
-                "Must be positive"
+                "Invalid MAX_FILE_SIZE_MB: %s. Must be positive", self.MAX_FILE_SIZE_MB
             )
             valid = False
 
@@ -393,23 +469,21 @@ class Settings:
 
         if self.MEMORY_THRESHOLD <= 0:
             logger.error(
-                f"Invalid MEMORY_THRESHOLD: {self.MEMORY_THRESHOLD}. "
-                "Must be positive"
+                "Invalid MEMORY_THRESHOLD: %s. Must be positive", self.MEMORY_THRESHOLD
             )
             valid = False
 
         if self.TRANSLATION_DELAY < 0:
             logger.error(
-                f"Invalid TRANSLATION_DELAY: {self.TRANSLATION_DELAY}. "
-                "Must be non-negative"
+                "Invalid TRANSLATION_DELAY: %s. Must be non-negative",
+                self.TRANSLATION_DELAY,
             )
             valid = False
 
         if self.TRANSLATION_CONCURRENCY_LIMIT < 1:
             logger.error(
-                f"Invalid TRANSLATION_CONCURRENCY_LIMIT: "
-                f"{self.TRANSLATION_CONCURRENCY_LIMIT}. "
-                "Must be >= 1"
+                "Invalid TRANSLATION_CONCURRENCY_LIMIT: %s. Must be >= 1",
+                self.TRANSLATION_CONCURRENCY_LIMIT,
             )
             valid = False
 
@@ -428,6 +502,27 @@ class Settings:
             # This is a warning, not an error, so don't set valid = False
 
         return valid
+
+    def _validate_secret_key(self) -> bool:
+        """Validate SECRET_KEY configuration for security."""
+        # SECRET_KEY is required when DEBUG=False
+        if not self.DEBUG and not self.SECRET_KEY:
+            logger.error(
+                "SECRET_KEY is required but not configured when DEBUG=False. "
+                "Set SECRET_KEY environment variable with a secure random value."
+            )
+            return False
+
+        # Validate SECRET_KEY strength for production
+        if not self.DEBUG and self.SECRET_KEY and len(self.SECRET_KEY) < 32:
+            logger.error(
+                "SECRET_KEY is too weak: %s characters. "
+                "Must be at least 32 characters for production use.",
+                len(self.SECRET_KEY),
+            )
+            return False
+
+        return True
 
     def _check_directory_writable(self, directory: str) -> bool:
         """Check if a directory is writable by attempting to create a test file."""

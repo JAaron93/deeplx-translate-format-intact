@@ -412,12 +412,15 @@ def test_neologism_models() -> None:
         data.get("term") == "Wirklichkeitsbewusstsein"
     ), "JSON should contain the term"
     assert "confidence" in data, "JSON should contain 'confidence' key"
-    assert isinstance(
-        data["confidence"], (int, float)
-    ), "JSON 'confidence' should be numeric"
+    conf_val = data["confidence"]
+    assert isinstance(conf_val, (int, float)) and not isinstance(
+        conf_val, bool
+    ), "JSON 'confidence' should be a number (int/float) but not bool"
+    conf_val = float(conf_val)
     assert math.isclose(
-        float(data["confidence"]), 0.85, rel_tol=0.0, abs_tol=1e-9
+        conf_val, 0.85, rel_tol=1e-9, abs_tol=1e-9
     ), "JSON should contain the confidence value"
+    assert 0.0 <= conf_val <= 1.0, "JSON 'confidence' should be between 0 and 1"
     print("✓ DetectedNeologism creation and validation passed")
 
     print("Neologism models test completed successfully")

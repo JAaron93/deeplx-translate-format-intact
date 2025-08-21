@@ -45,16 +45,20 @@ def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     )
 
     # Create a neologism detector
-    # Resolve terminology path relative to the repo root
-    terminology_path = (
-        Path(__file__).resolve().parents[1] / "config" / "klages_terminology.json"
-    )
+    # Check for environment override first, then fall back to repo-relative path
+    env_terminology_path = os.getenv("KLAGES_TERMINOLOGY_PATH")
+    if env_terminology_path:
+        terminology_path = Path(env_terminology_path)
+    else:
+        terminology_path = (
+            Path(__file__).resolve().parents[1] / "config" / "klages_terminology.json"
+        )
 
-    # Validate that the terminology file exists
-    if not terminology_path.exists():
+    # Validate that the terminology file exists and is a file (not directory)
+    if not terminology_path.is_file():
         raise FileNotFoundError(
             f"Terminology file not found: {terminology_path}. "
-            "Ensure the file exists in the config directory."
+            "Ensure the file exists and is not a directory."
         )
 
     detector: NeologismDetector = NeologismDetector(
@@ -507,12 +511,28 @@ def cleanup_example() -> None:
     db_path = _EXAMPLE_DB_PATH or os.path.join(
         tempfile.gettempdir(), "example_choices.db"
     )
-    files_to_remove: List[str] = [db_path, "exported_terminology.json"]
+
+    # Include SQLite companion files (journal, WAL, SHM)
+    db_base = os.path.splitext(db_path)[0]
+    files_to_remove: List[str] = [
+        db_path,
+        f"{db_base}-journal",  # Rollback journal
+        f"{db_base}-wal",  # Write-Ahead Log
+        f"{db_base}-shm",  # Shared memory file
+        "exported_terminology.json",
+    ]
 
     for file_path in files_to_remove:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            print(f"✓ Removed {file_path}")
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"✓ Removed {file_path}")
+            else:
+                print(f"⚠️  File not found: {file_path}")
+        except (OSError, FileNotFoundError) as e:
+            print(f"⚠️  Could not remove {file_path}: {e}")
+        except Exception as e:
+            print(f"⚠️  Unexpected error removing {file_path}: {e}")
 
 
 def main() -> None:
@@ -586,6 +606,14 @@ def main() -> None:
         traceback.print_exc()
 
     finally:
+        # Close resources before cleanup
+        if "manager" in locals() and hasattr(manager, "close"):
+            try:
+                manager.close()
+                print("✓ Closed database manager")
+            except Exception as e:
+                print(f"⚠️  Warning: Error closing manager: {e}")
+
         # Cleanup
         cleanup_example()
 

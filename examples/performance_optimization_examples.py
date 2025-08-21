@@ -149,6 +149,10 @@ async def track_async_connection():
         _metrics_collector.release_connection()
 
 
+import weakref
+from functools import wraps
+
+
 def instrument_cache(func):
     """Decorator to instrument cache operations with metrics.
 
@@ -159,7 +163,7 @@ def instrument_cache(func):
 
     # Store cache data per instance using a WeakKeyDictionary to avoid memory
     # leaks
-    _instance_caches = {}
+    _instance_caches = weakref.WeakKeyDictionary()
 
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -193,6 +197,11 @@ def instrument_cache(func):
             # Increment miss counter and re-raise
             _metrics_collector.increment_cache_miss()
             raise e
+        _metrics_collector.increment_cache_miss()
+        result = func(*args, **kwargs)
+        # Cache the result for future use
+        cache[cache_key] = result
+        return result
 
     return wrapper
 

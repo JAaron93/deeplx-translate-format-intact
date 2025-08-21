@@ -63,6 +63,7 @@ __all__: list[str] = [
     "ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE",
     "services_count",
     "services_list",
+    "AVAILABLE_SERVICES",
 ]
 
 # Export availability flags for runtime dependency checking
@@ -80,6 +81,9 @@ ENHANCED_DOCUMENT_PROCESSOR_AVAILABLE: bool = _service_availability[
 # Log summary of available services
 services_count: int = len(_available_services)
 services_list: str = ", ".join(_available_services)
+AVAILABLE_SERVICES: list[
+    str
+] = _available_services.copy()  # Machine-friendly list of available services
 logger.info(
     f"Services module initialized with {services_count} "
     f"available services: {services_list}"

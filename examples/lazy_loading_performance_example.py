@@ -40,6 +40,7 @@ Recalibration Notes:
 - Hardware architecture affects memory allocation patterns
 - Re-benchmark when upgrading spaCy versions or models
 """
+from __future__ import annotations
 
 import argparse
 import logging
@@ -47,9 +48,12 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import psutil
+
+if TYPE_CHECKING:
+    from services.neologism_detector import NeologismDetector
 
 # Robust absolute path resolution for project root
 # Uses Path.resolve() to handle symbolic links, relative path traversal,
@@ -58,8 +62,6 @@ project_root: Path = Path(__file__).parent.parent.resolve()
 if str(project_root) not in sys.path:
     # Add at end to avoid overriding system packages
     sys.path.append(str(project_root))
-
-from services.neologism_detector import NeologismDetector
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -134,6 +136,8 @@ def demonstrate_lazy_loading(
     eager_memory_override: Optional[float] = None,
 ) -> dict[str, float]:
     """Demonstrate lazy loading performance benefits."""
+    # Local import to avoid E402 after sys.path modification
+    from services.neologism_detector import NeologismDetector
 
     print("=" * 60)
     print("LAZY LOADING PERFORMANCE DEMONSTRATION")
@@ -145,7 +149,7 @@ def demonstrate_lazy_loading(
 
     # Test 1: Fast instantiation
     print("\n1. Testing instantiation speed...")
-    times: List[float] = []
+    times: list[float] = []
     for i in range(5):
         start_time: float = time.time()
         detector: NeologismDetector = NeologismDetector()
@@ -213,7 +217,7 @@ def demonstrate_lazy_loading(
     print("\n4. Testing multiple instantiations...")
 
     start_time = time.time()
-    detectors: List[NeologismDetector] = []
+    detectors: list[NeologismDetector] = []
     for _ in range(10):
         detector = NeologismDetector()
         detectors.append(detector)
@@ -295,7 +299,7 @@ def main() -> None:
     args: argparse.Namespace = parse_arguments()
 
     # Run the performance demonstration with optional memory override
-    results: Dict[str, float] = demonstrate_lazy_loading(
+    results: dict[str, float] = demonstrate_lazy_loading(
         eager_memory_override=args.eager_memory
     )
 

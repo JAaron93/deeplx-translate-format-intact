@@ -1,13 +1,7 @@
 """Simple test for the metrics system."""
 
 import asyncio
-import os
-import sys
 import threading
-import time
-
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from examples.performance_optimization_examples import (
     get_active_connections,
@@ -94,11 +88,15 @@ def test_thread_safety():
     initial_hits = initial_stats["hits"]
     initial_misses = initial_stats["misses"]
 
+    # Create barrier for synchronized thread start
+    barrier = threading.Barrier(5)
+
     def worker():
+        # Wait for all threads to be ready before starting work
+        barrier.wait()
         for _ in range(100):
             increment_cache_hit()
             increment_cache_miss()
-            time.sleep(0.001)
 
     # Create multiple threads
     threads = [threading.Thread(target=worker) for _ in range(5)]

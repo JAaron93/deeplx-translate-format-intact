@@ -21,7 +21,28 @@ LANGDETECT_AVAILABLE: bool = importlib.util.find_spec("langdetect") is not None
 logger: logging.Logger = logging.getLogger(__name__)
 
 # Accepted truthy values for environment flags (normalized to lower-case)
-TRUE_VALUES: set[str] = {"true", "1", "yes"}
+TRUE_VALUES: frozenset[str] = frozenset({"true", "1", "yes", "on", "y"})
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    """Check if an environment variable flag is set to a truthy value.
+
+    Reads the environment variable, normalizes it by stripping whitespace and converting to lowercase,
+    then checks if it matches any of the accepted truthy values. Returns the default value
+    if the environment variable is not set or is empty after normalization.
+
+    Args:
+        name: Environment variable name to check
+        default: Default value to return if the environment variable is not set or empty
+
+    Returns:
+        bool: True if the environment variable contains a truthy value, False if falsy,
+              or the default value if the variable is not set
+    """
+    value = os.getenv(name, "").strip().lower()
+    if not value:
+        return default
+    return value in TRUE_VALUES
 
 
 LANGUAGE_MAP: dict[str, str] = {
@@ -151,20 +172,26 @@ class LanguageDetector:
         """
         if self._langdetect_initialized:
             return
-        self._langdetect_initialized = True
+
+        # Set initialized if langdetect is confirmed unavailable
         if not LANGDETECT_AVAILABLE:
+            self._langdetect_initialized = True
             return
+
         try:
             mod: Any = importlib.import_module("langdetect")
-            exc_mod: Any = importlib.import_module("langdetect.lang_detect_exception")
             fallback_exc: type = type("LocalLangDetectException", (RuntimeError,), {})
-            exc: Any = getattr(exc_mod, "LangDetectException", fallback_exc)
+            # Get LangDetectException from the top-level module instead of importing submodule
+            exc: Any = getattr(mod, "LangDetectException", fallback_exc)
             detect_func: Optional[Any] = getattr(mod, "detect", None)
             self._langdetect_mod = mod
             self._langdetect_exception = exc
             self._detect_func = detect_func
+            # Only mark as initialized after successful import and caching
+            self._langdetect_initialized = True
         except (ModuleNotFoundError, ImportError, AttributeError) as err:
             logger.debug("langdetect import failed: %s", err)
+            # Don't set initialized flag on import errors to allow retry on transient failures
 
     def detect_language(
         self,
@@ -203,37 +230,61 @@ class LanguageDetector:
         if pre_extracted_text is not None:
             sample_text = pre_extracted_text
         elif text_extractor is not None:
-            sample_text = text_extractor(file_path)
+            try:
+                sample_text = text_extractor(file_path)
+            except Exception as e:
+                logger.warning(
+                    "Text extractor failed for %s: %s. Falling back to sample text extraction",
+                    file_path,
+                    str(e),
+                )
+                try:
+                    sample_text = self._extract_sample_text(file_path)
+                except Exception as fallback_e:
+                    logger.error(
+                        "Both text extractor and fallback failed for %s: %s",
+                        file_path,
+                        str(fallback_e),
+                    )
+                    sample_text = None
         else:
             sample_text = self._extract_sample_text(file_path)
 
         # Check for OCR environment flag to lower threshold when text is provided
-        ocr_text_available = (
-            os.getenv("OCR_TEXT_AVAILABLE", "").strip().lower() in TRUE_VALUES
-        )
+        ocr_text_available = env_flag("OCR_TEXT_AVAILABLE")
 
         # Adjust minimum length based on whether OCR text is expected
-        # OCR text tends to be cleaner but still needs reasonable length for accuracy
+        # OCR text tends to be cleaner; set langdetect thresholds accordingly
         min_length = 20 if ocr_text_available else 50
 
-        if not sample_text or len(sample_text.strip()) < min_length:
+        if not sample_text:
+            return "Unknown"
+        text_len = len(sample_text.strip())
+        if text_len < 10:
             return "Unknown"
 
-        # If we have enough text, try language detection
-        if LANGDETECT_AVAILABLE:
+        # If we have enough text for langdetect, try it; else use heuristics
+        if LANGDETECT_AVAILABLE and text_len >= min_length:
             self._ensure_langdetect()
-            detect_func: Optional[Any] = self._detect_func
-            lang_exc: Optional[Any] = self._langdetect_exception
-            if detect_func is None or lang_exc is None:
-                return self._simple_language_detection(sample_text)
-            try:
-                detected_code: str = detect_func(sample_text)
-            except (lang_exc, ValueError) as e:  # type: ignore[misc]
-                logger.warning("Language detection error: %s", e)
-                return "Unknown"
-            return self.language_map.get(detected_code, "Unknown")
+            if self._detect_func is not None and self._langdetect_exception is not None:
+                # At this point, sample_text is guaranteed to be not None and have length >= 10
+                assert (
+                    sample_text is not None
+                ), "sample_text should not be None at this point"
+                try:
+                    detected_code: str = self._detect_func(sample_text)
+                    mapped_lang = self.language_map.get(detected_code, "Unknown")
+                    if mapped_lang == "Unknown":
+                        logger.debug(
+                            "Unmapped language code '%s' detected, returning 'Unknown'",
+                            detected_code,
+                        )
+                    return mapped_lang
+                except (self._langdetect_exception, ValueError) as e:
+                    logger.warning("Language detection error: %s", e)
+                    return "Unknown"
 
-        # Fallback to simple heuristics
+        # Fallback to simple heuristics for shorter texts (≥10 chars)
         return self._simple_language_detection(sample_text)
 
     def _extract_sample_text(self, file_path: str) -> str:
@@ -279,7 +330,7 @@ class LanguageDetector:
                             )
 
                 # Check for OCR text available flag
-                if os.getenv("OCR_TEXT_AVAILABLE", "").strip().lower() in TRUE_VALUES:
+                if env_flag("OCR_TEXT_AVAILABLE"):
                     logger.debug(
                         "OCR_TEXT_AVAILABLE flag set but no text found for %s",
                         os.path.basename(file_path),
@@ -331,8 +382,8 @@ class LanguageDetector:
         words_set: set[str] = set(words)
 
         # Precompute denominators to avoid redundant calculations
-        denom: float = float(max(word_count, 1))
-        char_denom: float = float(max(len(text), 1))
+        denom: float = float(word_count)
+        char_denom: float = float(len(text))
 
         # Calculate normalized scores
         scores: dict[str, float] = {}
@@ -345,7 +396,7 @@ class LanguageDetector:
             word_matches: int = sum(1 for token in pattern_words if token in words_set)
             char_matches: int = sum(1 for ch in pattern_chars if ch in text)
 
-            # Calculate normalized scores (per 100 words)
+            # Calculate normalized scores (word_score per 100 words, char_score per 100 characters)
             word_score: float = (word_matches * word_weight) / denom * 100
             char_score: float = (char_matches * char_weight) / char_denom * 100
 
@@ -398,7 +449,14 @@ class LanguageDetector:
             except (lang_exc, ValueError) as e:  # type: ignore[misc]
                 logger.warning("Language detection error: %s", e)
             return "Unknown"
-            return self.language_map.get(detected_code, detected_code.upper())
+            mapped_lang = self.language_map.get(detected_code, detected_code.upper())
+            if mapped_lang == detected_code.upper():
+                logger.debug(
+                    "Unmapped language code '%s', falling back to uppercase '%s'",
+                    detected_code,
+                    mapped_lang,
+                )
+            return mapped_lang
 
         # Fallback to simple heuristics
         return self._simple_language_detection(text)

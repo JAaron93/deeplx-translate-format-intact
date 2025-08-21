@@ -14,7 +14,8 @@ try:
     from dotenv import load_dotenv
 except ImportError:  # pragma: no cover - optional at runtime
     # Fallback no-op with signature compatible to python-dotenv
-    def load_dotenv(*args: object, **kwargs: object) -> bool:
+    def load_dotenv(*_args: object, **_kwargs: object) -> bool:
+        """Fallback no-op function when python-dotenv is not available."""
         return False
 
 
@@ -35,9 +36,7 @@ def _parse_env(
     coerce: Callable[[str], T],
     min_value: T | None = None,
 ) -> T:
-    """Parse an environment variable with a coerce function and optional
-    minimum clamp.
-    """
+    """Parse an environment variable with a coerce function and optional minimum clamp."""
     fallback_value: T = (
         max(min_value, default_value) if min_value is not None else default_value
     )

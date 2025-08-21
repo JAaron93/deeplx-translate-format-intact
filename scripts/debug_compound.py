@@ -49,13 +49,22 @@ def get_default_categories() -> list[str]:
 def get_categories_from_config(config_path: Union[str, Path]) -> list[str]:
     """Get compound categories from configuration file."""
     try:
-        with open(config_path, encoding="utf-8") as f:
+        path = Path(config_path)
+        with path.open(encoding="utf-8") as f:
             config = json.load(f)
-            return config.get("compound_categories", get_default_categories())
+            categories = config.get("compound_categories", get_default_categories())
+            if not isinstance(categories, list) or not all(
+                isinstance(c, str) for c in categories
+            ):
+                logger.warning(
+                    "Invalid 'compound_categories' in %s; using defaults.", path
+                )
+                return get_default_categories()
+            return categories
     except (OSError, json.JSONDecodeError) as e:
         logger.warning(
             "Could not load categories from %s (%s). Using defaults.",
-            config_path,
+            path if "path" in locals() else config_path,
             e,
         )
         return get_default_categories()
@@ -87,7 +96,15 @@ def load_test_words(
         if categories is None:
             if auto_detect_categories:
                 categories = config.get("compound_categories", get_default_categories())
+                if not isinstance(categories, list) or not all(
+                    isinstance(c, str) for c in categories
+                ):
+                    print(
+                        f"⚠️  Warning: Invalid 'compound_categories' in {config_path}; using defaults."
+                    )
+                    categories = get_default_categories()
             else:
+                ...
                 categories = get_default_categories()
 
         # Flatten specified word categories into a single list
@@ -316,7 +333,7 @@ def get_available_categories(
     try:
         return get_categories_from_config(config_path)
     except Exception as e:
-        print(f"⚠️  Warning: Error loading categories from {config_path}: {e}")
+        logger.warning("Warning: Error loading categories from %s: %s", config_path, e)
         return get_default_categories()
 
 

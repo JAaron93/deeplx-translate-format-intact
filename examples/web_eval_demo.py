@@ -36,11 +36,15 @@ def demonstrate_web_eval_agent() -> None:
     # Simulate the web-eval-agent configuration
     print("\n📋 Configuration:")
     print("  • Server Name: github.com/Operative-Sh/web-eval-agent")
-    # Show only the first 4 chars for confirmation
-    print(
-        "  • API Key: "
-        + (f"{api_key[:4]}…" if api_key not in ("", "[API_KEY_NOT_SET]") else "not set")
-    )
+    # Show only the last 4 chars for confirmation (avoiding prefix leakage)
+    trimmed_key = api_key.strip()
+    if not trimmed_key or trimmed_key == "[API_KEY_NOT_SET]":
+        api_key_display = "not set"
+    else:
+        api_key_display = (
+            f"{'…' + trimmed_key[-4:] if len(trimmed_key) > 4 else trimmed_key}"
+        )
+    print(f"  • API Key: {api_key_display}")
     print(
         "  • Command: "
         "uvx --refresh-package webEvalAgent --from "
@@ -100,7 +104,7 @@ def demonstrate_web_eval_agent() -> None:
         ),
     }
 
-    print(json.dumps(sample_report, indent=2, ensure_ascii=False))
+    print(json.dumps(sample_report, indent=2, ensure_ascii=False, sort_keys=True))
 
     print("\n✨ Key Features Demonstrated:")
     print("  • 🌐 Browser Automation: Navigate and interact with web pages")

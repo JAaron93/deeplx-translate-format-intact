@@ -225,31 +225,23 @@ async def get_layout(pdf_path: Union[str, os.PathLike[str]]) -> dict[str, Any]:
     # Use streaming upload to avoid loading big PDFs fully into memory.
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
         with pdf_path.open("rb") as fp:
-            files: dict[str, tuple[str, io.BufferedReader, str]] = {
-                "file": (pdf_path.name, fp, "application/pdf")
-            }
+            files: dict[str, Any] = {"file": (pdf_path.name, fp, "application/pdf")}
             try:
                 response: httpx.Response = await client.post(endpoint, files=files)
                 response.raise_for_status()
             except httpx.HTTPError as exc:
-                logger.error("Dolphin request failed: %s: %s", type(exc).__name__, exc)
+                logger.error(
+                    "Dolphin request to %s failed: %s: %s",
+                    endpoint,
+                    type(exc).__name__,
+                    exc,
+                )
                 raise
 
     try:
         data: dict[str, Any] = response.json()
     except ValueError as e:
         raise ValueError(f"Invalid JSON response from Dolphin service: {e}") from e
-
-    # Basic validation - check if response has the expected structure
-    if not isinstance(data, dict) or "pages" not in data:
-        raise ValueError(
-            "Invalid response format from Dolphin service: missing 'pages' key"
-        )
-
-    if not isinstance(data["pages"], list):
-        raise ValueError(
-            "Invalid response format from Dolphin service: 'pages' is not a list"
-        )
 
     # Validate the response using the dedicated validation function
     validate_dolphin_layout_response(data)

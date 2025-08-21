@@ -3,7 +3,7 @@
 import json
 import logging
 import sqlite3
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -1170,7 +1170,7 @@ class ChoiceDatabase:
         """Validate and reconstruct a UserChoice object from JSON data.
 
         Args:
-            choice_data: Dictionary containing choice data
+            cchoice_data: Mapping containing choice data
             session_id: Optional session ID to assign
 
         Returns:
@@ -1276,15 +1276,18 @@ class ChoiceDatabase:
 
         return choice
 
-    def _bulk_import_choices(self, choices: Sequence[UserChoice]) -> int:
+    def _bulk_import_choices(self, choices: Iterable[UserChoice]) -> int:
         """Perform bulk import of validated choices using high-performance database operations.
 
         Args:
-            choices: List of validated UserChoice objects
+            choices: Iterable of validated UserChoice objects (converted to list for batching)
 
         Returns:
             Number of successfully imported choices
         """
+        # Convert to list to ensure slicing and len() operations are safe
+        choices = list(choices)
+
         if not choices:
             return 0
 
@@ -1335,7 +1338,7 @@ class ChoiceDatabase:
 
         Args:
             conn: Database connection
-            batch: List of UserChoice objects to import
+            batch: Sequence[UserChoice] to import
 
         Returns:
             Number of successfully imported choices in this batch

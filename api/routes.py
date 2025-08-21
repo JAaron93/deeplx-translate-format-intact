@@ -1,8 +1,6 @@
 """FastAPI route handlers for document translation API."""
 
 import logging
-from collections.abc import Mapping
-from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -344,68 +342,83 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
         )
 
         # Clean metadata access pattern with comprehensive object-to-dict conversion
-        def _is_path_like_key(key: str, value: Any) -> bool:
-            """Check if a key-value pair represents a filesystem path."""
-            if key.lower() in {
+        def _looks_like_fs_path(value: Any) -> bool:
+            """Heuristic: True for probable filesystem paths, False for URLs and generic strings."""
+            if not isinstance(value, (str, Path)):
+                return False
+            s = str(value).strip()
+            if not s:
+                return False
+            lower = s.lower()
+            # Treat common URL-like schemes as non-filesystem
+            if lower.startswith(("http://", "https://", "ftp://", "s3://", "gs://")):
+                return False
+            # Unix-style absolute or relative
+            if s.startswith(("/", "./", "../", "~")):
+                return True
+            # Generic presence of separators suggesting a path (but not just a lone slash)
+            if ("/" in s or "\\" in s) and any(
+                part not in ("", ".", "..") for part in s.replace("\\", "/").split("/")
+            ):
+                return True
+            return False
+
+        def sanitize_metadata(obj: Any) -> Any:
+            """Recursively sanitize metadata by removing path-like keys and values."""
+            # Define disallowed key patterns (case-insensitive)
+            disallowed_keys = {
                 "path",
                 "file_path",
                 "filepath",
                 "full_path",
                 "directory",
-            }:
-                return True
-            # Check if value looks like a path
-            if isinstance(value, (str, Path)) and str(value):
-                str_value = str(value)
-                if "/" in str_value or "\\" in str_value or str_value.startswith("."):
-                    return True
-            return False
-
-        def sanitize_metadata(obj: Any) -> Any:
-            """Recursively sanitize metadata by removing path-like keys."""
-            # Define disallowed key patterns (case-insensitive)
-            disallowed_keys = {"path", "file_path", "filepath", "full_path"}
+            }
 
             if isinstance(obj, dict):
-                return {
-                    k: sanitize_metadata(v)
-                    for k, v in obj.items()
-                    if k.casefold() not in disallowed_keys
-                }
+                sanitized: Dict[str, Any] = {}
+                for k, v in obj.items():
+                    # Drop if key is path-like or the value itself resembles a filesystem path
+                    if k.casefold() in disallowed_keys or _looks_like_fs_path(v):
+                        continue
+                    sanitized[k] = sanitize_metadata(v)
+                return sanitized
             elif isinstance(obj, list):
-                return [sanitize_metadata(item) for item in obj]
+                sanitized_list: List[Any] = []
+                for item in obj:
+                    if _looks_like_fs_path(item):
+                        # Preserve shape but avoid leaking server paths
+                        sanitized_list.append(Path(str(item)).name)
+                    else:
+                        sanitized_list.append(sanitize_metadata(item))
+                return sanitized_list
+            elif hasattr(obj, "__dict__"):
+                sanitized_obj = {
+                    k: v
+                    for k, v in obj.__dict__.items()
+                    if not k.startswith("_")
+                    and k.casefold()
+                    not in {"path", "file_path", "filepath", "full_path", "directory"}
+                    and not _looks_like_fs_path(v)
+                }
+                return sanitized_obj
             else:
                 return obj
 
-        metadata: Any = content.get("metadata")
-        metadata_dict: Dict[str, Any] = {}
-
-        if metadata is not None:
-            # First, detect dataclasses and convert them with asdict()
-            if is_dataclass(metadata):
-                metadata_dict = asdict(metadata)
-            # Pydantic v2 model_dump() method with safe serialization
-            elif hasattr(metadata, "model_dump"):
-                metadata_dict = metadata.model_dump(exclude_unset=True, by_alias=True)
-            # Pydantic v1 dict() method with safe serialization
-            elif hasattr(metadata, "dict"):
-                metadata_dict = metadata.dict(exclude_unset=True, by_alias=True)
-            # Standard Mapping interface
-            elif isinstance(metadata, Mapping):
-                metadata_dict = dict(metadata)
-            # Fallback to __dict__ for other objects with enhanced filtering
-            elif hasattr(metadata, "__dict__"):
-                metadata_dict = {
-                    k: v
-                    for k, v in metadata.__dict__.items()
-                    if not k.startswith("_") and not _is_path_like_key(k, v)
-                }
-
-            # Apply comprehensive sanitization to remove path-like keys recursively
-            metadata_dict = sanitize_metadata(metadata_dict)
-
         # Do not expose server filesystem paths. Use a safe identifier (basename) instead.
         upload_id: str = Path(file_path).name
+
+        # Get and sanitize metadata
+        metadata: Any = content.get("metadata")
+        metadata_dict: Dict[str, Any] = {}
+        if metadata and hasattr(metadata, "__dict__"):
+            metadata_dict = {
+                k: v
+                for k, v in metadata.__dict__.items()
+                if not k.startswith("_")
+                and k.casefold()
+                not in {"path", "file_path", "filepath", "full_path", "directory"}
+                and not _looks_like_fs_path(v)
+            }
         return {
             "message": "File processed with advanced extraction",
             "filename": file.filename,
@@ -512,4 +525,4 @@ async def download_result(job_id: str) -> FileResponse:
             },
         )
     except (FileNotFoundError, OSError):
-        raise HTTPException(status_code=404, detail="Output file not found")
+        raise HTTPException(status_code=404, detail="Output file not found") from None

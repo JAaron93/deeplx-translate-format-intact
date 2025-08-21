@@ -5,36 +5,61 @@ import os
 import sys
 import time
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directory to path for imports (if not already present)
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
-from examples.performance_optimization_examples import (
-    get_active_connections,
-    get_cache_hit_rate,
-    get_cache_stats,
-    instrument_cache,
-    track_async_connection,
-    track_connection,
-)
+# Import required modules with error handling
+try:
+    from examples.performance_optimization_examples import (
+        get_active_connections,
+        get_cache_hit_rate,
+        get_cache_stats,
+        instrument_cache,
+        track_async_connection,
+        track_connection,
+    )
+except ImportError as e:
+    print(f"❌ Error: Could not import required modules from parent directory: {e}")
+    print("   Make sure you're running this script from the correct location.")
+    print(f"   Expected parent directory: {parent_dir}")
+    print(f"   Current working directory: {os.getcwd()}")
+    sys.exit(1)
+except Exception as e:
+    print(f"❌ Unexpected error during import: {e}")
+    sys.exit(1)
 
 
-# Example cache that can be instrumented
-@instrument_cache
+# Closure-based cache to avoid clobbering decorator state
+_cache = {}
+
+
 def example_cache_function(key: str) -> str:
-    """Example function with cache instrumentation."""
+    """Example function with proper cache miss semantics.
 
-    # Simple cache implementation for demonstration
-    if not hasattr(example_cache_function, "_cache"):
-        example_cache_function._cache = {}
+    This function uses closure-based caching and implements the correct pattern:
+    - First call: Raises KeyError (miss)
+    - Subsequent calls: Returns cached value (hit)
+    - Manually increments hit counter on cache hits to align with decorator
+    """
+    # Check if result is in our closure cache
+    if key in _cache:
+        # This is a cache hit - manually increment hit counter to align with decorator
+        from examples.performance_optimization_examples import _metrics_collector
 
-    if key in example_cache_function._cache:
-        return example_cache_function._cache[key]
+        _metrics_collector.increment_cache_hit()
+        return _cache[key]
 
-    # Simulate some computation
+    # Cache miss - compute result, store it, raise KeyError for decorator
     time.sleep(0.1)
     result = f"processed_{key}"
-    example_cache_function._cache[key] = result
-    return result
+    _cache[key] = result
+    raise KeyError(f"Cache miss for key: {key}")
+
+
+# Apply the decorator
+example_cache_function = instrument_cache(example_cache_function)
 
 
 # Example of instrumenting a simple dict-backed cache (swap in LRU in real use)
@@ -47,7 +72,7 @@ class ExampleService:
     @instrument_cache
     def get_cached_data(self, key: str) -> str:
         """Get data with cache instrumentation."""
-        # The decorator will handle caching - this method just does the lookup
+        # This method owns the cache lookup; the decorator only instruments hits/misses.
         if key in self._cache:
             return self._cache[key]
         # Simulate cache miss - could populate cache here
@@ -132,7 +157,6 @@ async def demonstrate_metrics():
     print("   Active connections:", get_active_connections())
 
     print("\n4. Final metrics summary:")
-    print(f"   Cache hit rate: {get_cache_hit_rate():.2%}")
     print("   Active connections:", get_active_connections())
     print("   Cache stats:", get_cache_stats())
     print(f"   Cache hit rate: {get_cache_hit_rate():.2%}")

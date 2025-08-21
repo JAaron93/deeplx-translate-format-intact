@@ -9,7 +9,7 @@ import re
 import time
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
 from models.user_choice_models import ChoiceType, UserChoice
