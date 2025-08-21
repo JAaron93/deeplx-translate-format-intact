@@ -2,6 +2,7 @@
 
 import logging
 from collections.abc import Mapping
+from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -156,9 +157,9 @@ async def save_user_choice(choice_data: ChoiceData) -> Dict[str, Any]:
         detail = getattr(he, "detail", None)
         err_code = detail.get("error_code") if isinstance(detail, dict) else None
         logger.warning(
-            "HTTP %s error saving user choice%s",
+            "HTTP %s error saving user choice",
             getattr(he, "status_code", "error"),
-            f" (code={err_code})" if err_code else "",
+            extra={"error_code": err_code},
         )
         raise he
     except Exception as e:
@@ -343,31 +344,65 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
         )
 
         # Clean metadata access pattern with comprehensive object-to-dict conversion
+        def _is_path_like_key(key: str, value: Any) -> bool:
+            """Check if a key-value pair represents a filesystem path."""
+            if key.lower() in {
+                "path",
+                "file_path",
+                "filepath",
+                "full_path",
+                "directory",
+            }:
+                return True
+            # Check if value looks like a path
+            if isinstance(value, (str, Path)) and str(value):
+                str_value = str(value)
+                if "/" in str_value or "\\" in str_value or str_value.startswith("."):
+                    return True
+            return False
+
+        def sanitize_metadata(obj: Any) -> Any:
+            """Recursively sanitize metadata by removing path-like keys."""
+            # Define disallowed key patterns (case-insensitive)
+            disallowed_keys = {"path", "file_path", "filepath", "full_path"}
+
+            if isinstance(obj, dict):
+                return {
+                    k: sanitize_metadata(v)
+                    for k, v in obj.items()
+                    if k.casefold() not in disallowed_keys
+                }
+            elif isinstance(obj, list):
+                return [sanitize_metadata(item) for item in obj]
+            else:
+                return obj
+
         metadata: Any = content.get("metadata")
         metadata_dict: Dict[str, Any] = {}
 
         if metadata is not None:
-            # Pydantic v2 model_dump() method
-            if hasattr(metadata, "model_dump"):
-                metadata_dict = metadata.model_dump()
-            # Pydantic v1 dict() method
+            # First, detect dataclasses and convert them with asdict()
+            if is_dataclass(metadata):
+                metadata_dict = asdict(metadata)
+            # Pydantic v2 model_dump() method with safe serialization
+            elif hasattr(metadata, "model_dump"):
+                metadata_dict = metadata.model_dump(exclude_unset=True, by_alias=True)
+            # Pydantic v1 dict() method with safe serialization
             elif hasattr(metadata, "dict"):
-                metadata_dict = metadata.dict()
+                metadata_dict = metadata.dict(exclude_unset=True, by_alias=True)
             # Standard Mapping interface
             elif isinstance(metadata, Mapping):
                 metadata_dict = dict(metadata)
-            # Fallback to __dict__ for other objects
+            # Fallback to __dict__ for other objects with enhanced filtering
             elif hasattr(metadata, "__dict__"):
                 metadata_dict = {
-                    k: v for k, v in metadata.__dict__.items() if not k.startswith("_")
+                    k: v
+                    for k, v in metadata.__dict__.items()
+                    if not k.startswith("_") and not _is_path_like_key(k, v)
                 }
 
-            # Drop sensitive/path-like fields if present
-            if metadata_dict:
-                for key in list(metadata_dict.keys()):
-                    k = key.lower()
-                    if k in {"path", "file_path", "filepath", "full_path"}:
-                        metadata_dict.pop(key, None)
+            # Apply comprehensive sanitization to remove path-like keys recursively
+            metadata_dict = sanitize_metadata(metadata_dict)
 
         # Do not expose server filesystem paths. Use a safe identifier (basename) instead.
         upload_id: str = Path(file_path).name
@@ -376,7 +411,7 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
             "filename": file.filename,
             "detected_language": detected_lang or "unknown",
             "upload_id": upload_id,
-            "content_type": content["type"],
+            "content_type": content.get("type", "document"),
             "metadata": metadata_dict,
         }
 

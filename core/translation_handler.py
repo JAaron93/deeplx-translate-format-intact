@@ -398,14 +398,14 @@ async def _translate_page_texts_concurrently(
 ) -> list[str]:
     """Translate page texts concurrently with bounded concurrency and safe fallbacks.
 
-    - Respects settings.translation_concurrency_limit (fallback 8)
+    - Respects settings.TRANSLATION_CONCURRENCY_LIMIT (fallback 8)
     - Skips empty/whitespace-only texts without calling the service
     - Preserves original ordering
     - Returns the original text on per-item failure, but propagates cancellation
     """
     # Defensive read of concurrency limit
     try:
-        limit: int = int(getattr(settings, "translation_concurrency_limit", 8))
+        limit: int = int(getattr(settings, "TRANSLATION_CONCURRENCY_LIMIT", 8))
         if limit < 1:
             limit = 8
     except Exception:

@@ -59,7 +59,7 @@ if str(project_root) not in sys.path:
     # Add at end to avoid overriding system packages
     sys.path.append(str(project_root))
 
-from services.neologism_detector import NeologismDetector  # noqa: E402
+from services.neologism_detector import NeologismDetector
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

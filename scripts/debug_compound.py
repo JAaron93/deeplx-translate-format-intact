@@ -46,14 +46,18 @@ def get_default_categories() -> list[str]:
     ]
 
 
-def get_categories_from_config(config_path: str) -> list[str]:
+def get_categories_from_config(config_path: Union[str, Path]) -> list[str]:
     """Get compound categories from configuration file."""
     try:
         with open(config_path, encoding="utf-8") as f:
             config = json.load(f)
             return config.get("compound_categories", get_default_categories())
-    except (FileNotFoundError, json.JSONDecodeError, KeyError):
-        logger.warning(f"Could not load categories from {config_path}, using defaults")
+    except (OSError, json.JSONDecodeError) as e:
+        logger.warning(
+            "Could not load categories from %s (%s). Using defaults.",
+            config_path,
+            e,
+        )
         return get_default_categories()
 
 
@@ -79,10 +83,10 @@ def load_test_words(
         with open(config_path, encoding="utf-8") as f:
             config = json.load(f)
 
-        # Determine which categories to use
+        # Determine which categories to use (use the already-loaded config)
         if categories is None:
             if auto_detect_categories:
-                categories = get_categories_from_config(config_path)
+                categories = config.get("compound_categories", get_default_categories())
             else:
                 categories = get_default_categories()
 
@@ -295,7 +299,9 @@ def debug_compound_detection(
         sys.exit(1)
 
 
-def get_available_categories(config_path: Optional[str] = None) -> list[str]:
+def get_available_categories(
+    config_path: Optional[Union[str, Path]] = None
+) -> list[str]:
     """Get available categories for command line argument choices.
 
     Args:

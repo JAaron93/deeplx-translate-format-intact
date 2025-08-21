@@ -51,7 +51,7 @@ async def test_philosophy_path_moderate_load_order_and_concurrency(
     # Bound concurrency via settings
     import core.translation_handler as th
 
-    th.settings.translation_concurrency_limit = 8
+    th.settings.TRANSLATION_CONCURRENCY_LIMIT = 8
 
     fake = LoadFakeTranslator(latency_ms=(5, 20))
 

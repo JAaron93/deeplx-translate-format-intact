@@ -13,6 +13,6 @@ __all__: list[str] = [
     "ConfigurationManager",
     "DolphinConfig",
     "ErrorResponse",
-    "setup_logging",
     "get_logger",
+    "setup_logging",
 ]

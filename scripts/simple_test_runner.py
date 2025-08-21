@@ -7,6 +7,7 @@ regardless of the execution location.
 """
 
 import json
+import math
 import sys
 import traceback
 from pathlib import Path
@@ -410,8 +411,12 @@ def test_neologism_models() -> None:
     assert (
         data.get("term") == "Wirklichkeitsbewusstsein"
     ), "JSON should contain the term"
-    assert (
-        abs(float(data.get("confidence", -1)) - 0.85) < 1e-9
+    assert "confidence" in data, "JSON should contain 'confidence' key"
+    assert isinstance(
+        data["confidence"], (int, float)
+    ), "JSON 'confidence' should be numeric"
+    assert math.isclose(
+        float(data["confidence"]), 0.85, rel_tol=0.0, abs_tol=1e-9
     ), "JSON should contain the confidence value"
     print("✓ DetectedNeologism creation and validation passed")
 

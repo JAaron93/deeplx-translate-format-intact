@@ -22,12 +22,22 @@ from examples.performance_optimization_examples import (
 @instrument_cache
 def example_cache_function(key: str) -> str:
     """Example function with cache instrumentation."""
+
+    # Simple cache implementation for demonstration
+    if not hasattr(example_cache_function, "_cache"):
+        example_cache_function._cache = {}
+
+    if key in example_cache_function._cache:
+        return example_cache_function._cache[key]
+
     # Simulate some computation
     time.sleep(0.1)
-    return f"processed_{key}"
+    result = f"processed_{key}"
+    example_cache_function._cache[key] = result
+    return result
 
 
-# Example of instrumenting an existing LRU cache
+# Example of instrumenting a simple dict-backed cache (swap in LRU in real use)
 class ExampleService:
     """Example service with cache instrumentation."""
 
@@ -37,9 +47,11 @@ class ExampleService:
     @instrument_cache
     def get_cached_data(self, key: str) -> str:
         """Get data with cache instrumentation."""
+        # The decorator will handle caching - this method just does the lookup
         if key in self._cache:
             return self._cache[key]
-        # Simulate cache miss
+        # Simulate cache miss - could populate cache here
+        # For demo purposes, just raise KeyError
         raise KeyError(f"Key {key} not found")
 
     def set_cached_data(self, key: str, value: str):
@@ -120,9 +132,10 @@ async def demonstrate_metrics():
     print("   Active connections:", get_active_connections())
 
     print("\n4. Final metrics summary:")
-    print("   Cache hit rate:", f"{get_cache_hit_rate():.2%}")
+    print(f"   Cache hit rate: {get_cache_hit_rate():.2%}")
     print("   Active connections:", get_active_connections())
     print("   Cache stats:", get_cache_stats())
+    print(f"   Cache hit rate: {get_cache_hit_rate():.2%}")
 
 
 def demonstrate_sync_metrics():

@@ -20,6 +20,9 @@ LANGDETECT_AVAILABLE: bool = importlib.util.find_spec("langdetect") is not None
 
 logger: logging.Logger = logging.getLogger(__name__)
 
+# Accepted truthy values for environment flags (normalized to lower-case)
+TRUE_VALUES: set[str] = {"true", "1", "yes"}
+
 
 LANGUAGE_MAP: dict[str, str] = {
     "en": "English",
@@ -205,18 +208,18 @@ class LanguageDetector:
             sample_text = self._extract_sample_text(file_path)
 
         # Check for OCR environment flag to lower threshold when text is provided
-        ocr_text_available = os.getenv("OCR_TEXT_AVAILABLE", "").lower() in (
-            "true",
-            "1",
-            "yes",
+        ocr_text_available = (
+            os.getenv("OCR_TEXT_AVAILABLE", "").strip().lower() in TRUE_VALUES
         )
 
         # Adjust minimum length based on whether OCR text is expected
-        min_length = 10 if ocr_text_available else 50
+        # OCR text tends to be cleaner but still needs reasonable length for accuracy
+        min_length = 20 if ocr_text_available else 50
 
         if not sample_text or len(sample_text.strip()) < min_length:
             return "Unknown"
 
+        # If we have enough text, try language detection
         if LANGDETECT_AVAILABLE:
             self._ensure_langdetect()
             detect_func: Optional[Any] = self._detect_func
@@ -228,7 +231,7 @@ class LanguageDetector:
             except (lang_exc, ValueError) as e:  # type: ignore[misc]
                 logger.warning("Language detection error: %s", e)
                 return "Unknown"
-            return self.language_map.get(detected_code, detected_code.upper())
+            return self.language_map.get(detected_code, "Unknown")
 
         # Fallback to simple heuristics
         return self._simple_language_detection(sample_text)
@@ -276,7 +279,7 @@ class LanguageDetector:
                             )
 
                 # Check for OCR text available flag
-                if os.getenv("OCR_TEXT_AVAILABLE", "").lower() in ("true", "1", "yes"):
+                if os.getenv("OCR_TEXT_AVAILABLE", "").strip().lower() in TRUE_VALUES:
                     logger.debug(
                         "OCR_TEXT_AVAILABLE flag set but no text found for %s",
                         os.path.basename(file_path),
@@ -327,6 +330,10 @@ class LanguageDetector:
         # Compute once to speed up membership checks
         words_set: set[str] = set(words)
 
+        # Precompute denominators to avoid redundant calculations
+        denom: float = float(max(word_count, 1))
+        char_denom: float = float(max(len(text), 1))
+
         # Calculate normalized scores
         scores: dict[str, float] = {}
         for lang, patterns in language_patterns.items():
@@ -339,8 +346,8 @@ class LanguageDetector:
             char_matches: int = sum(1 for ch in pattern_chars if ch in text)
 
             # Calculate normalized scores (per 100 words)
-            word_score: float = (word_matches * word_weight) / max(word_count, 1) * 100
-            char_score: float = (char_matches * char_weight) / max(word_count, 1) * 100
+            word_score: float = (word_matches * word_weight) / denom * 100
+            char_score: float = (char_matches * char_weight) / char_denom * 100
 
             # Combine scores with weights
             scores[lang] = (word_score * 0.7) + (char_score * 0.3)
@@ -368,7 +375,7 @@ class LanguageDetector:
 
         Args:
             text: Text to analyze for language detection. Should contain
-                at least 10 characters for reliable detection.
+                  at least 10 characters for reliable detection.
 
         Returns:
             str: Detected language name (e.g., "German", "English") or
@@ -390,7 +397,7 @@ class LanguageDetector:
                 detected_code: str = detect_func(text)
             except (lang_exc, ValueError) as e:  # type: ignore[misc]
                 logger.warning("Language detection error: %s", e)
-                return "Unknown"
+            return "Unknown"
             return self.language_map.get(detected_code, detected_code.upper())
 
         # Fallback to simple heuristics

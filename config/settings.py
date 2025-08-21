@@ -230,9 +230,7 @@ class Settings:
     DEBUG: bool = _parse_bool_env("DEBUG", "false")
 
     # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY") or (_ for _ in ()).throw(
-        ValueError("SECRET_KEY environment variable is required")
-    )
+    SECRET_KEY: str | None = os.getenv("SECRET_KEY")
 
     # File handling
     MAX_FILE_SIZE_MB: int = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
@@ -253,7 +251,7 @@ class Settings:
     # Maximum number of concurrent translation tasks.
     # Environment variable: TRANSLATION_CONCURRENCY_LIMIT
     # Default: 8 (must be >= 1)
-    translation_concurrency_limit: int = int(
+    TRANSLATION_CONCURRENCY_LIMIT: int = int(
         os.getenv("TRANSLATION_CONCURRENCY_LIMIT", "8")
     )
 
@@ -390,7 +388,7 @@ class Settings:
             valid = False
 
         if self.PDF_DPI < 72 or self.PDF_DPI > 600:
-            logger.error(f"Invalid PDF_DPI: {self.PDF_DPI}. Recommended range: 72-600")
+            logger.error("Invalid PDF_DPI: %s. Recommended range: 72-600", self.PDF_DPI)
             valid = False
 
         if self.MEMORY_THRESHOLD <= 0:
@@ -407,10 +405,10 @@ class Settings:
             )
             valid = False
 
-        if self.translation_concurrency_limit < 1:
+        if self.TRANSLATION_CONCURRENCY_LIMIT < 1:
             logger.error(
-                f"Invalid translation_concurrency_limit: "
-                f"{self.translation_concurrency_limit}. "
+                f"Invalid TRANSLATION_CONCURRENCY_LIMIT: "
+                f"{self.TRANSLATION_CONCURRENCY_LIMIT}. "
                 "Must be >= 1"
             )
             valid = False

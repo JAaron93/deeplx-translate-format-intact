@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import logging
+import math
 import os
 import re
 from abc import ABC, abstractmethod
@@ -180,6 +181,40 @@ class MCPLingoTranslator(BaseTranslator):
             return texts
 
 
+def _parse_positive_float_env(name: str, default: float) -> float:
+    """Parse a positive float environment variable with validation and logging.
+
+    Args:
+        name: Environment variable name
+        default: Default value to use if parsing fails
+
+    Returns:
+        Parsed float value or default if validation fails
+    """
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+
+    try:
+        value = float(raw_value)
+    except ValueError:
+        logger.warning(
+            "Invalid %s value '%s', using default %.1f", name, raw_value, default
+        )
+        return default
+
+    if not math.isfinite(value) or value <= 0:
+        logger.warning(
+            "Invalid %s value %.1f (must be finite and positive), using default %.1f",
+            name,
+            value,
+            default,
+        )
+        return default
+
+    return value
+
+
 class TranslationService:
     """Main translation service with Lingo.dev provider."""
 
@@ -207,24 +242,12 @@ class TranslationService:
                 if use_mcp:
                     # Read MCP config from environment at runtime
                     tool_name: Optional[str] = os.getenv("LINGO_MCP_TOOL_NAME") or None
-                    try:
-                        startup_timeout: float = float(
-                            os.getenv("LINGO_MCP_STARTUP_TIMEOUT", "20")
-                        )
-                    except ValueError:
-                        logger.warning(
-                            "Invalid LINGO_MCP_STARTUP_TIMEOUT value, using default 20.0"
-                        )
-                        startup_timeout = 20.0
-                    try:
-                        call_timeout: float = float(
-                            os.getenv("LINGO_MCP_CALL_TIMEOUT", "60")
-                        )
-                    except ValueError:
-                        logger.warning(
-                            "Invalid LINGO_MCP_CALL_TIMEOUT value, using default 60.0"
-                        )
-                        call_timeout = 60.0
+                    startup_timeout: float = _parse_positive_float_env(
+                        "LINGO_MCP_STARTUP_TIMEOUT", 20.0
+                    )
+                    call_timeout: float = _parse_positive_float_env(
+                        "LINGO_MCP_CALL_TIMEOUT", 60.0
+                    )
 
                     cfg: McpLingoConfig = McpLingoConfig(
                         api_key=lingo_key,

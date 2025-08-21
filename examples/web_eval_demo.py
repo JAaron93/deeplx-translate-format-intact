@@ -39,11 +39,7 @@ def demonstrate_web_eval_agent() -> None:
     # Show only the first 4 chars for confirmation
     print(
         "  • API Key: "
-        + (
-            "set"
-            if os.getenv("OP_API_KEY") not in (None, "", "[API_KEY_NOT_SET]")
-            else "not set"
-        )
+        + (f"{api_key[:4]}…" if api_key not in ("", "[API_KEY_NOT_SET]") else "not set")
     )
     print(
         "  • Command: "
@@ -104,7 +100,7 @@ def demonstrate_web_eval_agent() -> None:
         ),
     }
 
-    print(json.dumps(sample_report, indent=2))
+    print(json.dumps(sample_report, indent=2, ensure_ascii=False))
 
     print("\n✨ Key Features Demonstrated:")
     print("  • 🌐 Browser Automation: Navigate and interact with web pages")

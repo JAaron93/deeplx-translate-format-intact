@@ -16,8 +16,11 @@ sys.path.insert(0, str(project_root))
 
 try:
     from services.dolphin_client import get_layout
-except ImportError:
-    print("❌ Could not import dolphin_client. Ensure the project is properly set up.")
+except ModuleNotFoundError as e:
+    print(
+        f"❌ Could not import dolphin_client: {e}. Ensure the project is properly set up.",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 # ---------------------------------------------------------------------------
@@ -39,7 +42,8 @@ def find_test_pdf() -> Optional[Path]:
 
     Returns:
         Optional[Path]: Path to the first existing test PDF file, or None
-                        if no test PDF is found in any of the predefined locations.
+                        if no test PDF is found in any of the predefined
+                        locations.
     """
     candidates = (Path(p) for p in TEST_PDF_PATHS)
     return next((p for p in candidates if p.exists()), None)
@@ -56,12 +60,8 @@ async def run_test_modal_endpoint() -> bool:
     """Test the Modal Dolphin OCR endpoint."""
     print("🧪 Testing Modal Dolphin OCR endpoint...")
 
-    # Check if endpoint is configured
-    endpoint: Optional[str] = os.getenv("DOLPHIN_ENDPOINT")
-    if not endpoint:
-        print("❌ DOLPHIN_ENDPOINT not set in environment")
-        return False
-
+    # Get endpoint (already validated by check_environment)
+    endpoint: str = os.getenv("DOLPHIN_ENDPOINT", "")
     print(f"📡 Testing endpoint: {endpoint}")
 
     # Look for a test PDF file using the reusable function
@@ -75,7 +75,7 @@ async def run_test_modal_endpoint() -> bool:
 
     try:
         # Test the Dolphin client
-        result: Any = await get_layout(test_pdf)
+        result: Any = await asyncio.wait_for(get_layout(test_pdf), timeout=60)
 
         if not isinstance(result, dict):
             raise ValueError(f"Expected dict result, got {type(result)}")
@@ -124,7 +124,7 @@ async def run_test_local_fallback() -> bool:
         return True
 
     except Exception as e:
-        print(f"⚠️  Local endpoint not available: {e}")
+        print(f"⚠️  Local endpoint not available: {e}", file=sys.stderr)
         return False  # Local service is not available or failed
 
     finally:
@@ -220,6 +220,11 @@ async def main() -> None:
         case (False, False):
             print("❌ Both Modal deployment and local fallback failed.")
             print("   Check both Modal deployment and local service configuration.")
+            sys.exit(1)
+        case _:
+            print(
+                f"⚠️  Unexpected result combination: modal={modal_success}, local={local_fallback_success}"
+            )
             sys.exit(1)
 
 

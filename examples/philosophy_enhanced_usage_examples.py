@@ -7,7 +7,7 @@ for various translation scenarios involving philosophical texts with neologisms.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from models.user_choice_models import ChoiceSession, ChoiceType
 from services.philosophy_enhanced_document_processor import (
@@ -42,8 +42,6 @@ class PhilosophyTranslationExamples:
 
     def example_1_basic_text_translation(self) -> Any:
         """Example 1: Basic text translation with neologism detection."""
-
-    def example_3_user_choice_management(self) -> tuple[Any, ChoiceSession]:
         print("EXAMPLE 1: Basic Text Translation with Neologism Detection")
         print("=" * 80)
 
@@ -363,14 +361,37 @@ class PhilosophyTranslationExamples:
         print("=" * 80)
 
         try:
-            # Run examples
-            self.example_1_basic_text_translation()
-            self.example_2_batch_translation()
-            self.example_3_user_choice_management()
-            self.example_4_progress_tracking()
-            self.example_5_document_processing()
+            # Run examples and capture return values for logging
+            print("Running example 1: Basic text translation...")
+            result1 = self.example_1_basic_text_translation()
+            print(f"Example 1 completed. Translation result type: {type(result1)}")
+
+            print("Running example 2: Batch translation...")
+            results2 = self.example_2_batch_translation()
+            print(f"Example 2 completed. Translated {len(results2)} texts")
+
+            print("Running example 3: User choice management...")
+            result3, session3 = self.example_3_user_choice_management()
+            print(
+                f"Example 3 completed. Session: {session3.session_id}, "
+                f"Result type: {type(result3)}"
+            )
+
+            print("Running example 4: Progress tracking...")
+            result4 = self.example_4_progress_tracking()
+            print(f"Example 4 completed. Result type: {type(result4)}")
+
+            print("Running example 5: Document processing...")
+            result5 = self.example_5_document_processing()
+            print(f"Example 5 completed. Result type: {type(result5)}")
+
+            print("Running example 6: Error handling...")
             self.example_6_error_handling()
+            print("Example 6 completed (no return value)")
+
+            print("Running example 7: Performance optimization...")
             self.example_7_performance_optimization()
+            print("Example 7 completed (no return value)")
 
             print("\n" + "=" * 80)
             print("All examples completed successfully!")

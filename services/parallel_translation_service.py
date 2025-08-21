@@ -561,8 +561,16 @@ class ParallelLingoTranslator:
         if "layouts" in translated_content:
             for i, layout in enumerate(translated_content["layouts"]):
                 translation_key = f"layout_{i}"
-                if translation_key in translations and hasattr(layout, "text"):
-                    layout.text = translations[translation_key]
+                if translation_key in translations:
+                    if isinstance(layout, dict) and "text" in layout:
+                        layout["text"] = translations[translation_key]
+                    elif hasattr(layout, "text"):
+                        layout.text = translations[translation_key]
+                    else:
+                        logger.warning(
+                            "Layout %s has no 'text' attribute/key to apply translation",
+                            i,
+                        )
 
         return translated_content
 

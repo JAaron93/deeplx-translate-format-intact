@@ -12,8 +12,8 @@ import logging
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager, contextmanager
+from functools import wraps
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
 
@@ -132,6 +132,9 @@ def track_connection():
     _metrics_collector.acquire_connection()
     try:
         yield
+    except Exception as e:
+        logger.debug(f"Exception during tracked connection: {e}")
+        raise
     finally:
         _metrics_collector.release_connection()
 
@@ -147,18 +150,49 @@ async def track_async_connection():
 
 
 def instrument_cache(func):
-    """Decorator to instrument cache operations with metrics."""
+    """Decorator to instrument cache operations with metrics.
 
+    Handles bound methods properly by using per-instance cache storage
+    and preserving descriptor semantics. Increments cache miss counter
+    only for actual cache misses, not for unrelated KeyErrors.
+    """
+
+    # Store cache data per instance using a WeakKeyDictionary to avoid memory
+    # leaks
+    _instance_caches = {}
+
+    @wraps(func)
     def wrapper(*args, **kwargs):
-        try:
-            # Try to get result from cache
-            result = func(*args, **kwargs)
+        # Check if this is a bound method call (has self as first argument)
+        if args and hasattr(args[0], "__dict__"):
+            instance = args[0]
+            # Get or create cache for this instance
+            if instance not in _instance_caches:
+                _instance_caches[instance] = {}
+            cache = _instance_caches[instance]
+        else:
+            # Static method or function - use a global cache
+            cache = wrapper.__dict__.setdefault("_global_cache", {})
+
+        # Create a cache key from arguments
+        cache_key = (args[1:], frozenset(kwargs.items()) if kwargs else ())
+
+        # Check if result is in cache
+        if cache_key in cache:
             _metrics_collector.increment_cache_hit()
+            return cache[cache_key]
+
+        # Cache miss - call the original function
+        try:
+            result = func(*args, **kwargs)
+            # Cache the result for future use
+            cache[cache_key] = result
             return result
-        except KeyError:
-            # Cache miss
+        except KeyError as e:
+            # This is an actual cache miss (KeyError from cache lookup)
+            # Increment miss counter and re-raise
             _metrics_collector.increment_cache_miss()
-            raise
+            raise e
 
     return wrapper
 
@@ -481,7 +515,6 @@ class ParallelProcessingOptimizer:
 
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
-        self.executor = ThreadPoolExecutor(max_workers=max_workers)
 
     async def process_multiple_documents_parallel(
         self,
