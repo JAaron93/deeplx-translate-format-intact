@@ -199,14 +199,26 @@ class LayoutAwareTranslationService:
             target_lang=target_lang,
         )
 
-        # Ensure size parity to avoid index errors; truncate extras defensively
-        translations = translations[: len(text_blocks)]
-        if confidences is not None:
-            confidences = confidences[: len(text_blocks)]
+        # Ensure exact 1:1 mapping between text_blocks and translations
+        if len(translations) != len(text_blocks):
+            raise ValueError(
+                f"Translation count mismatch: expected {len(text_blocks)} "
+                f"translations for {len(text_blocks)} text blocks, but got "
+                f"{len(translations)} translations. This indicates a critical "
+                "error in the translation service."
+            )
+
+        # Validate confidences length if present
+        if confidences is not None and len(confidences) != len(text_blocks):
+            raise ValueError(
+                f"Confidence count mismatch: expected {len(text_blocks)} "
+                f"confidence scores for {len(text_blocks)} text blocks, but "
+                f"got {len(confidences)} scores."
+            )
 
         results: list[TranslationResult] = []
         for index, (block, raw) in enumerate(
-            zip(text_blocks, translations, strict=False)
+            zip(text_blocks, translations, strict=True)
         ):
             optimized = self._optimize_for_length(raw)
             analysis = self._engine.analyze_text_fit(

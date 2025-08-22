@@ -213,6 +213,27 @@ async def process_file_upload(file: FileObject) -> tuple[str, str, str, str, str
         return "", f"❌ Upload failed: {e!s}", "", "", ""
 
 
+def process_file_upload_sync(file):
+    """Synchronous wrapper for process_file_upload to work with Gradio."""
+    try:
+        # Check if we're already in an async context
+        try:
+            loop = asyncio.get_running_loop()
+            # If we get here, we're in an async context
+            # Use a thread executor to run the async function
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, process_file_upload(file))
+                return future.result()
+        except RuntimeError:
+            # No event loop running, we can safely use asyncio.run
+            return asyncio.run(process_file_upload(file))
+    except Exception as e:
+        logger.error(f"Sync wrapper error: {e!s}")
+        return "", f"❌ Processing failed: {e!s}", "", "", ""
+
+
 async def start_translation(
     target_language: str, max_pages: int, philosophy_mode: bool
 ) -> tuple[str, str, bool]:
@@ -264,6 +285,32 @@ async def start_translation(
     except Exception as e:
         logger.error(f"Translation start error: {e!s}")
         return f"❌ Failed to start translation: {e!s}", "", False
+
+
+def start_translation_sync(target_language, max_pages, philosophy_mode):
+    """Synchronous wrapper for start_translation to work with Gradio."""
+    try:
+        # Check if we're already in an async context
+        try:
+            loop = asyncio.get_running_loop()
+            # If we get here, we're in an async context
+            # Use a thread executor to run the async function
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(
+                    asyncio.run,
+                    start_translation(target_language, max_pages, philosophy_mode),
+                )
+                return future.result()
+        except RuntimeError:
+            # No event loop running, we can safely use asyncio.run
+            return asyncio.run(
+                start_translation(target_language, max_pages, philosophy_mode)
+            )
+    except Exception as e:
+        logger.error(f"Sync wrapper error: {e!s}")
+        return f"❌ Translation start failed: {e!s}", "", False
 
 
 async def translate_content(

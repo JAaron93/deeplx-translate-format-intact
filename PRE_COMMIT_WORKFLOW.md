@@ -39,9 +39,9 @@ git commit -m "Your message"
 # Run comprehensive linting with manual-stage hooks (only runs hooks that declare this stage)
 pre-commit run --all-files --hook-stage manual
 
-# Config-agnostic alternative: run all hooks across all stages
+-# Config-agnostic alternative: run all hooks across all stages
+# Config-agnostic alternative: run all hooks at their default stages across all files
 pre-commit run --all-files
-
 # Run specific tools
 pre-commit run ruff --all-files --hook-stage manual  # If ruff has manual stage
 pre-commit run bandit --all-files                    # Standard stage
@@ -60,13 +60,10 @@ black --check --diff .                               # Direct Black invocation
 
 If a commit is blocked:
 1. Check which hook failed
-If a commit is blocked:
-1. Check which hook failed
 2. Run `pre-commit run --all-files` to see detailed output
-3. If files were modified by hooks, `git add -A`
+3. If files were modified by hooks, `git add -u`
 4. Fix any remaining reported issues
 5. Commit again
-
 ## CI/CD Behavior
 
 In CI/CD environments:

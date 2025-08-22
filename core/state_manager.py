@@ -49,16 +49,32 @@ class ThreadSafeTranslationJobs:
         self._last_cleanup = time.time()
 
     def add_job(self, job_id: str, job_data: dict[str, Any]) -> None:
-        """Add a new job with timestamp."""
+        """Add a new job with timestamp.
+
+        Creates a shallow copy of job_data to avoid mutating caller's dict.
+        The job data is stored with an added timestamp field.
+
+        Note:
+            To update job data after creation, use update_job() method.
+        """
         with self._lock:
-            job_data["timestamp"] = datetime.now()
-            self._jobs[job_id] = job_data
+            # Create shallow copy to avoid mutating caller's dict
+            job = dict(job_data)
+            job["timestamp"] = datetime.now()
+            self._jobs[job_id] = job
             self._maybe_cleanup()
 
     def get_job(self, job_id: str) -> Optional[dict[str, Any]]:
-        """Get job data by ID."""
+        """Get job data by ID.
+
+        Returns:
+            A shallow copy of the job data if found, None otherwise.
+            Returned dict is safe to read but modifications won't affect
+            the stored job. Use update_job() to modify job data.
+        """
         with self._lock:
-            return self._jobs.get(job_id)
+            job_data = self._jobs.get(job_id)
+            return dict(job_data) if job_data is not None else None
 
     def update_job(self, job_id: str, updates: dict[str, Any]) -> bool:
         """Update job data. Returns True if job exists."""
@@ -77,9 +93,15 @@ class ThreadSafeTranslationJobs:
             return False
 
     def get_all_jobs(self) -> dict[str, dict[str, Any]]:
-        """Get a copy of all jobs."""
+        """Get a snapshot of all jobs.
+
+        Returns:
+            A dict containing shallow copies of all job data.
+            Safe to read and modify without affecting stored jobs.
+            Use update_job() to modify individual job data.
+        """
         with self._lock:
-            return dict(self._jobs)
+            return {job_id: dict(job_data) for job_id, job_data in self._jobs.items()}
 
     def __contains__(self, job_id: str) -> bool:
         """Check if job exists."""
@@ -87,9 +109,20 @@ class ThreadSafeTranslationJobs:
             return job_id in self._jobs
 
     def __getitem__(self, job_id: str) -> dict[str, Any]:
-        """Get job data using subscript notation."""
+        """Get job data using subscript notation.
+
+        Returns:
+            A shallow copy of the job data.
+            Returned dict is safe to read but modifications won't affect
+            the stored job. Use update_job() to modify job data.
+
+        Raises:
+            KeyError: If job_id doesn't exist.
+        """
         with self._lock:
-            return self._jobs[job_id]
+            if job_id not in self._jobs:
+                raise KeyError(f"Job '{job_id}' not found")
+            return dict(self._jobs[job_id])
 
     def __setitem__(self, job_id: str, job_data: dict[str, Any]) -> None:
         """Set job data using subscript notation."""

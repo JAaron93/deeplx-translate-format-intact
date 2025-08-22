@@ -338,14 +338,7 @@ def get_available_categories(
         config_path = project_root / "config" / "debug_test_words.json"
 
 
-def main():
-    """Main entry point with command line argument parsing."""
-    # Ensure logger output is visible in CLI usage
-    if not logging.getLogger().handlers:
-        logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    # First pass: parse config argument to determine available categories
-    pre_parser = argparse.ArgumentParser(add_help=False)
-    ...
+# (Removed the incomplete main() stub at lines 340–348)
 
 
 def main():

@@ -257,9 +257,9 @@ GEMINI.md
 !.augment/rules/
 
 # GitHub specific
-.github
-.github/
-
+# GitHub specific
+# Keep .github tracked (workflows, templates, CODEOWNERS).
+# If any local-only files under .github need ignoring, add targeted patterns instead.
 # Kilocode specific
 .kilocode
 .kilocode/
@@ -267,11 +267,13 @@ GEMINI.md
 # Kiro IDE specific
 .kiro
 .kiro/
-.kiro/settings/
-.kiro/cache/
-.kiro/temp/
 # Keep steering rules but ignore other Kiro files
 !.kiro/steering/
+# Keep specific MCP config - unignore parent directory first
+!.kiro/settings/
+!.kiro/settings/mcp.json
+.kiro/cache/
+.kiro/temp/
 
 # Qoder specific
 .qoder
@@ -280,10 +282,11 @@ GEMINI.md
 # MCP (Model Context Protocol) configurations - keep workspace configs
 mcp.json
 .mcp/
-!.kiro/settings/mcp.json
 
 # Vincent AI specific
 .vincent/
+# Keep specific MCP config - unignore parent directory first
+!.vincent/
 !.vincent/mcp.json
 
 # Superdesign specific

@@ -219,7 +219,7 @@ async def get_philosophy_progress() -> ProgressResponse:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@api_router.post("/philosophy/export-choices")
+@api_router.post("/philosophy/export-choices", response_model=None)
 async def export_user_choices(
     export_data: ExportData,
 ) -> Union[FileResponse, dict[str, Any]]:

@@ -8,8 +8,8 @@ import gradio as gr
 from core.translation_handler import (
     download_translated_file,
     get_translation_status,
-    process_file_upload,
-    start_translation,
+    process_file_upload_sync,
+    start_translation_sync,
 )
 
 
@@ -50,7 +50,7 @@ __doc__ = f"Gradio interface for {APP_TITLE}."
 
 def on_file_upload(
     file,
-    progress: "gr.Progress | None" = None,
+    progress=None,
 ):
     """Wrapper to handle validation errors and quality metrics.
 
@@ -63,7 +63,7 @@ def on_file_upload(
     try:
         with contextlib.suppress(Exception):
             progress(0.05, desc="Validating file")
-        result = process_file_upload(file)
+        result = process_file_upload_sync(file)
     except Exception as exc:  # Fallback for unexpected client/server issues
         logging.error(
             "Unexpected error during file upload: %s",
@@ -175,10 +175,10 @@ def on_file_upload(
 
 
 def start_translation_with_progress(
-    target_language: str,
-    pages_to_translate: int,
-    philosophy_mode: bool,
-    progress: "gr.Progress | None" = None,
+    target_language,
+    pages_to_translate,
+    philosophy_mode,
+    progress=None,
 ):
     """Start translation and update a subtle progress indicator.
 
@@ -188,7 +188,7 @@ def start_translation_with_progress(
         progress = gr.Progress(track_tqdm=False)
     with contextlib.suppress(Exception):
         progress(0.05, desc="Starting translation")
-        result = start_translation(
+        result = start_translation_sync(
             target_language,
             pages_to_translate,
             philosophy_mode,
@@ -384,8 +384,8 @@ def create_gradio_interface() -> gr.Blocks:
                     )
                     refresh_btn = gr.Button("🔄 Refresh", size="sm", scale=1)
 
-                # Progress bar for visual feedback
-                gr.Progress()
+                # Progress section without standalone Progress bar
+                # progress_bar = gr.Progress()
 
                 # Timer for auto-refreshing progress while translation runs
                 progress_timer = gr.Timer(1.0, active=False)
@@ -432,7 +432,7 @@ def create_gradio_interface() -> gr.Blocks:
         )
 
         # Status update function for manual refresh
-        def update_status(_progress: "gr.Progress | None" = None):
+        def update_status(_progress=None):
             if _progress is None:
                 gr.Progress(track_tqdm=False)
             status, _unused, download_ready = get_translation_status()

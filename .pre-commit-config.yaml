@@ -8,7 +8,7 @@
 #   pre-commit install
 #
 # Usage:
-#   - Normal commits: Auto-fixes applied after commit, syntax/quality issues block commits
+#   - Normal commits: Auto-fixes applied during commit, syntax/quality issues may block commits
 #   - Full linting: pre-commit run --all-files --hook-stage manual
 #   - Specific hook: pre-commit run <hook-id> --all-files
 
@@ -209,11 +209,11 @@ exclude: |
 default_stages: [pre-commit]
 
 # CI/CD Notes:
-# ✅ Trailing whitespace: Auto-removed before commit; commit halts if files change
-# ✅ Line endings: Auto-fixed before commit; commit halts if files change
-# ✅ Mixed line endings: Auto-fixed before commit; commit halts if files change
+# ✅ Trailing whitespace: Auto-removed during commit; commit aborted if files are modified
+# ✅ Line endings: Auto-fixed during commit; commit aborted if files are modified
+# ✅ Mixed line endings: Auto-fixed during commit; commit aborted if files are modified
 # ✅ Ruff linting: Two modes available:
-#    - Normal commits: Auto-fixes, never blocks
+#    - Normal commits: Auto-fixes with --exit-zero; commit aborted if files are modified by --fix
 #    - Manual stage: Full linting with blocking on all violations
 # ✅ Bandit security: Blocks on high-severity, high-confidence security vulnerabilities
 # ✅ Black formatting: Auto-applies formatting, never blocks commits
