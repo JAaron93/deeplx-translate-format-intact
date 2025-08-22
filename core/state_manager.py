@@ -5,7 +5,7 @@ import threading
 import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class AdvancedTranslationState:
     def __init__(self):
         """Initialize translation state with default values."""
         self.current_file: Optional[str] = None
-        self.current_content: Optional[Dict[str, Any]] = None
+        self.current_content: Optional[dict[str, Any]] = None
         self.source_language: Optional[str] = None
         self.target_language: Optional[str] = None
         self.translation_progress: int = 0
@@ -24,18 +24,12 @@ class AdvancedTranslationState:
         self.error_message: str = ""
         self.job_id: Optional[str] = None
         self.output_file: Optional[str] = None
-        self.processing_info: Dict[str, Any] = {}
+        self.processing_info: dict[str, Any] = {}
         self.backup_path: Optional[str] = None
         self.max_pages: int = 0  # 0 means translate all pages
         self.session_id: Optional[str] = None
-        self.neologism_analysis: Optional[Dict[str, Any]] = None
-        self.user_choices: List[Dict[str, Any]] = []
-        self.philosophy_mode: bool = False
-        self.backup_path = None
-        self.max_pages: int = 0  # 0 means translate all pages
-        self.session_id: Optional[str] = None
-        self.neologism_analysis: Optional[Dict[str, Any]] = None
-        self.user_choices: List[Dict[str, Any]] = []
+        self.neologism_analysis: Optional[dict[str, Any]] = None
+        self.user_choices: list[dict[str, Any]] = []
         self.philosophy_mode: bool = False
 
 
@@ -48,25 +42,25 @@ class ThreadSafeTranslationJobs:
         Args:
             retention_hours: Hours to retain completed jobs before cleanup
         """
-        self._jobs: Dict[str, Dict[str, Any]] = {}
+        self._jobs: dict[str, dict[str, Any]] = {}
         self._lock = threading.RLock()
         self._retention_hours = retention_hours
         self._cleanup_interval = 3600  # Run cleanup every hour
         self._last_cleanup = time.time()
 
-    def add_job(self, job_id: str, job_data: Dict[str, Any]) -> None:
+    def add_job(self, job_id: str, job_data: dict[str, Any]) -> None:
         """Add a new job with timestamp."""
         with self._lock:
             job_data["timestamp"] = datetime.now()
             self._jobs[job_id] = job_data
             self._maybe_cleanup()
 
-    def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
+    def get_job(self, job_id: str) -> Optional[dict[str, Any]]:
         """Get job data by ID."""
         with self._lock:
             return self._jobs.get(job_id)
 
-    def update_job(self, job_id: str, updates: Dict[str, Any]) -> bool:
+    def update_job(self, job_id: str, updates: dict[str, Any]) -> bool:
         """Update job data. Returns True if job exists."""
         with self._lock:
             if job_id in self._jobs:
@@ -82,7 +76,7 @@ class ThreadSafeTranslationJobs:
                 return True
             return False
 
-    def get_all_jobs(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_jobs(self) -> dict[str, dict[str, Any]]:
         """Get a copy of all jobs."""
         with self._lock:
             return dict(self._jobs)
@@ -92,12 +86,12 @@ class ThreadSafeTranslationJobs:
         with self._lock:
             return job_id in self._jobs
 
-    def __getitem__(self, job_id: str) -> Dict[str, Any]:
+    def __getitem__(self, job_id: str) -> dict[str, Any]:
         """Get job data using subscript notation."""
         with self._lock:
             return self._jobs[job_id]
 
-    def __setitem__(self, job_id: str, job_data: Dict[str, Any]) -> None:
+    def __setitem__(self, job_id: str, job_data: dict[str, Any]) -> None:
         """Set job data using subscript notation."""
         self.add_job(job_id, job_data)
 
@@ -139,7 +133,7 @@ class StateManager:
 
     def __init__(self):
         """Initialize state manager with empty state dictionary and thread lock."""
-        self._states: Dict[str, AdvancedTranslationState] = {}
+        self._states: dict[str, AdvancedTranslationState] = {}
         self._lock = threading.RLock()
 
     def get_state(self, session_id: str) -> AdvancedTranslationState:

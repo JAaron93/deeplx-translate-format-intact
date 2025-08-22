@@ -15,7 +15,7 @@ Usage:
 import os
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from models.user_choice_models import ChoiceScope, ChoiceType, ConflictResolution
 from services.neologism_detector import NeologismDetector
@@ -48,7 +48,8 @@ def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     # Check for environment override first, then fall back to repo-relative path
     env_terminology_path = os.getenv("KLAGES_TERMINOLOGY_PATH")
     if env_terminology_path:
-        terminology_path = Path(env_terminology_path)
+        # Support $VAR and ~ expansions in the environment override
+        terminology_path = Path(os.path.expandvars(env_terminology_path)).expanduser()
     else:
         terminology_path = (
             Path(__file__).resolve().parents[1] / "config" / "klages_terminology.json"
@@ -58,7 +59,8 @@ def setup_example_environment() -> tuple[UserChoiceManager, NeologismDetector]:
     if not terminology_path.is_file():
         raise FileNotFoundError(
             f"Terminology file not found: {terminology_path}. "
-            "Ensure the file exists and is not a directory."
+            "Ensure the path points to a regular file (not a directory). "
+            "Set KLAGES_TERMINOLOGY_PATH to override the default location."
         )
 
     detector: NeologismDetector = NeologismDetector(
@@ -100,14 +102,14 @@ def demonstrate_basic_choice_workflow(
     print(f"✓ Detected {analysis.total_detections} neologisms")
 
     # Process each neologism and make choices
-    choices_made: List[Any] = []
+    choices_made: list[Any] = []
     for neologism in analysis.detected_neologisms:
         print(f"\n--- Processing: {neologism.term} ---")
         print(f"Confidence: {neologism.confidence:.2f}")
         print(f"Context: {neologism.sentence_context[:60]}...")
 
         # Get recommendation
-        recommendation: Dict[str, Any] = manager.get_recommendation_for_neologism(
+        recommendation: dict[str, Any] = manager.get_recommendation_for_neologism(
             neologism, session.session_id
         )
 
@@ -177,7 +179,7 @@ def demonstrate_basic_choice_workflow(
 
 def demonstrate_choice_reuse(
     manager: UserChoiceManager, detector: NeologismDetector
-) -> tuple[Any, Dict[str, Any]]:
+) -> tuple[Any, dict[str, Any]]:
     """Demonstrate choice reuse and context matching."""
     print("\n=== Choice Reuse and Context Matching ===")
 
@@ -201,7 +203,7 @@ def demonstrate_choice_reuse(
     new_analysis: Any = detector.analyze_text(new_text, "heidegger_sample_2")
 
     # Process with existing choices
-    results: List[Tuple[Any, Any]] = manager.process_neologism_batch(
+    results: list[tuple[Any, Any]] = manager.process_neologism_batch(
         neologisms=new_analysis.detected_neologisms,
         session_id=new_session.session_id,
         auto_apply_similar=True,
@@ -222,7 +224,7 @@ def demonstrate_choice_reuse(
     print(f"✓ Auto-applied {applied_count} existing choices")
 
     # Apply choices to analysis
-    application_results: Dict[str, Any] = manager.apply_choices_to_analysis(
+    application_results: dict[str, Any] = manager.apply_choices_to_analysis(
         analysis=new_analysis, session_id=new_session.session_id
     )
 
@@ -289,7 +291,7 @@ def demonstrate_conflict_resolution(
         print("✓ Made conflicting choice: PRESERVE")
 
         # Check for unresolved conflicts
-        conflicts: List[Any] = manager.get_unresolved_conflicts()
+        conflicts: list[Any] = manager.get_unresolved_conflicts()
         print(f"✓ Found {len(conflicts)} unresolved conflicts")
 
         for conflict in conflicts:
@@ -316,7 +318,7 @@ def demonstrate_terminology_import_export(
     print("\n=== Terminology Import/Export ===")
 
     # Create custom terminology
-    custom_terminology: Dict[str, str] = {
+    custom_terminology: dict[str, str] = {
         "Geworfenheit": "thrownness",
         "Zuhandenheit": "readiness-to-hand",
         "Vorhandenheit": "presence-at-hand",
@@ -386,7 +388,7 @@ def demonstrate_statistics_and_analytics(manager: UserChoiceManager) -> None:
     print("\n=== Statistics and Analytics ===")
 
     # Get comprehensive statistics
-    stats: Dict[str, Any] = manager.get_statistics()
+    stats: dict[str, Any] = manager.get_statistics()
 
     print("Manager Statistics:")
     for key, value in stats["manager_stats"].items():
@@ -406,7 +408,7 @@ def demonstrate_statistics_and_analytics(manager: UserChoiceManager) -> None:
     print(f"Auto Resolve Conflicts: {stats['auto_resolve_conflicts']}")
 
     # Get active sessions
-    active_sessions: List[Any] = manager.get_active_sessions()
+    active_sessions: list[Any] = manager.get_active_sessions()
     print("\nActive Sessions Details:")
     for session in active_sessions:
         print(f"  Session: {session.session_name}")
@@ -418,7 +420,7 @@ def demonstrate_statistics_and_analytics(manager: UserChoiceManager) -> None:
         print(f"    Created: {session.created_at}")
 
     # Validate data integrity
-    integrity_report: Dict[str, Any] = manager.validate_data_integrity()
+    integrity_report: dict[str, Any] = manager.validate_data_integrity()
     print("\nData Integrity Report:")
     print(f"  Total Issues: {integrity_report['total_issues']}")
     print(f"  Recommendations: {len(integrity_report['recommendations'])}")
@@ -428,7 +430,7 @@ def demonstrate_statistics_and_analytics(manager: UserChoiceManager) -> None:
 
 def demonstrate_advanced_features(
     manager: UserChoiceManager, detector: NeologismDetector
-) -> tuple[Any, list[Dict[str, Any]]]:
+) -> tuple[Any, list[dict[str, Any]]]:
     """Demonstrate advanced features."""
     print("\n=== Advanced Features ===")
 
@@ -455,9 +457,9 @@ def demonstrate_advanced_features(
     complex_analysis: Any = detector.analyze_text(complex_text, "complex_analysis")
 
     # Process with recommendations
-    recommendations: List[Dict[str, Any]] = []
+    recommendations: list[dict[str, Any]] = []
     for neologism in complex_analysis.detected_neologisms:
-        rec: Dict[str, Any] = manager.get_recommendation_for_neologism(
+        rec: dict[str, Any] = manager.get_recommendation_for_neologism(
             neologism, advanced_session.session_id
         )
         recommendations.append(rec)
@@ -513,8 +515,9 @@ def cleanup_example() -> None:
     )
 
     # Include SQLite companion files (journal, WAL, SHM)
-    db_base = os.path.splitext(db_path)[0]
-    files_to_remove: List[str] = [
+    # SQLite companion files are suffixed to the full DB filename (including extension)
+    db_base = db_path
+    files_to_remove: list[str] = [
         db_path,
         f"{db_base}-journal",  # Rollback journal
         f"{db_base}-wal",  # Write-Ahead Log
@@ -524,12 +527,11 @@ def cleanup_example() -> None:
 
     for file_path in files_to_remove:
         try:
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                print(f"✓ Removed {file_path}")
-            else:
-                print(f"⚠️  File not found: {file_path}")
-        except (OSError, FileNotFoundError) as e:
+            os.remove(file_path)
+            print(f"✓ Removed {file_path}")
+        except FileNotFoundError:
+            print(f"⚠️  File not found: {file_path}")
+        except OSError as e:
             print(f"⚠️  Could not remove {file_path}: {e}")
         except Exception as e:
             print(f"⚠️  Unexpected error removing {file_path}: {e}")
@@ -553,7 +555,7 @@ def main() -> None:
         session1, choices1 = demonstrate_basic_choice_workflow(manager, detector)
 
         session2: Any
-        results2: Dict[str, Any]
+        results2: dict[str, Any]
         session2, results2 = demonstrate_choice_reuse(manager, detector)
 
         session3: Any = demonstrate_conflict_resolution(manager, detector)
@@ -565,7 +567,7 @@ def main() -> None:
         demonstrate_statistics_and_analytics(manager)
 
         session6: Any
-        recommendations: list[Dict[str, Any]]
+        recommendations: list[dict[str, Any]]
         session6, recommendations = demonstrate_advanced_features(manager, detector)
 
         print("\n" + "=" * 60)
@@ -582,7 +584,7 @@ def main() -> None:
         print("✓ Showed advanced recommendation system")
 
         # Final statistics
-        final_stats: Dict[str, Any] = manager.get_statistics()
+        final_stats: dict[str, Any] = manager.get_statistics()
         print("\nFinal Statistics:")
         print(
             f"  Total Choices Made: {final_stats['manager_stats']['total_choices_made']}"

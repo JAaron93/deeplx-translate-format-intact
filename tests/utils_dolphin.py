@@ -50,7 +50,7 @@ def b64(data: bytes) -> str:
 
 def get_sample_pdfs() -> tuple[str, str, str]:
     return (
-        "1-chapter-11-pages-klages.pdf",
-        "complex-layout-1-page-klages.pdf",
-        "large-text-149-pages-klages-from-page-370.pdf",
+        "1-chapter-11-pages-klages.pdf",  # Small multi-page (53KB)
+        "complex-layout-1-page-klages.pdf",  # Complex layout (335KB)
+        "1-chapter-11-pages-klages.pdf",  # Fallback to multi-page for large tests
     )

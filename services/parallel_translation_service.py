@@ -20,11 +20,11 @@ import inspect
 import logging
 import os
 import time
-from collections.abc import MutableMapping
+from collections.abc import Callable, MutableMapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Optional
 
 import aiohttp
 from aiohttp import ClientSession, ClientTimeout
@@ -68,6 +68,9 @@ def _get_version() -> str:
 
 # Module-level constants
 USER_AGENT = f"Dolphin-OCR-Translate-Parallel/{_get_version()}"
+
+# Maximum allowed Retry-After delay to prevent pathologically long sleeps
+MAX_RETRY_AFTER_SECONDS = 60.0
 
 
 @dataclass
@@ -121,7 +124,7 @@ class TranslationTask:
     source_lang: str
     target_lang: str
     task_id: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -135,7 +138,7 @@ class TranslationResult:
     error: Optional[str] = None
     retry_count: int = 0
     processing_time: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -251,13 +254,14 @@ class ParallelLingoTranslator:
         """Parse Retry-After header value and return seconds to wait.
 
         Handles both numeric seconds and RFC 7231 HTTP-date formats.
-        Returns a float >= 1.0.
+        Returns a float >= 1.0, capped at MAX_RETRY_AFTER_SECONDS to prevent
+        pathologically long sleeps from unreasonable server responses.
 
         Args:
             header_val: The Retry-After header value (can be numeric seconds or HTTP date)
 
         Returns:
-            float: Seconds to wait, guaranteed to be >= 1.0
+            float: Seconds to wait, guaranteed to be >= 1.0 and <= MAX_RETRY_AFTER_SECONDS
         """
         if not header_val:
             return 1.0
@@ -265,7 +269,8 @@ class ParallelLingoTranslator:
         # Try parsing as numeric seconds first
         try:
             retry_seconds = float(header_val)
-            return max(1.0, retry_seconds)
+            # Cap at maximum to prevent excessively long sleeps
+            return max(1.0, min(retry_seconds, MAX_RETRY_AFTER_SECONDS))
         except (ValueError, TypeError):
             pass
 
@@ -275,14 +280,14 @@ class ParallelLingoTranslator:
             parsed_date = email.utils.parsedate_to_datetime(header_val)
             if parsed_date.tzinfo is None:
                 # Assume UTC if no timezone specified
-                parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+                parsed_date = parsed_date.replace(tzinfo=UTC)
 
             # Calculate seconds from now
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             seconds_diff = (parsed_date - now).total_seconds()
 
-            # Ensure minimum of 1.0 seconds
-            return max(1.0, seconds_diff)
+            # Ensure minimum of 1.0 seconds, cap at maximum
+            return max(1.0, min(seconds_diff, MAX_RETRY_AFTER_SECONDS))
         except (ValueError, TypeError):
             # Any parsing error falls back to 1.0 seconds
             return 1.0
@@ -401,7 +406,7 @@ class ParallelLingoTranslator:
             metadata=task.metadata,
         )
 
-    def _extract_translation(self, response_data: Dict[str, Any]) -> str:
+    def _extract_translation(self, response_data: dict[str, Any]) -> str:
         """Extract translation from API response."""
         if "translation" in response_data:
             return response_data["translation"]
@@ -525,11 +530,11 @@ class ParallelLingoTranslator:
 
     async def translate_document_parallel(
         self,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         source_lang: str,
         target_lang: str,
         progress_callback: Optional[Callable[[BatchProgress], None]] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Translate document content in parallel."""
         # Extract text blocks for translation
         text_blocks = self._extract_text_blocks(content)
@@ -572,6 +577,14 @@ class ParallelLingoTranslator:
 
         # Extract from layouts if available
         for i, layout in enumerate(content.get("layouts", [])):
+            # First check if layout is dict-like (MutableMapping)
+            if isinstance(layout, MutableMapping):
+                text_val = layout.get("text")
+                if isinstance(text_val, str) and text_val.strip():
+                    text_blocks.append((f"layout_{i}", text_val))
+                    continue  # Skip object handling for this layout
+
+            # Fall through to object handling (unchanged)
             text_attr = getattr(layout, "text", None)
             if isinstance(text_attr, str) and text_attr.strip():
                 text_blocks.append((f"layout_{i}", text_attr))
@@ -666,11 +679,11 @@ class ParallelTranslationService:
 
     async def translate_large_document(
         self,
-        content: Dict[str, Any],
+        content: dict[str, Any],
         source_lang: str,
         target_lang: str,
         progress_callback: Optional[Callable[[BatchProgress], None]] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Translate large document with optimal parallel processing."""
         if not self._translator:
             raise RuntimeError("Service not initialized. Use async context manager.")

@@ -5,7 +5,7 @@ Modal deployment of the Dolphin OCR model for better performance and control.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 import modal
 
@@ -147,7 +147,7 @@ class DolphinOCRProcessor:
         )
 
     @modal.method()
-    def process_pdf(self, pdf_bytes: bytes) -> Dict[str, Any]:
+    def process_pdf(self, pdf_bytes: bytes) -> dict[str, Any]:
         """Process a PDF with Dolphin OCR using cached model and processor.
 
         Args:
@@ -234,7 +234,7 @@ dolphin_processor = DolphinOCRProcessor()
     memory=8192,
     container_idle_timeout=600,
 )
-def process_pdf_with_dolphin(pdf_bytes: bytes) -> Dict[str, Any]:
+def process_pdf_with_dolphin(pdf_bytes: bytes) -> dict[str, Any]:
     """Process a PDF with Dolphin OCR using cached model (backward compatibility wrapper).
 
     This function maintains backward compatibility while using the cached processor.
@@ -273,7 +273,7 @@ def parse_dolphin_output(
         y2 = max(0.0, min(float(y2), float(page_height)))
         return [x1, y1, x2, y2]
 
-    def _norm_block(obj: Dict[str, Any]) -> Dict[str, Any]:
+    def _norm_block(obj: dict[str, Any]) -> dict[str, Any]:
         text = str(obj.get("text", "")).strip()
         bbox = obj.get("bbox") or obj.get("box") or obj.get("bounds")
         if isinstance(bbox, dict):
@@ -332,7 +332,7 @@ def parse_dolphin_output(
         pass
 
     # 3) Parse line-based format: bbox=[x1,y1,x2,y2] conf=0.95 text="..." type=...
-    blocks: List[Dict[str, Any]] = []
+    blocks: list[dict[str, Any]] = []
     line_pattern = _re.compile(
         r"bbox\s*[:=]\s*[\[\(]?\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)\s*[\]\)]?"  # bbox
         r".*?(?:conf(?:idence)?|score)\s*[:=]\s*([0-9.]+)"  # confidence
@@ -381,7 +381,7 @@ def parse_dolphin_output(
 @modal.web_endpoint(method="POST", docs=True)
 def dolphin_ocr_endpoint(
     pdf_file: bytes = modal.web_endpoint.FileUpload(),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """HTTP endpoint for Dolphin OCR processing.
     Compatible with the existing dolphin_client.py interface.
     """

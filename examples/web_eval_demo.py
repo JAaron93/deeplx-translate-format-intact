@@ -5,10 +5,11 @@ This script shows how the web-eval-agent can be used for automated web
 evaluation.
 """
 
+import hashlib
 import json
 import os
 import time
-from typing import Final, List, TypedDict
+from typing import Final, TypedDict
 
 # Default demo URL for web evaluation demonstration
 DEFAULT_DEMO_URL: Final[str] = "http://localhost:8000/static/demos/web-eval/demo.html"
@@ -19,9 +20,9 @@ class SampleReport(TypedDict):
 
     url: str
     task: str
-    agent_steps: List[str]
-    console_logs: List[str]
-    network_requests: List[str]
+    agent_steps: list[str]
+    console_logs: list[str]
+    network_requests: list[str]
     conclusion: str
 
 
@@ -36,14 +37,14 @@ def demonstrate_web_eval_agent() -> None:
     # Simulate the web-eval-agent configuration
     print("\n📋 Configuration:")
     print("  • Server Name: github.com/Operative-Sh/web-eval-agent")
-    # Show only the last 4 chars for confirmation (avoiding prefix leakage)
+    # Use non-reversible fingerprint to avoid leaking any key substring
     trimmed_key = api_key.strip()
     if not trimmed_key or trimmed_key == "[API_KEY_NOT_SET]":
         api_key_display = "not set"
     else:
-        api_key_display = (
-            f"{'…' + trimmed_key[-4:] if len(trimmed_key) > 4 else trimmed_key}"
-        )
+        # Compute SHA-256 fingerprint and show first 8 hex chars
+        fingerprint = hashlib.sha256(trimmed_key.encode()).hexdigest()[:8]
+        api_key_display = f"set (fingerprint: {fingerprint})"
     print(f"  • API Key: {api_key_display}")
     print(
         "  • Command: "
@@ -104,7 +105,9 @@ def demonstrate_web_eval_agent() -> None:
         ),
     }
 
-    print(json.dumps(sample_report, indent=2, ensure_ascii=False, sort_keys=True))
+    # Preserve insertion order for better readability and logical flow
+    # Original order: url -> task -> agent_steps -> console_logs -> network_requests -> conclusion
+    print(json.dumps(sample_report, indent=2, ensure_ascii=False))
 
     print("\n✨ Key Features Demonstrated:")
     print("  • 🌐 Browser Automation: Navigate and interact with web pages")

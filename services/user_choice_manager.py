@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 from database.choice_database import ChoiceDatabase
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
@@ -46,7 +46,7 @@ class UserChoiceManager:
         self.session_expiry_hours = session_expiry_hours
 
         # Active sessions cache
-        self._active_sessions: Dict[str, ChoiceSession] = {}
+        self._active_sessions: dict[str, ChoiceSession] = {}
 
         # Load active sessions from database
         self._load_active_sessions()
@@ -145,11 +145,11 @@ class UserChoiceManager:
 
         return False
 
-    def get_active_sessions(self) -> List[ChoiceSession]:
+    def get_active_sessions(self) -> list[ChoiceSession]:
         """Get all active sessions."""
         return list(self._active_sessions.values())
 
-    def get_user_sessions(self, user_id: str, limit: int = 50) -> List[ChoiceSession]:
+    def get_user_sessions(self, user_id: str, limit: int = 50) -> list[ChoiceSession]:
         """Get sessions for a specific user."""
         return self.db.get_user_sessions(user_id, limit)
 
@@ -270,16 +270,16 @@ class UserChoiceManager:
 
         return None
 
-    def get_choices_by_term(self, term: str, limit: int = 100) -> List[UserChoice]:
+    def get_choices_by_term(self, term: str, limit: int = 100) -> list[UserChoice]:
         """Get all choices for a specific term."""
         return self.db.get_choices_by_term(term, limit)
 
-    def get_session_choices(self, session_id: str) -> List[UserChoice]:
+    def get_session_choices(self, session_id: str) -> list[UserChoice]:
         """Get all choices for a session."""
         return self.db.get_choices_by_session(session_id)
 
     def update_choice(
-        self, choice_id: str, updates: Dict[str, Any], mark_as_used: bool = False
+        self, choice_id: str, updates: dict[str, Any], mark_as_used: bool = False
     ) -> bool:
         """Update an existing choice.
 
@@ -314,7 +314,7 @@ class UserChoiceManager:
 
     # Conflict Management
 
-    def _check_for_conflicts(self, new_choice: UserChoice) -> List[ChoiceConflict]:
+    def _check_for_conflicts(self, new_choice: UserChoice) -> list[ChoiceConflict]:
         """Check for conflicts with existing choices."""
         existing_choices = self.db.get_choices_by_term(new_choice.neologism_term)
 
@@ -329,7 +329,7 @@ class UserChoiceManager:
 
         return conflicts
 
-    def _resolve_conflicts_automatically(self, conflicts: List[ChoiceConflict]) -> None:
+    def _resolve_conflicts_automatically(self, conflicts: list[ChoiceConflict]) -> None:
         """Automatically resolve conflicts based on strategy."""
         for conflict in conflicts:
             # Analyze the conflict
@@ -354,7 +354,7 @@ class UserChoiceManager:
                 self.stats["conflicts_resolved"] += 1
                 logger.info(f"Auto-resolved conflict: {conflict.conflict_id}")
 
-    def get_unresolved_conflicts(self) -> List[ChoiceConflict]:
+    def get_unresolved_conflicts(self) -> list[ChoiceConflict]:
         """Get all unresolved conflicts."""
         return self.db.get_unresolved_conflicts()
 
@@ -394,7 +394,7 @@ class UserChoiceManager:
 
     def find_similar_contexts(
         self, context: TranslationContext, similarity_threshold: float = 0.8
-    ) -> List[UserChoice]:
+    ) -> list[UserChoice]:
         """Find choices with similar contexts."""
         similar_choices = self.db.search_similar_choices(context)
 
@@ -411,10 +411,10 @@ class UserChoiceManager:
 
     def process_neologism_batch(
         self,
-        neologisms: List[DetectedNeologism],
+        neologisms: list[DetectedNeologism],
         session_id: Optional[str] = None,
         auto_apply_similar: bool = True,
-    ) -> List[Tuple[DetectedNeologism, Optional[UserChoice]]]:
+    ) -> list[tuple[DetectedNeologism, Optional[UserChoice]]]:
         """Process a batch of neologisms and return suggested choices.
 
         Args:
@@ -457,7 +457,7 @@ class UserChoiceManager:
 
     def apply_choices_to_analysis(
         self, analysis: NeologismAnalysis, session_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Apply user choices to a neologism analysis.
 
         Args:
@@ -524,7 +524,7 @@ class UserChoiceManager:
         return self.db.import_choices_from_json(json_data, session_id)
 
     def import_choices_from_dict(
-        self, choices_dict: Dict[str, Any], session_id: Optional[str] = None
+        self, choices_dict: dict[str, Any], session_id: Optional[str] = None
     ) -> int:
         """Import choices from a dictionary.
 
@@ -556,7 +556,7 @@ class UserChoiceManager:
 
     def import_terminology_as_choices(
         self,
-        terminology_dict: Dict[str, str],
+        terminology_dict: dict[str, str],
         session_id: Optional[str] = None,
         source_language: str = "de",
         target_language: str = "en",
@@ -613,7 +613,7 @@ class UserChoiceManager:
 
         return expired_count
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get comprehensive statistics."""
         db_stats = self.db.get_database_statistics()
 
@@ -625,7 +625,7 @@ class UserChoiceManager:
             "auto_resolve_conflicts": self.auto_resolve_conflicts,
         }
 
-    def validate_data_integrity(self) -> Dict[str, Any]:
+    def validate_data_integrity(self) -> dict[str, Any]:
         """Validate data integrity and return report."""
         report = {
             "total_issues": 0,
@@ -735,7 +735,7 @@ class UserChoiceManager:
 
         return report
 
-    def _check_orphaned_contexts(self) -> List[str]:
+    def _check_orphaned_contexts(self) -> list[str]:
         """Check for orphaned contexts (contexts without corresponding choices)."""
         try:
             # Get all context hashes from the database
@@ -753,7 +753,7 @@ class UserChoiceManager:
             logger.error(f"Error checking orphaned contexts: {e}")
             return []
 
-    def _check_missing_choice_references(self) -> List[str]:
+    def _check_missing_choice_references(self) -> list[str]:
         """Check for choices referencing non-existent sessions."""
         try:
             missing_references = []
@@ -773,7 +773,7 @@ class UserChoiceManager:
             logger.error(f"Error checking missing choice references: {e}")
             return []
 
-    def _check_invalid_sessions(self) -> List[str]:
+    def _check_invalid_sessions(self) -> list[str]:
         """Check for sessions with invalid states."""
         try:
             invalid_sessions = []
@@ -813,7 +813,7 @@ class UserChoiceManager:
             logger.error(f"Error checking invalid sessions: {e}")
             return []
 
-    def _check_duplicate_choices(self) -> List[Tuple[str, str]]:
+    def _check_duplicate_choices(self) -> list[tuple[str, str]]:
         """Check for duplicate choices (same term + context hash)."""
         try:
             duplicates = []
@@ -849,7 +849,7 @@ class UserChoiceManager:
             logger.error(f"Error checking duplicate choices: {e}")
             return []
 
-    def _check_conflicting_choices(self) -> List[str]:
+    def _check_conflicting_choices(self) -> list[str]:
         """Check for conflicting choices (same term, different translations)."""
         try:
             conflicts = []
@@ -889,7 +889,7 @@ class UserChoiceManager:
             logger.error(f"Error checking conflicting choices: {e}")
             return []
 
-    def _check_expired_sessions(self) -> List[str]:
+    def _check_expired_sessions(self) -> list[str]:
         """Check for expired sessions that should be cleaned up."""
         try:
             expired_sessions = []
@@ -931,7 +931,7 @@ class UserChoiceManager:
 
     def get_recommendation_for_neologism(
         self, neologism: DetectedNeologism, session_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get comprehensive recommendation for handling a neologism.
 
         Args:
@@ -1025,7 +1025,7 @@ def process_neologism_analysis(
     manager: UserChoiceManager,
     analysis: NeologismAnalysis,
     session_id: Optional[str] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Process a neologism analysis with the choice manager."""
     return manager.apply_choices_to_analysis(analysis, session_id)
 

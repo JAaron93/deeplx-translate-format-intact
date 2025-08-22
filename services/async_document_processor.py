@@ -13,10 +13,10 @@ async alternative for higher throughput and responsive servers.
 import asyncio
 import os
 import time
+from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
 
 from dolphin_ocr.layout import BoundingBox, FontInfo
 from dolphin_ocr.pdf_to_image import PDFToImageConverter

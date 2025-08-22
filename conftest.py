@@ -17,8 +17,10 @@ def pytest_configure(config: pytest_api.Config) -> None:
     """
     # Set DEBUG=True for tests to enable auto-generated SECRET_KEY
     os.environ.setdefault("DEBUG", "true")
-    # Provide a fallback SECRET_KEY for tests (will be auto-generated if empty)
-    os.environ.setdefault("SECRET_KEY", "")
+    # Provide a deterministic SECRET_KEY for tests to ensure consistency across workers
+    os.environ.setdefault(
+        "SECRET_KEY", "test-secret-key-deterministic-for-testing-only-32chars"
+    )
     # When focusing, quiet output at runtime without relying on pre-parsed
     # addopts
     if os.getenv("FOCUSED"):

@@ -9,7 +9,7 @@ large documents efficiently with parallel processing.
 import asyncio
 import logging
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 from services.enhanced_translation_service import EnhancedTranslationService
 from services.parallel_translation_service import ParallelTranslationConfig
@@ -47,7 +47,7 @@ def create_sample_document() -> dict[str, Any]:
 
 def create_large_text_batch() -> list[str]:
     """Create a large batch of texts for performance testing."""
-    base_texts: List[str] = [
+    base_texts: list[str] = [
         "Die Philosophie beschäftigt sich mit grundlegenden Fragen des Seins.",
         "Bewusstsein ist ein komplexes Phänomen der menschlichen Erfahrung.",
         "Erkenntnistheorie untersucht die Bedingungen möglicher Erkenntnis.",
@@ -61,7 +61,7 @@ def create_large_text_batch() -> list[str]:
     ]
 
     # Create a larger batch by repeating and modifying base texts
-    large_batch: List[str] = []
+    large_batch: list[str] = []
     for i in range(50):  # Create 500 texts total
         for j, text in enumerate(base_texts):
             modified_text: str = f"{text} (Variante {i + 1}.{j + 1})"
@@ -104,7 +104,7 @@ async def demo_basic_parallel_translation() -> None:
     logger.info("=== Basic Parallel Translation Demo ===")
 
     # Create sample texts
-    texts: List[str] = [
+    texts: list[str] = [
         "Die Philosophie der Bewusstseinsforschung ist komplex.",
         "Wirklichkeitsbewusstsein spielt eine zentrale Rolle.",
         "Erkenntnistheorie untersucht die Grundlagen des Wissens.",
@@ -138,7 +138,7 @@ async def demo_basic_parallel_translation() -> None:
         logger.info("Translation completed in %.2f seconds", elapsed)
 
         # Show performance stats
-        stats: Dict[str, Any] = service.get_performance_stats()
+        stats: dict[str, Any] = service.get_performance_stats()
         logger.info("Performance stats: %s", stats)
 
     except Exception as e:
@@ -152,7 +152,7 @@ async def demo_large_document_processing() -> None:
     logger.info("=== Large Document Processing Demo ===")
 
     # Create sample document
-    document: Dict[str, Any] = create_sample_document()
+    document: dict[str, Any] = create_sample_document()
 
     # Configure for high-performance processing
     config: ParallelTranslationConfig = ParallelTranslationConfig(
@@ -208,11 +208,11 @@ async def demo_batch_performance_comparison() -> None:
     logger.info("=== Performance Comparison Demo ===")
 
     # Create large text batch
-    texts: List[str] = create_large_text_batch()
+    texts: list[str] = create_large_text_batch()
     logger.info("Created batch of %d texts for performance testing", len(texts))
 
     # Test with different batch sizes
-    batch_sizes: List[int] = [10, 25, 50, 100]
+    batch_sizes: list[int] = [10, 25, 50, 100]
 
     for batch_size in batch_sizes:
         logger.info("--- Testing with batch size: %d ---", batch_size)
@@ -227,7 +227,7 @@ async def demo_batch_performance_comparison() -> None:
         service.parallel_config = config
 
         # Take a subset for testing
-        test_texts: List[str] = texts[:batch_size]
+        test_texts: list[str] = texts[:batch_size]
 
         tracker: ProgressTracker = ProgressTracker(f"Batch Size {batch_size}")
 
@@ -274,7 +274,7 @@ async def demo_error_handling_and_resilience() -> None:
     logger.info("- Backoff multiplier: %.1fx", config.backoff_multiplier)
 
     # Simulate processing with potential failures
-    texts: List[str] = ["Text 1", "Text 2", "Text 3", "Text 4", "Text 5"]
+    texts: list[str] = ["Text 1", "Text 2", "Text 3", "Text 4", "Text 5"]
 
     tracker: ProgressTracker = ProgressTracker("Resilience Test")
 

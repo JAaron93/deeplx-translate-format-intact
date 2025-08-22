@@ -8,9 +8,9 @@ reconstruction steps into a single `DocumentProcessor` pipeline.
 
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
 
 from dolphin_ocr.layout import BoundingBox, FontInfo
 from dolphin_ocr.monitoring import MonitoringService

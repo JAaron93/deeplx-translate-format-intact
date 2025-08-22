@@ -8,14 +8,17 @@ capabilities.
 
 import asyncio
 import gc
+import inspect
 import logging
 import os
 import threading
 import time
+import weakref
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, contextmanager
 from functools import wraps
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, Optional
 
 import psutil
 
@@ -77,7 +80,7 @@ class MetricsCollector:
         with self._lock:
             return self._active_connections
 
-    def get_cache_stats(self) -> Dict[str, int]:
+    def get_cache_stats(self) -> dict[str, int]:
         """Get current cache statistics."""
         with self._lock:
             return {
@@ -149,10 +152,6 @@ async def track_async_connection():
         _metrics_collector.release_connection()
 
 
-import weakref
-from functools import wraps
-
-
 def instrument_cache(func):
     """Decorator to instrument cache operations with metrics.
 
@@ -167,8 +166,37 @@ def instrument_cache(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # Check if this is a bound method call (has self as first argument)
-        if args and hasattr(args[0], "__dict__"):
+        # Robust method detection to determine if this is a bound method call
+        is_bound_method = False
+
+        # Check if the decorated function is already a bound method
+        if inspect.ismethod(func) or hasattr(func, "__self__"):
+            is_bound_method = True
+        # Check if it's a function defined in a class (unbound method)
+        # An unbound method has a __qualname__ that includes the class name
+        elif (
+            inspect.isfunction(func)
+            and hasattr(func, "__qualname__")
+            and "." in func.__qualname__
+            and hasattr(func, "__get__")
+        ):
+            # This is likely an unbound method that will be bound to the first argument
+            is_bound_method = True
+        # Fallback: check if first argument looks like a user-defined instance
+        # Only consider it an instance if it has __class__ and the class is user-defined
+        elif (
+            args
+            and hasattr(args[0], "__class__")
+            and hasattr(args[0].__class__, "__module__")
+            and args[0].__class__.__module__ != "builtins"
+            and not inspect.isfunction(args[0])
+            and not inspect.ismethod(args[0])
+            and not inspect.isclass(args[0])
+            and not isinstance(args[0], (int, float, str, bool, list, tuple, dict, set))
+        ):
+            is_bound_method = True
+
+        if is_bound_method and args:
             instance = args[0]
             # Get or create cache for this instance
             if instance not in _instance_caches:
@@ -341,7 +369,7 @@ class LargeDocumentProcessor:
         target_lang: str,
         provider: str = "auto",
         user_id: Optional[str] = None,
-    ) -> AsyncIterator[Dict[str, Any]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Process large document with streaming approach for memory efficiency.
 
@@ -427,12 +455,12 @@ class LargeDocumentProcessor:
 
     async def _process_page_chunk(
         self,
-        chunk_pages: List[Dict[str, Any]],
+        chunk_pages: list[dict[str, Any]],
         source_lang: str,
         target_lang: str,
         provider: str,
         user_id: Optional[str],
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process a chunk of pages concurrently."""
         # Extract texts from pages
         page_texts = []
@@ -495,7 +523,7 @@ class LargeDocumentProcessor:
 
     def _calculate_final_metrics(
         self, total_pages: int, total_neologisms: int, processing_time: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate final performance metrics."""
         current_metrics = self.performance_optimizer.get_current_metrics()
 
@@ -585,7 +613,7 @@ class ParallelProcessingOptimizer:
         source_lang: str,
         target_lang: str,
         provider: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process a single document asynchronously."""
         results = []
 

@@ -1,73 +1,75 @@
 # Pre-commit Configuration for deeplx-translate-format-intact
 # ========================================================
 # CI/CD-friendly configuration that only blocks on critical issues.
+# Auto-fixing hooks run before commit; if a hook edits files, the commit halts and must be re-run.
 #
 # Installation:
 #   pip install pre-commit
 #   pre-commit install
 #
 # Usage:
-#   - Normal commits: Only critical violations block commits
+#   - Normal commits: Auto-fixes applied after commit, syntax/quality issues block commits
 #   - Full linting: pre-commit run --all-files --hook-stage manual
 #   - Specific hook: pre-commit run <hook-id> --all-files
 
 repos:
-  # Built-in hooks for basic file checks (non-blocking)
+  # Built-in hooks for file validation and auto-fixes (mixed blocking behavior)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-      # Whitespace and line ending fixes (auto-fix, non-blocking)
-      # Trailing whitespace is automatically removed and never blocks commits
+      # Whitespace and line ending fixes (auto-fix, runs before commit)
+      # Trailing whitespace is automatically removed before commits
       - id: trailing-whitespace
-        name: Remove trailing whitespace (non-blocking)
-        description: Automatically removes trailing whitespace from all files
+        name: Remove trailing whitespace
+        description: Automatically removes trailing whitespace from files before commit
         args: [--markdown-linebreak-ext=md]
 
 
       - id: end-of-file-fixer
-        name: Fix end of file (non-blocking)
-        description: Ensures files end with a newline
+        name: Fix end of file
+        description: Ensures files end with a newline before commit
 
       - id: mixed-line-ending
-        name: Fix mixed line endings (non-blocking)
-        description: Fixes mixed line endings (LF vs CRLF)
+        name: Fix mixed line endings
+        description: Fixes mixed line endings (LF vs CRLF) before commit
 
-      # File formatting checks (non-blocking - just warn)
+      # Syntax validation checks (blocking - prevents broken files)
       - id: check-yaml
-        name: Check YAML syntax (non-blocking)
-        description: Checks yaml files for parseable syntax
+        name: Check YAML syntax (blocking)
+        description: Validates YAML files for parseable syntax and blocks commits on errors
 
       - id: check-json
-        name: Check JSON syntax (non-blocking)
-        description: Checks json files for parseable syntax
+        name: Check JSON syntax (blocking)
+        description: Validates JSON files for parseable syntax and blocks commits on errors
 
       - id: check-toml
-        name: Check TOML syntax (non-blocking)
-        description: Checks toml files for parseable syntax
+        name: Check TOML syntax (blocking)
+        description: Validates TOML files for parseable syntax and blocks commits on errors
 
       - id: check-xml
-        name: Check XML syntax (non-blocking)
-        description: Checks xml files for parseable syntax
+        name: Check XML syntax (blocking)
+        description: Validates XML files for parseable syntax and blocks commits on errors
 
-      # Code quality checks (non-blocking - just warn)
+      # Repository integrity checks (blocking - prevents common issues)
       - id: check-merge-conflict
-        name: Check for merge conflicts (non-blocking)
-        description: Checks for merge conflict markers
+        name: Check for merge conflicts (blocking)
+        description: Detects merge conflict markers and blocks commits containing them
 
       - id: check-added-large-files
-        name: Check for large files (non-blocking)
-        description: Prevents giant files from being committed
+        name: Check for large files (blocking)
+        description: Prevents accidentally committing files larger than 1000KB
         args: ['--maxkb=1000']
 
       - id: check-case-conflict
-        name: Check case conflicts (non-blocking)
-        description: Checks for case conflicts in filenames
+        name: Check case conflicts (blocking)
+        description: Detects case conflicts in filenames and blocks commits on conflicts
 
       - id: check-symlinks
-        name: Check symlinks (non-blocking)
-        description: Checks for broken symlinks
+        name: Check symlinks (blocking)
+        description: Detects broken symlinks and blocks commits containing them
 
-      # Python-specific checks (critical ones remain blocking)
+      # Syntax and quality checks (blocking - ensures code quality)
+      # These hooks validate file integrity and prevent common repository issues
       - id: check-ast
         name: Check Python AST (blocking - syntax errors)
         description: Checks Python files for valid syntax
@@ -98,36 +100,42 @@ repos:
         name: Format Python code with Black (non-blocking)
         description: Formats Python code to Black's style (auto-formats files)
         language_version: python3
-        # Auto-format files but don't block commit on formatting violations
+        # Auto-format files; if files change, pre-commit will halt the commit and you must re-run it
         args: [--quiet]
-
   # Python linting with Ruff (CI-friendly configuration)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.11
     hooks:
       - id: ruff
         name: Lint Python code with Ruff (non-blocking for CI)
-        description: Fast Python linter that auto-fixes issues but doesn't block commits
+        description: Fast Python linter that auto-fixes issues; --exit-zero prevents exit on violations but file changes from --fix may halt commits
         args: [--fix, --quiet, --exit-zero]
         verbose: false
-        # Use --exit-zero to make Ruff non-blocking even with violations
-        # This allows commits to proceed while still fixing auto-fixable issues
+        # Use --exit-zero to suppress non-zero exit on violations
+        # Commits proceed even with linting violations, but may halt if --fix modifies files
+      - id: ruff
+        name: Lint Python code with Ruff (manual stage - full linting)
+        description: Complete Ruff linting with all rules for manual runs
+        args: [--fix, --quiet]
+        verbose: false
+        # Full linting without --exit-zero for manual runs
+        # This will block on all violations for comprehensive code quality checks
         pass_filenames: true
         always_run: false
-        stages: [pre-commit]
+        stages: [manual]
 
-  # Python security checks with bandit (temporarily disabled for CI compatibility)
-  # - repo: https://github.com/pycqa/bandit
-  #   rev: 1.7.5
-  #   hooks:
-  #     - id: bandit
-  #       name: Security check with bandit (CI-friendly, high severity only)
-  #       description: Checks Python code for high-severity security issues only
-  #       args: [--severity-level, high, --quiet, --exit-zero]
-  #       exclude: ^tests/
-  #       verbose: false
-  #       pass_filenames: false
-  #       always_run: true
+  # Python security checks with bandit (enhanced configuration)
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        name: Security check with bandit (high severity and confidence)
+        description: Checks Python code for high-severity, high-confidence security issues
+        args: [--severity-level, high, --confidence-level, high, --quiet]
+        exclude: ^tests/
+        verbose: false
+        pass_filenames: true
+        always_run: false
 
   # # Python type checking with mypy (temporarily disabled due to SSL issues)
   # - repo: https://github.com/pre-commit/mirrors-mypy
@@ -172,7 +180,7 @@ repos:
 default_language_version:
   python: python3
 
-# Make all hooks non-blocking (allow commits even with failures)
+# Do not stop on first failure; note: commits still fail if any hook fails or edits files
 fail_fast: false
 
 ci:
@@ -201,12 +209,16 @@ exclude: |
 default_stages: [pre-commit]
 
 # CI/CD Notes:
-# ✅ Trailing whitespace: Auto-removed, never blocks commits
-# ✅ Ruff linting: Only blocks on critical syntax errors (E9)
-# ✅ Bandit security: Only blocks on high-severity vulnerabilities
+# ✅ Trailing whitespace: Auto-removed before commit; commit halts if files change
+# ✅ Line endings: Auto-fixed before commit; commit halts if files change
+# ✅ Mixed line endings: Auto-fixed before commit; commit halts if files change
+# ✅ Ruff linting: Two modes available:
+#    - Normal commits: Auto-fixes, never blocks
+#    - Manual stage: Full linting with blocking on all violations
+# ✅ Bandit security: Blocks on high-severity, high-confidence security vulnerabilities
 # ✅ Black formatting: Auto-applies formatting, never blocks commits
 # ✅ Most style violations: Auto-fixed or ignored in CI environments
 #
 # For comprehensive linting during development:
-#   pre-commit run --all-files --hook-stage manual (if configured)
+#   pre-commit run --all-files --hook-stage manual
 #   Or run ruff directly: ruff check --select=ALL .

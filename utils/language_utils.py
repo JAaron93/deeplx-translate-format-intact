@@ -1,12 +1,12 @@
 """Utility functions for language detection and text extraction."""
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-def extract_text_sample_for_language_detection(content: Dict[str, Any]) -> str:
+def extract_text_sample_for_language_detection(content: dict[str, Any]) -> str:
     """Extract a text sample from document content for language detection.
 
     This function handles various content types and provides a consistent

@@ -9,12 +9,11 @@ This script handles:
 
 import os
 import sys
-from typing import List, Tuple
 
 # Optional (non-fatal) environment variables recognized by deployment.
 # DOLPHIN_ENDPOINT can be provided here for convenience during validation,
 # but it is still validated as required in validate_environment_variables.
-OPTIONAL_ENV_VARS: List[str] = [
+OPTIONAL_ENV_VARS: list[str] = [
     "HF_TOKEN",  # HuggingFace token for model downloads
     "PDF_DPI",
     "MAX_CONCURRENT_REQUESTS",
@@ -28,7 +27,7 @@ OPTIONAL_ENV_VARS: List[str] = [
 
 
 def validate_environment_variables() -> (
-    Tuple[List[str], List[str], List[str], List[str]]
+    tuple[list[str], list[str], list[str], list[str]]
 ):
     """Validate environment variables and return validation results.
 
@@ -36,19 +35,17 @@ def validate_environment_variables() -> (
         tuple: (missing_required, empty_required, missing_optional, empty_optional)
                where each element is a list of variable names
     """
-    required_vars: List[str] = [
+    required_vars: list[str] = [
         "MODAL_TOKEN_ID",
         "MODAL_TOKEN_SECRET",
         "LINGO_API_KEY",
-        "DOLPHIN_ENDPOINT",
     ]
+    optional_vars: list[str] = [v for v in OPTIONAL_ENV_VARS if v not in required_vars]
 
-    optional_vars: List[str] = [v for v in OPTIONAL_ENV_VARS if v not in required_vars]
-
-    missing_required: List[str] = []
-    empty_required: List[str] = []
-    missing_optional: List[str] = []
-    empty_optional: List[str] = []
+    missing_required: list[str] = []
+    empty_required: list[str] = []
+    missing_optional: list[str] = []
+    empty_optional: list[str] = []
 
     # Validate required variables
     for var in required_vars:
@@ -70,10 +67,10 @@ def validate_environment_variables() -> (
 
 
 def report_environment_validation(
-    missing_required: List[str],
-    empty_required: List[str],
-    missing_optional: List[str],
-    empty_optional: List[str],
+    missing_required: list[str],
+    empty_required: list[str],
+    missing_optional: list[str],
+    empty_optional: list[str],
 ) -> bool:
     """Report environment variable validation results to the user.
 
@@ -87,7 +84,7 @@ def report_environment_validation(
         bool: True if all required variables are valid, False otherwise
     """
     # Report required variable issues
-    invalid_required: List[str] = missing_required + empty_required
+    invalid_required: list[str] = missing_required + empty_required
     if invalid_required:
         print("❌ Invalid required environment variables:")
         for var in missing_required:
@@ -100,7 +97,7 @@ def report_environment_validation(
     print("✅ All required environment variables are set")
 
     # Report optional variable status
-    all_optional: List[str] = missing_optional + empty_optional
+    all_optional: list[str] = missing_optional + empty_optional
     for var in all_optional:
         if var in missing_optional:
             print(f"⚠️  Optional variable {var} is not set")
@@ -265,6 +262,25 @@ def main() -> None:
     if not deploy_dolphin_service():
         sys.exit(1)
 
+    # Step 3.5: Check DOLPHIN_ENDPOINT after deployment
+    # On first-time setup, DOLPHIN_ENDPOINT doesn't exist until after deploying the Dolphin service
+    if not os.getenv("DOLPHIN_ENDPOINT"):
+        print("\n⚠️  DOLPHIN_ENDPOINT is not set")
+        print(
+            "   This is expected on first-time setup since the endpoint doesn't exist"
+        )
+        print("   until after deploying the Dolphin service.")
+        print(
+            "\n   After deployment completes, set DOLPHIN_ENDPOINT to the service URL:"
+        )
+        endpoint_url: str = os.getenv(
+            "MODAL_ENDPOINT_BASE",
+            "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run",
+        )
+        print(f"   export DOLPHIN_ENDPOINT={endpoint_url}")
+        print("\n   Then run the test script to verify the deployment:")
+        print("   python -m scripts.test_modal_deployment")
+
     # Step 4: Deploy main application
     if not deploy_main_application():
         sys.exit(1)
@@ -279,11 +295,14 @@ def main() -> None:
     print("\n2. Deploy the Dolphin OCR service:")
     print("   modal deploy services/dolphin_modal_service.py")
 
-    endpoint_url: str = os.getenv(
-        "MODAL_ENDPOINT_BASE",
-        "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run",
-    )
-    print(f"   DOLPHIN_ENDPOINT={endpoint_url}")
+    # Only show DOLPHIN_ENDPOINT setup if it wasn't already shown above
+    if os.getenv("DOLPHIN_ENDPOINT"):
+        endpoint_url: str = os.getenv(
+            "MODAL_ENDPOINT_BASE",
+            "https://modal-labs--dolphin-ocr-service-dolphin-ocr-endpoint.modal.run",
+        )
+        print(f"\n3. Current DOLPHIN_ENDPOINT: {os.getenv('DOLPHIN_ENDPOINT')}")
+        print("   (If this differs from actual deployment URL, update accordingly)")
 
     print("\n4. Test the deployment:")
     print("   python -m scripts.test_modal_deployment")

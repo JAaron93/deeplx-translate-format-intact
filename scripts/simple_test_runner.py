@@ -10,8 +10,9 @@ import json
 import math
 import sys
 import traceback
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any
 
 
 # Dynamically resolve the project root directory based on script location
@@ -222,7 +223,7 @@ def test_neologism_models() -> None:
     ), f"Expected 0.6, got {analysis.morphological_productivity}"
 
     # Test to_dict method
-    analysis_dict: Dict[str, Any] = analysis.to_dict()
+    analysis_dict: dict[str, Any] = analysis.to_dict()
     assert isinstance(analysis_dict, dict), "to_dict should return a dictionary"
     assert "root_words" in analysis_dict, "Dictionary should contain 'root_words' key"
     assert (
@@ -269,7 +270,7 @@ def test_neologism_models() -> None:
     ), f"Expected 'philosophical_treatise', got {phil_context.text_genre}"
 
     # Test PhilosophicalContext to_dict method
-    phil_dict: Dict[str, Any] = phil_context.to_dict()
+    phil_dict: dict[str, Any] = phil_context.to_dict()
     assert isinstance(
         phil_dict, dict
     ), "PhilosophicalContext to_dict should return a dictionary"
@@ -316,7 +317,7 @@ def test_neologism_models() -> None:
     ), f"Weighted score should be between 0 and 1, got {weighted_score}"
 
     # Test ConfidenceFactors to_dict method
-    factors_dict: Dict[str, Any] = confidence_factors.to_dict()
+    factors_dict: dict[str, Any] = confidence_factors.to_dict()
     assert isinstance(
         factors_dict, dict
     ), "ConfidenceFactors to_dict should return a dictionary"
@@ -385,7 +386,7 @@ def test_neologism_models() -> None:
     ), f"Expected ConfidenceLevel.HIGH for confidence 0.85, got {confidence_level}"
 
     # Test DetectedNeologism to_dict method
-    neologism_dict: Dict[str, Any] = detected_neologism.to_dict()
+    neologism_dict: dict[str, Any] = detected_neologism.to_dict()
     assert isinstance(
         neologism_dict, dict
     ), "DetectedNeologism to_dict should return a dictionary"
@@ -415,12 +416,17 @@ def test_neologism_models() -> None:
     conf_val = data["confidence"]
     assert isinstance(conf_val, (int, float)) and not isinstance(
         conf_val, bool
-    ), "JSON 'confidence' should be a number (int/float) but not bool"
+    ), f"JSON 'confidence' should be a number (int/float) but not bool, got {conf_val!r}"
     conf_val = float(conf_val)
+    assert math.isfinite(
+        conf_val
+    ), f"JSON 'confidence' should be finite (not NaN/Inf), got {conf_val}"
+    assert (
+        0.0 <= conf_val <= 1.0
+    ), f"JSON 'confidence' should be between 0.0 and 1.0, got {conf_val}"
     assert math.isclose(
-        conf_val, 0.85, rel_tol=1e-9, abs_tol=1e-9
-    ), "JSON should contain the confidence value"
-    assert 0.0 <= conf_val <= 1.0, "JSON 'confidence' should be between 0 and 1"
+        conf_val, 0.85, abs_tol=1e-9
+    ), f"JSON 'confidence' should be 0.85, got {conf_val}"
     print("✓ DetectedNeologism creation and validation passed")
 
     print("Neologism models test completed successfully")
@@ -430,7 +436,7 @@ def main() -> None:
     """Run all tests."""
     print("Starting simple test runner...")
 
-    tests: List[Tuple[str, Callable[[], None]]] = [
+    tests: list[tuple[str, Callable[[], None]]] = [
         ("User Choice Models", test_user_choice_models),
         ("Choice Database", test_choice_database),
         ("Neologism Models", test_neologism_models),

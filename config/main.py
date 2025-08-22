@@ -6,9 +6,11 @@ Enhanced image handling and parallel processing.
 import json
 import logging
 import os
+import warnings
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Mapping, TypeVar
+from typing import TypeVar
 
 try:
     from dotenv import load_dotenv
@@ -16,6 +18,7 @@ except ImportError:  # pragma: no cover - optional at runtime
     # Fallback no-op with signature compatible to python-dotenv
     def load_dotenv(*_args: object, **_kwargs: object) -> bool:
         """Fallback no-op function when python-dotenv is not available."""
+        warnings.warn("python-dotenv not installed; .env not loaded", stacklevel=2)
         return False
 
 

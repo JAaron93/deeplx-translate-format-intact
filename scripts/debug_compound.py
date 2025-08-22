@@ -26,7 +26,7 @@ if project_root_str not in sys.path:
 import argparse  # noqa: E402
 import json  # noqa: E402
 import traceback  # noqa: E402
-from typing import Any, Dict, List, Optional, Union  # noqa: E402
+from typing import Any, Optional, Union  # noqa: E402
 
 # Project imports
 from services.neologism_detector import NeologismDetector  # noqa: E402
@@ -48,8 +48,8 @@ def get_default_categories() -> list[str]:
 
 def get_categories_from_config(config_path: Union[str, Path]) -> list[str]:
     """Get compound categories from configuration file."""
+    path = Path(config_path)
     try:
-        path = Path(config_path)
         with path.open(encoding="utf-8") as f:
             config = json.load(f)
             categories = config.get("compound_categories", get_default_categories())
@@ -60,11 +60,18 @@ def get_categories_from_config(config_path: Union[str, Path]) -> list[str]:
                     "Invalid 'compound_categories' in %s; using defaults.", path
                 )
                 return get_default_categories()
-            return categories
+            # Deduplicate while preserving order (keep first occurrence only)
+            seen = set()
+            deduplicated_categories = []
+            for category in categories:
+                if category not in seen:
+                    seen.add(category)
+                    deduplicated_categories.append(category)
+            return deduplicated_categories
     except (OSError, json.JSONDecodeError) as e:
         logger.warning(
             "Could not load categories from %s (%s). Using defaults.",
-            path if "path" in locals() else config_path,
+            path,
             e,
         )
         return get_default_categories()
@@ -72,9 +79,9 @@ def get_categories_from_config(config_path: Union[str, Path]) -> list[str]:
 
 def load_test_words(
     config_path: Optional[Union[str, Path]] = None,
-    categories: Optional[List[str]] = None,
+    categories: Optional[list[str]] = None,
     auto_detect_categories: bool = True,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Load test words from configuration file with flexible category selection.
 
     Args:
@@ -99,12 +106,12 @@ def load_test_words(
                 if not isinstance(categories, list) or not all(
                     isinstance(c, str) for c in categories
                 ):
-                    print(
-                        f"⚠️  Warning: Invalid 'compound_categories' in {config_path}; using defaults."
+                    logger.warning(
+                        "Invalid 'compound_categories' in %s; using defaults.",
+                        config_path,
                     )
                     categories = get_default_categories()
             else:
-                ...
                 categories = get_default_categories()
 
         # Flatten specified word categories into a single list
@@ -143,7 +150,7 @@ def load_test_words(
         return []
 
 
-def format_debug_output(word_info: Dict[str, Any], debug_result: Dict[str, Any]) -> str:
+def format_debug_output(word_info: dict[str, Any], debug_result: dict[str, Any]) -> str:
     """Format debug analysis results for readable output.
 
     Args:
@@ -220,11 +227,11 @@ def format_debug_output(word_info: Dict[str, Any], debug_result: Dict[str, Any])
 
 
 def debug_compound_detection(
-    test_words: Optional[List[str]] = None,
+    test_words: Optional[list[str]] = None,
     config_path: Optional[Union[str, Path]] = None,
     verbose: bool = True,
     filter_category: Optional[str] = None,
-    categories: Optional[List[str]] = None,
+    categories: Optional[list[str]] = None,
 ) -> None:
     """Debug compound word detection using public NeologismDetector API.
 
@@ -330,11 +337,15 @@ def get_available_categories(
     if config_path is None:
         config_path = project_root / "config" / "debug_test_words.json"
 
-    try:
-        return get_categories_from_config(config_path)
-    except Exception as e:
-        logger.warning("Warning: Error loading categories from %s: %s", config_path, e)
-        return get_default_categories()
+
+def main():
+    """Main entry point with command line argument parsing."""
+    # Ensure logger output is visible in CLI usage
+    if not logging.getLogger().handlers:
+        logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    # First pass: parse config argument to determine available categories
+    pre_parser = argparse.ArgumentParser(add_help=False)
+    ...
 
 
 def main():

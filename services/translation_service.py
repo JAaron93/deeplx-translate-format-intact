@@ -9,7 +9,8 @@ import math
 import os
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 import requests
 

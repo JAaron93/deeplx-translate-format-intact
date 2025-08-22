@@ -11,7 +11,7 @@ This document summarizes how CI is set up to validate the new philosophy-enhance
   - tests/test_translate_content_philosophy_load.py provides a focused load test for the philosophy path.
   - It validates:
     - Preserved ordering of outputs
-    - Bounded concurrency via settings.TRANSLATION_CONCURRENCY_LIMIT
+    - Bounded concurrency via `settings.TRANSLATION_CONCURRENCY_LIMIT`
     - Reasonable runtime under moderate load
   - The CI workflow defines a separate optional job that runs only the load tests when triggered manually or on a schedule. Load tests are marked with `@pytest.mark.load`.
 

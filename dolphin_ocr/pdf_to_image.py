@@ -15,10 +15,10 @@ libraries at module import time to keep startup overhead low.
 from __future__ import annotations
 
 import mmap
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Sequence
 
 from dolphin_ocr.errors import (
     EncryptedPdfError,

@@ -1,5 +1,6 @@
 """SQLite database management for user choices."""
 
+import itertools
 import json
 import logging
 import sqlite3
@@ -1170,7 +1171,7 @@ class ChoiceDatabase:
         """Validate and reconstruct a UserChoice object from JSON data.
 
         Args:
-            cchoice_data: Mapping containing choice data
+            choice_data: Mapping containing choice data
             session_id: Optional session ID to assign
 
         Returns:
@@ -1280,40 +1281,49 @@ class ChoiceDatabase:
         """Perform bulk import of validated choices using high-performance database operations.
 
         Args:
-            choices: Iterable of validated UserChoice objects (converted to list for batching)
+            choices: Iterable of validated UserChoice objects (processed in streaming batches)
 
         Returns:
             Number of successfully imported choices
         """
-        # Convert to list to ensure slicing and len() operations are safe
-        choices = list(choices)
+        # Create an iterator to process choices in streaming batches
+        choices_iter = iter(choices)
 
-        if not choices:
+        # Check if there are any choices to process
+        try:
+            first_choice = next(choices_iter)
+        except StopIteration:
             return 0
+
+        # Put the first choice back at the beginning of the iterator
+        choices_iter = itertools.chain([first_choice], choices_iter)
 
         try:
             with self._get_connection() as conn:
                 imported_count = 0
                 failed_count = 0
+                batch_number = 1
 
-                # Process in batches to avoid memory issues with very large imports
-                for i in range(0, len(choices), self._batch_size):
-                    batch = choices[i : i + self._batch_size]
+                # Process in streaming batches using islice to avoid loading everything into memory
+                while True:
+                    # Take the next batch from the iterator
+                    batch = list(itertools.islice(choices_iter, self._batch_size))
+                    if not batch:
+                        break  # No more items
+
                     try:
                         batch_imported = self._import_choice_batch(conn, batch)
                         imported_count += batch_imported
                     except Exception as e:
-                        logger.error(
-                            f"Error importing batch {i // self._batch_size + 1}: {e}"
-                        )
+                        logger.error(f"Error importing batch {batch_number}: {e}")
                         failed_count += len(batch)
-                        # Continue with next batch instead of failing entirely
-                        continue
 
-                    # Log progress for large imports
-                    if len(choices) > 1000:
+                    batch_number += 1
+
+                    # Log progress for large imports (every 10 batches or so)
+                    if batch_number % 10 == 0:
                         logger.info(
-                            f"Imported batch {i // self._batch_size + 1}: {batch_imported}/{len(batch)} choices"
+                            f"Processing batch {batch_number}: {imported_count} total choices imported"
                         )
 
                 conn.commit()

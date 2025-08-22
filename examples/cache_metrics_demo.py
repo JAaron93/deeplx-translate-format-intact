@@ -27,12 +27,15 @@ except ImportError as e:
     print(f"   Current working directory: {os.getcwd()}")
     sys.exit(1)
 except Exception as e:
+    import traceback
+
     print(f"❌ Unexpected error during import: {e}")
+    traceback.print_exc()
     sys.exit(1)
 
 
 # Closure-based cache to avoid clobbering decorator state
-_cache = {}
+_cache: dict[str, str] = {}
 
 
 def example_cache_function(key: str) -> str:
@@ -41,14 +44,11 @@ def example_cache_function(key: str) -> str:
     This function uses closure-based caching and implements the correct pattern:
     - First call: Raises KeyError (miss)
     - Subsequent calls: Returns cached value (hit)
-    - Manually increments hit counter on cache hits to align with decorator
+    - Relies on decorator to record hits/misses
     """
     # Check if result is in our closure cache
     if key in _cache:
-        # This is a cache hit - manually increment hit counter to align with decorator
-        from examples.performance_optimization_examples import _metrics_collector
-
-        _metrics_collector.increment_cache_hit()
+        # This is a cache hit - return cached value
         return _cache[key]
 
     # Cache miss - compute result, store it, raise KeyError for decorator

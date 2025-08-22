@@ -6,10 +6,11 @@ import asyncio
 import json
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from models.neologism_models import NeologismAnalysis
 

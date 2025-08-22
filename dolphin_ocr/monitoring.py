@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict, deque
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Deque, Iterable
+from typing import Deque
 
 
 @dataclass

@@ -7,7 +7,7 @@ for various translation scenarios involving philosophical texts with neologisms.
 """
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from models.user_choice_models import ChoiceSession, ChoiceType
 from services.philosophy_enhanced_document_processor import (
@@ -82,7 +82,7 @@ class PhilosophyTranslationExamples:
         print("=" * 80)
 
         # Multiple philosophical texts
-        texts: List[str] = [
+        texts: list[str] = [
             "Dasein encompasses the whole of human existence in its temporal structure.",
             "The concept of Angst reveals the fundamental groundlessness of existence.",
             "Zuhandenheit describes our practical engagement with the world of equipment.",
@@ -92,7 +92,7 @@ class PhilosophyTranslationExamples:
         print(f"Translating {len(texts)} philosophical texts...")
 
         # Batch translate with neologism handling
-        results: List[Any] = self.service.translate_batch_with_neologism_handling(
+        results: list[Any] = self.service.translate_batch_with_neologism_handling(
             texts=texts,
             source_lang="en",
             target_lang="de",
@@ -109,7 +109,7 @@ class PhilosophyTranslationExamples:
 
         return results
 
-    def example_3_user_choice_management(self) -> Tuple[Any, ChoiceSession]:
+    def example_3_user_choice_management(self) -> tuple[Any, ChoiceSession]:
         """Example 3: Managing user choices for neologism handling."""
         print("\n" + "=" * 80)
         print("EXAMPLE 3: User Choice Management for Neologisms")
@@ -228,7 +228,7 @@ class PhilosophyTranslationExamples:
         processor = create_philosophy_enhanced_document_processor()
 
         # Sample document content (simplified for example)
-        document_content: Dict[str, Any] = {
+        document_content: dict[str, Any] = {
             "type": "philosophy_document",
             "title": "Heidegger's Being and Time Analysis",
             "content": [
@@ -325,7 +325,7 @@ class PhilosophyTranslationExamples:
         print("=" * 80)
 
         # Large batch of texts for performance testing
-        large_texts: List[str] = [
+        large_texts: list[str] = [
             f"Philosophical text {i} with neologisms and complex terminology."
             for i in range(100)
         ]
@@ -337,7 +337,7 @@ class PhilosophyTranslationExamples:
 
         start_time: float = time.perf_counter()
 
-        results: List[Any] = self.service.translate_batch_with_neologism_handling(
+        results: list[Any] = self.service.translate_batch_with_neologism_handling(
             texts=large_texts[
                 :10
             ],  # Limited to 10 texts for quick demonstration; adjust for actual performance testing

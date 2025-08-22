@@ -137,7 +137,13 @@ def demonstrate_lazy_loading(
 ) -> dict[str, float]:
     """Demonstrate lazy loading performance benefits."""
     # Local import to avoid E402 after sys.path modification
-    from services.neologism_detector import NeologismDetector
+    try:
+        from services.neologism_detector import NeologismDetector
+    except ModuleNotFoundError as e:
+        raise RuntimeError(
+            "Could not import services.neologism_detector.NeologismDetector. "
+            "Ensure project_root is on sys.path and 'services' is importable."
+        ) from e
 
     print("=" * 60)
     print("LAZY LOADING PERFORMANCE DEMONSTRATION")
@@ -217,10 +223,7 @@ def demonstrate_lazy_loading(
     print("\n4. Testing multiple instantiations...")
 
     start_time = time.time()
-    detectors: list[NeologismDetector] = []
-    for _ in range(10):
-        detector = NeologismDetector()
-        detectors.append(detector)
+    detectors: list[NeologismDetector] = [NeologismDetector() for _ in range(10)]
 
     multi_init_time: float = time.time() - start_time
     print(f"   10 instantiations time: {multi_init_time:.4f}s")
@@ -315,7 +318,7 @@ def main() -> None:
     print("✓ Backward compatibility maintained")
 
     # Show configuration info
-    if args.eager_memory:
+    if args.eager_memory is not None:
         print(f"✓ Used command-line memory override: {args.eager_memory:.2f} MB")
     elif os.environ.get("LAZY_LOADING_EAGER_MEMORY_MB"):
         env_val: Optional[str] = os.environ.get("LAZY_LOADING_EAGER_MEMORY_MB")

@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -8,7 +8,7 @@ from core.translation_handler import translate_content
 
 
 class StubPhilosophyService:
-    def __init__(self, behavior: Dict[str, Any]):
+    def __init__(self, behavior: dict[str, Any]):
         """
         behavior: mapping of input text -> action
         - value is a string: return that as translated_text
@@ -24,7 +24,7 @@ class StubPhilosophyService:
         target_lang: str,
         provider: str,
         session_id: str,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         action = self.behavior.get(text)
         if isinstance(action, Exception):
             raise action

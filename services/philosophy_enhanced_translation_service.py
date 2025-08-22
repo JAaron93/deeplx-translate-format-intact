@@ -7,9 +7,10 @@ import json
 import logging
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from models.neologism_models import DetectedNeologism, NeologismAnalysis
 from models.user_choice_models import ChoiceType, UserChoice

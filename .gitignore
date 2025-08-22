@@ -251,21 +251,36 @@ GEMINI.md
 .vincent
 
 # AI Development Tools
+# Augment AI specific
+.augment
+.augment/
+!.augment/rules/
+
+# GitHub specific
+.github
+.github/
+
+# Kilocode specific
+.kilocode
+.kilocode/
+
 # Kiro IDE specific
+.kiro
+.kiro/
 .kiro/settings/
 .kiro/cache/
 .kiro/temp/
 # Keep steering rules but ignore other Kiro files
 !.kiro/steering/
 
+# Qoder specific
+.qoder
+.qoder/
+
 # MCP (Model Context Protocol) configurations - keep workspace configs
 mcp.json
 .mcp/
 !.kiro/settings/mcp.json
-
-# Augment AI specific
-.augment/
-!.augment/rules/
 
 # Vincent AI specific
 .vincent/

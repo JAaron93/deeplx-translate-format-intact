@@ -1,9 +1,9 @@
 """FastAPI route handlers for document translation API."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from fastapi import (
     APIRouter,
@@ -50,19 +50,19 @@ api_router: APIRouter = APIRouter()
 app_router: APIRouter = APIRouter()
 
 # Type aliases for better readability
-ChoiceData = Dict[str, Any]
-ExportData = Dict[str, Any]
-ImportData = Dict[str, Any]
-UploadResponse = Dict[str, Any]
-TranslationResponse = Dict[str, Any]
-JobStatusResponse = Dict[str, Any]
-NeologismResponse = Dict[str, Any]
-ProgressResponse = Dict[str, Any]
-TerminologyResponse = Dict[str, str]
+ChoiceData = dict[str, Any]
+ExportData = dict[str, Any]
+ImportData = dict[str, Any]
+UploadResponse = dict[str, Any]
+TranslationResponse = dict[str, Any]
+JobStatusResponse = dict[str, Any]
+NeologismResponse = dict[str, Any]
+ProgressResponse = dict[str, Any]
+TerminologyResponse = dict[str, str]
 
 
 @app_router.get("/")
-async def root() -> Dict[str, Any]:
+async def root() -> dict[str, Any]:
     """Root endpoint."""
     return {
         "message": "Advanced Document Translator API",
@@ -91,7 +91,7 @@ async def philosophy_interface(request: Request) -> HTMLResponse:
 
 # Philosophy API Endpoints
 @api_router.post("/philosophy/choice")
-async def save_user_choice(choice_data: ChoiceData) -> Dict[str, Any]:
+async def save_user_choice(choice_data: ChoiceData) -> dict[str, Any]:
     """Save a user choice for a neologism."""
     try:
         # Extract choice data with explicit validation
@@ -122,7 +122,7 @@ async def save_user_choice(choice_data: ChoiceData) -> Dict[str, Any]:
         )
 
         # Map choice string to ChoiceType
-        choice_type_mapping: Dict[str, ChoiceType] = {
+        choice_type_mapping: dict[str, ChoiceType] = {
             "preserve": ChoiceType.PRESERVE,
             "translate": ChoiceType.TRANSLATE,
             "custom": ChoiceType.CUSTOM_TRANSLATION,
@@ -176,7 +176,7 @@ async def get_detected_neologisms(
     """
     try:
         # Return neologisms from state
-        neologisms: List[DetectedNeologism] = (
+        neologisms: list[DetectedNeologism] = (
             state.neologism_analysis.get("detected_neologisms", [])
             if state.neologism_analysis
             else []
@@ -194,7 +194,7 @@ async def get_philosophy_progress() -> ProgressResponse:
     try:
         total_neologisms: int = 0
         if state.neologism_analysis and isinstance(state.neologism_analysis, dict):
-            detected: List[Any] = state.neologism_analysis.get(
+            detected: list[Any] = state.neologism_analysis.get(
                 "detected_neologisms", []
             )
             if isinstance(detected, list):
@@ -222,7 +222,7 @@ async def get_philosophy_progress() -> ProgressResponse:
 @api_router.post("/philosophy/export-choices")
 async def export_user_choices(
     export_data: ExportData,
-) -> Union[FileResponse, Dict[str, Any]]:
+) -> Union[FileResponse, dict[str, Any]]:
     """Export user choices to JSON."""
     try:
         session_id: Optional[str] = export_data.get("session_id")
@@ -240,7 +240,7 @@ async def export_user_choices(
                 media_type="application/json",
                 filename=(
                     "philosophy-choices-"
-                    f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+                    f"{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
                     ".json"
                 ),
             )
@@ -253,10 +253,10 @@ async def export_user_choices(
 
 
 @api_router.post("/philosophy/import-choices")
-async def import_user_choices(import_data: ImportData) -> Dict[str, Any]:
+async def import_user_choices(import_data: ImportData) -> dict[str, Any]:
     """Import user choices from dictionary."""
     try:
-        choices: Dict[str, Any] = import_data.get("choices", {})
+        choices: dict[str, Any] = import_data.get("choices", {})
         session_id: Optional[str] = import_data.get("session_id")
 
         # Validate that choices is a dictionary
@@ -287,7 +287,7 @@ async def get_terminology() -> TerminologyResponse:
     """Get current terminology database."""
     try:
         # Get terminology from neologism detector
-        terminology: Dict[str, str] = neologism_detector.terminology_map
+        terminology: dict[str, str] = neologism_detector.terminology_map
         return terminology
 
     except Exception as e:
@@ -310,7 +310,7 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
                 detail={
                     "error_code": "DOLPHIN_005",
                     "message": "Only PDF format supported",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "context": {"path": Path(file_path).name},
                 },
             )
@@ -323,13 +323,13 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
                 detail={
                     "error_code": "DOLPHIN_014",
                     "message": get_error_message("DOLPHIN_014"),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "context": {"path": Path(file_path).name},
                 },
             )
 
         # Process with advanced extraction
-        content: Dict[str, Any] = document_processor.extract_content(file_path)
+        content: dict[str, Any] = document_processor.extract_content(file_path)
 
         # Detect language using the utility function
         sample_text: str = (
@@ -375,7 +375,7 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
             }
 
             if isinstance(obj, dict):
-                sanitized: Dict[str, Any] = {}
+                sanitized: dict[str, Any] = {}
                 for k, v in obj.items():
                     # Drop if key is path-like or the value itself resembles a filesystem path
                     if k.casefold() in disallowed_keys or _looks_like_fs_path(v):
@@ -383,7 +383,7 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
                     sanitized[k] = sanitize_metadata(v)
                 return sanitized
             elif isinstance(obj, list):
-                sanitized_list: List[Any] = []
+                sanitized_list: list[Any] = []
                 for item in obj:
                     if _looks_like_fs_path(item):
                         # Preserve shape but avoid leaking server paths
@@ -409,16 +409,7 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
 
         # Get and sanitize metadata
         metadata: Any = content.get("metadata")
-        metadata_dict: Dict[str, Any] = {}
-        if metadata and hasattr(metadata, "__dict__"):
-            metadata_dict = {
-                k: v
-                for k, v in metadata.__dict__.items()
-                if not k.startswith("_")
-                and k.casefold()
-                not in {"path", "file_path", "filepath", "full_path", "directory"}
-                and not _looks_like_fs_path(v)
-            }
+        metadata_dict: dict[str, Any] = sanitize_metadata(metadata) if metadata else {}
         return {
             "message": "File processed with advanced extraction",
             "filename": file.filename,
@@ -438,7 +429,7 @@ async def upload_file(file: UploadFile = File(...)) -> UploadResponse:  # noqa: 
             detail={
                 "error_code": "DOLPHIN_002",
                 "message": get_error_message("DOLPHIN_002"),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "filename": Path(file.filename).name
                 if getattr(file, "filename", None)
                 else None,
@@ -466,7 +457,7 @@ async def translate_document(
             "file_path": file_path,
             "source_language": source_language,
             "target_language": target_language,
-            "created_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(UTC),
             "output_file": None,
             "error": None,
             "processing_type": "advanced",
@@ -508,7 +499,7 @@ async def download_result(job_id: str) -> FileResponse:
     if job_id not in translation_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    job: Dict[str, Any] = translation_jobs[job_id]
+    job: dict[str, Any] = translation_jobs[job_id]
     if (job["status"] != "completed") or (not job["output_file"]):
         raise HTTPException(
             status_code=400,

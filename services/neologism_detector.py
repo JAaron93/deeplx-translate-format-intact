@@ -1069,7 +1069,7 @@ def analyze_document_batch(
         text_ids = [f"doc_{i}" for i in range(len(texts))]
 
     analyses = []
-    for text, text_id in zip(texts, text_ids):
+    for text, text_id in zip(texts, text_ids, strict=False):
         analysis = detector.analyze_text(text, text_id)
         analyses.append(analysis)
 

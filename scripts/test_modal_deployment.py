@@ -8,7 +8,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 # Add the project root to the Python path
 project_root: Path = Path(__file__).parent.parent
@@ -27,7 +27,7 @@ except ModuleNotFoundError as e:
 # Test-data paths searched by the helper functions
 # ---------------------------------------------------------------------------
 
-TEST_PDF_PATHS: List[str] = [
+TEST_PDF_PATHS: list[str] = [
     "tests/fixtures/sample.pdf",
     "docs/sample.pdf",
     "sample.pdf",
@@ -155,7 +155,7 @@ def check_environment() -> bool:
     """Check the deployment environment."""
     print("🌍 Checking deployment environment...")
 
-    required_vars: List[str] = [
+    required_vars: list[str] = [
         "DOLPHIN_ENDPOINT",
         "LINGO_API_KEY",
     ]
@@ -169,7 +169,7 @@ def check_environment() -> bool:
         print(f"   • Poppler: required by pdf2image. {poppler_hint}")
         print("   • Fonts: install DejaVu/Noto for consistent rendering.")
 
-    missing_vars: List[str] = []
+    missing_vars: list[str] = []
     for var in required_vars:
         if not os.getenv(var):
             missing_vars.append(var)

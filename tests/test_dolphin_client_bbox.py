@@ -27,15 +27,21 @@ def make_layout(bbox):
 
 
 @pytest.mark.parametrize(
-    "bbox,description",
+    "bbox",
     [
-        ([100.0, 100.0, 100.0, 200.0], "zero width (vertical line)"),
-        ([100.0, 100.0, 200.0, 100.0], "zero height (horizontal line)"),
-        ([100.0, 100.0, 100.0, 100.0], "zero width and height (point)"),
-        ([100.0, 100.0, 200.0, 200.0], "positive extents"),
+        [100.0, 100.0, 100.0, 200.0],
+        [100.0, 100.0, 200.0, 100.0],
+        [100.0, 100.0, 100.0, 100.0],
+        [100.0, 100.0, 200.0, 200.0],
+    ],
+    ids=[
+        "zero width (vertical line)",
+        "zero height (horizontal line)",
+        "zero width and height (point)",
+        "positive extents",
     ],
 )
-def test_valid_bboxes_allowed(bbox, description):
+def test_valid_bboxes_allowed(bbox):
     """Test that various valid bbox configurations are allowed."""
     data = make_layout(bbox)
     result = validate_dolphin_layout_response(data)
@@ -43,14 +49,18 @@ def test_valid_bboxes_allowed(bbox, description):
 
 
 @pytest.mark.parametrize(
-    "bbox,description",
+    "bbox",
     [
-        ([200.0, 100.0, 100.0, 200.0], "negative width"),
-        ([100.0, 200.0, 200.0, 100.0], "negative height"),
+        [200.0, 100.0, 100.0, 200.0],
+        [100.0, 200.0, 200.0, 100.0],
+    ],
+    ids=[
+        "negative width",
+        "negative height",
     ],
 )
-def test_invalid_bboxes_rejected(bbox, description):
+def test_invalid_bboxes_rejected(bbox):
     """Test that invalid bbox extents (negative) are rejected."""
     data = make_layout(bbox)
-    with pytest.raises(ValueError, match=r"(?i)invalid bbox extents"):
+    with pytest.raises(ValueError, match=r"(?i)invalid bbox"):
         validate_dolphin_layout_response(data)

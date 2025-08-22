@@ -2,19 +2,16 @@
 
 ## Overview
 
-This project uses a CI/CD-friendly pre-commit configuration that balances code quality with development productivity. The configuration automatically handles formatting and only blocks commits on critical issues.
-
+This project uses a CI/CD-friendly pre-commit configuration that balances code quality with development productivity. The configuration automatically handles formatting. Note: if a hook modifies files (e.g., Black, trailing whitespace fixes), your commit will be aborted; re-stage the changes and commit again. Only critical issues are intended to fail commits otherwise.
 ## What Gets Auto-Fixed
 
-The following issues are automatically resolved and never block your commits:
+Auto-fixed issues (the commit that triggers a change will abort; re-stage and commit again):
 
-- **Trailing whitespace** - Automatically removed from all files
-- **Line endings** - Fixed to use consistent LF endings
-- **Python code formatting** - Black formats your code automatically
-- **End-of-file newlines** - Added automatically where needed
-- **Most style violations** - Auto-fixed by Ruff and Black
-
-## What Blocks Commits
+- **Trailing whitespace** — `trailing-whitespace` hook
+- **Line endings (LF)** — `mixed-line-ending` (configured to `lf`)
+- **Python code formatting** — `black`
+- **End-of-file newlines** — `end-of-file-fixer`
+- **Many style violations** — `ruff --fix` (for fixable rules)
 
 Only critical issues will prevent commits:
 
@@ -30,27 +27,45 @@ Only critical issues will prevent commits:
 # Install pre-commit hooks
 pre-commit install
 
-# Normal commits will only be blocked by critical issues
+# Keep hooks up to date (optional, recommended)
+pre-commit autoupdate
+
+# Normal commits: if hooks modify files (formatting, whitespace), re-stage and commit again.
 git commit -m "Your message"
 ```
 
 ### Full Code Quality Checks
 ```bash
-# Run all linting rules (for thorough code review)
+# Run comprehensive linting with manual-stage hooks (only runs hooks that declare this stage)
 pre-commit run --all-files --hook-stage manual
 
-# Run specific linters
-pre-commit run ruff --all-files --hook-stage manual
-pre-commit run bandit --all-files
+# Config-agnostic alternative: run all hooks across all stages
+pre-commit run --all-files
+
+# Run specific tools
+pre-commit run ruff --all-files --hook-stage manual  # If ruff has manual stage
+pre-commit run bandit --all-files                    # Standard stage
+pre-commit run black --all-files                     # Formatting
+
+# Black check-only mode (as used in CI - doesn't modify files)
+black --check --diff .                               # Direct Black invocation
 ```
+
+**When to use each approach:**
+- `--hook-stage manual`: Use when you want comprehensive linting from hooks specifically configured for manual review
+- `--all-files` (no stage): Use as fallback that works with any pre-commit config, runs hooks at their default stages
+- Direct tool invocation: Use for CI checks or when you need specific tool options not available in pre-commit config
 
 ### Troubleshooting
 
 If a commit is blocked:
 1. Check which hook failed
+If a commit is blocked:
+1. Check which hook failed
 2. Run `pre-commit run --all-files` to see detailed output
-3. Fix the reported issues
-4. Commit again
+3. If files were modified by hooks, `git add -A`
+4. Fix any remaining reported issues
+5. Commit again
 
 ## CI/CD Behavior
 
@@ -75,3 +90,4 @@ In CI/CD environments:
 - ✅ **Security focus** - Only critical security issues block commits
 - ✅ **Syntax safety** - Critical syntax errors still prevent broken code
 - ✅ **Development productivity** - Developers can focus on features, not formatting
+- ℹ️ Note: when a hook auto-fixes files, the initial commit aborts by design; re-stage and commit again.

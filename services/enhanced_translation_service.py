@@ -8,7 +8,8 @@ with significant performance improvements for large documents.
 
 import logging
 import time
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from services.parallel_translation_service import (
     BatchProgress,
@@ -193,7 +194,7 @@ class EnhancedTranslationService(TranslationService):
 
         return text_blocks
 
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics."""
         stats = self.performance_stats.copy()
 

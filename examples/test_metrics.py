@@ -3,6 +3,11 @@
 import asyncio
 import threading
 
+# Constants for thread safety test
+NUM_THREADS = 5
+ITERATIONS = 100
+BARRIER_TIMEOUT = 5
+
 from examples.performance_optimization_examples import (
     get_active_connections,
     get_cache_hit_rate,
@@ -89,17 +94,20 @@ def test_thread_safety():
     initial_misses = initial_stats["misses"]
 
     # Create barrier for synchronized thread start
-    barrier = threading.Barrier(5)
+    barrier = threading.Barrier(NUM_THREADS, timeout=BARRIER_TIMEOUT)
 
     def worker():
         # Wait for all threads to be ready before starting work
-        barrier.wait()
-        for _ in range(100):
+        try:
+            barrier.wait()
+        except threading.BrokenBarrierError as e:
+            raise AssertionError(f"Barrier broken or timed out: {e}")
+        for _ in range(ITERATIONS):
             increment_cache_hit()
             increment_cache_miss()
 
     # Create multiple threads
-    threads = [threading.Thread(target=worker) for _ in range(5)]
+    threads = [threading.Thread(target=worker) for _ in range(NUM_THREADS)]
 
     # Start all threads
     for thread in threads:
@@ -110,8 +118,9 @@ def test_thread_safety():
         thread.join()
 
     stats = get_cache_stats()
-    expected_hits = initial_hits + 500  # 5 threads * 100 iterations
-    expected_misses = initial_misses + 500
+    expected_total_operations = NUM_THREADS * ITERATIONS
+    expected_hits = initial_hits + expected_total_operations
+    expected_misses = initial_misses + expected_total_operations
 
     print(f"Expected: {expected_hits} hits, {expected_misses} misses")
     print(f"Actual: {stats['hits']} hits, {stats['misses']} misses")

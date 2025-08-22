@@ -5,8 +5,9 @@ import importlib
 import os
 import subprocess
 import time
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Sequence, cast
+from typing import cast
 
 
 @dataclass(frozen=True)
@@ -284,7 +285,7 @@ class PDFQualityValidator:
 
                     # Map images back to page indices
                     batch_indices = list(range(first - 1, last))
-                    for img, page_i in zip(images, batch_indices):
+                    for img, page_i in zip(images, batch_indices, strict=False):
                         if page_i < 0 or page_i >= capped_pages:
                             continue
                         if text_per_page[page_i]:
@@ -468,8 +469,8 @@ class PDFQualityValidator:
         score = 1.0 if denom == 0 else 1.0 - (abs(la_eff - lb_eff) / float(denom))
 
         # Provide hashes for traceability (not used for scoring)
-        a_hash = hashlib.sha1(a_sig.encode("utf-8")).hexdigest()
-        b_hash = hashlib.sha1(b_sig.encode("utf-8")).hexdigest()
+        a_hash = hashlib.sha1(a_sig.encode("utf-8"), usedforsecurity=False).hexdigest()
+        b_hash = hashlib.sha1(b_sig.encode("utf-8"), usedforsecurity=False).hexdigest()
 
         return {
             "score": float(max(0.0, min(1.0, score))),

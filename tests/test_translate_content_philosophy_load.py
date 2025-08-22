@@ -1,7 +1,7 @@
 import asyncio
 import random
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 
@@ -41,6 +41,9 @@ class LoadFakeTranslator:
 async def test_philosophy_path_moderate_load_order_and_concurrency(
     monkeypatch: pytest.MonkeyPatch,
 ):
+    # Test configuration constants
+    CONCURRENCY_LIMIT = 8
+
     # Build a single page with N items to translate
     N = 200
     content = {
@@ -51,13 +54,17 @@ async def test_philosophy_path_moderate_load_order_and_concurrency(
     # Bound concurrency via settings
     import core.translation_handler as th
 
-    monkeypatch.setattr(th.settings, "TRANSLATION_CONCURRENCY_LIMIT", 8, raising=True)
+    monkeypatch.setattr(
+        th.settings, "TRANSLATION_CONCURRENCY_LIMIT", CONCURRENCY_LIMIT, raising=True
+    )
 
+    # Reduce run-to-run variability by fixing per-item latency to the midpoint.
+    monkeypatch.setattr(random, "randint", lambda a, b: (a + b) // 2, raising=True)
     fake = LoadFakeTranslator(latency_ms=(5, 20))
 
     async def _fake_translate_text_with_neologism_handling(
         *, text: str, **kwargs: Any
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         try:
             res = await fake.translate(text, **kwargs)
             return {"translated_text": res}
@@ -72,7 +79,7 @@ async def test_philosophy_path_moderate_load_order_and_concurrency(
         raising=True,
     )
 
-    t0 = time.time()
+    t0 = time.perf_counter()
     translated_by_page, _ = await translate_content(
         content=content,
         source_language="en",
@@ -80,20 +87,20 @@ async def test_philosophy_path_moderate_load_order_and_concurrency(
         philosophy_mode=True,
         session_id="s-load",
     )
-    elapsed = time.time() - t0
+    elapsed = time.perf_counter() - t0
 
     # Order is preserved exactly for items that succeed; failed items equal original
-    page0: List[str] = translated_by_page[0]
+    page0: list[str] = translated_by_page[0]
     assert len(page0) == N
     for i, out in enumerate(page0):
         exp_ok = f"T:t{i}"
         assert out in (exp_ok, f"t{i}")
 
     # Concurrency should remain bounded
-    assert fake.max <= 8
+    assert fake.max <= CONCURRENCY_LIMIT
 
     # Basic throughput sanity: should complete within a reasonable bound on CI
-    # With 8-way concurrency and ~12.5ms avg per item, expect ~N*12.5/8 ms => ~0.31s; add headroom
+    # With {CONCURRENCY_LIMIT}-way concurrency and ~12.5ms avg per item, expect ~N*12.5/{CONCURRENCY_LIMIT} ms => ~0.31s; add headroom
     assert elapsed < 5.0
 
     # Simple observability counters for the test

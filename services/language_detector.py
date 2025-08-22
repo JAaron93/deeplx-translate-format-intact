@@ -12,16 +12,21 @@ from __future__ import annotations
 import importlib
 import logging
 import os
+import threading
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional, TypedDict
+from typing import Any, Optional, TypedDict
 
 # Optional dependency detection without importing at module import time
 LANGDETECT_AVAILABLE: bool = importlib.util.find_spec("langdetect") is not None
 
+# Module-level lock for thread-safe langdetect initialization
+_LANGDETECT_LOCK = threading.Lock()
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 # Accepted truthy values for environment flags (normalized to lower-case)
-TRUE_VALUES: frozenset[str] = frozenset({"true", "1", "yes", "on", "y"})
+TRUE_VALUES: frozenset[str] = frozenset({"true", "1", "yes", "on", "y", "t"})
 
 
 def env_flag(name: str, default: bool = False) -> bool:
@@ -169,29 +174,39 @@ class LanguageDetector:
 
         This avoids repeated dynamic imports on every call while
         remaining resilient when the optional dependency is missing.
+        Uses double-checked locking to prevent race conditions in multi-threaded environments.
         """
+        # First check without lock for performance
         if self._langdetect_initialized:
             return
 
-        # Set initialized if langdetect is confirmed unavailable
-        if not LANGDETECT_AVAILABLE:
-            self._langdetect_initialized = True
-            return
+        # Use lock to prevent race conditions during initialization
+        with _LANGDETECT_LOCK:
+            # Second check inside lock (double-checked locking pattern)
+            if self._langdetect_initialized:
+                return
 
-        try:
-            mod: Any = importlib.import_module("langdetect")
-            fallback_exc: type = type("LocalLangDetectException", (RuntimeError,), {})
-            # Get LangDetectException from the top-level module instead of importing submodule
-            exc: Any = getattr(mod, "LangDetectException", fallback_exc)
-            detect_func: Optional[Any] = getattr(mod, "detect", None)
-            self._langdetect_mod = mod
-            self._langdetect_exception = exc
-            self._detect_func = detect_func
-            # Only mark as initialized after successful import and caching
-            self._langdetect_initialized = True
-        except (ModuleNotFoundError, ImportError, AttributeError) as err:
-            logger.debug("langdetect import failed: %s", err)
-            # Don't set initialized flag on import errors to allow retry on transient failures
+            # Set initialized if langdetect is confirmed unavailable
+            if not LANGDETECT_AVAILABLE:
+                self._langdetect_initialized = True
+                return
+
+            try:
+                mod: Any = importlib.import_module("langdetect")
+                fallback_exc: type = type(
+                    "LocalLangDetectException", (RuntimeError,), {}
+                )
+                # Get LangDetectException from the top-level module instead of importing submodule
+                exc: Any = getattr(mod, "LangDetectException", fallback_exc)
+                detect_func: Optional[Any] = getattr(mod, "detect", None)
+                self._langdetect_mod = mod
+                self._langdetect_exception = exc
+                self._detect_func = detect_func
+                # Only mark as initialized after successful import and caching
+                self._langdetect_initialized = True
+            except (ModuleNotFoundError, ImportError, AttributeError) as err:
+                logger.debug("langdetect import failed: %s", err)
+                # Don't set initialized flag on import errors to allow retry on transient failures
 
     def detect_language(
         self,
@@ -237,6 +252,7 @@ class LanguageDetector:
                     "Text extractor failed for %s: %s. Falling back to sample text extraction",
                     file_path,
                     str(e),
+                    exc_info=True,
                 )
                 try:
                     sample_text = self._extract_sample_text(file_path)
@@ -245,6 +261,7 @@ class LanguageDetector:
                         "Both text extractor and fallback failed for %s: %s",
                         file_path,
                         str(fallback_e),
+                        exc_info=True,
                     )
                     sample_text = None
         else:
@@ -275,14 +292,21 @@ class LanguageDetector:
                     detected_code: str = self._detect_func(sample_text)
                     mapped_lang = self.language_map.get(detected_code, "Unknown")
                     if mapped_lang == "Unknown":
+                        # Return uppercase language code for unmapped codes instead of "Unknown"
                         logger.debug(
-                            "Unmapped language code '%s' detected, returning 'Unknown'",
+                            "Unmapped language code '%s' detected, returning uppercase code",
                             detected_code,
                         )
+                        return detected_code.upper()
                     return mapped_lang
                 except (self._langdetect_exception, ValueError) as e:
-                    logger.warning("Language detection error: %s", e)
-                    return "Unknown"
+                    logger.warning(
+                        "Language detection error: %s. Falling back to heuristic detection",
+                        e,
+                        exc_info=True,
+                    )
+                    # Fall back to the same heuristic detection used elsewhere in the module
+                    return self._simple_language_detection(sample_text)
 
         # Fallback to simple heuristics for shorter texts (≥10 chars)
         return self._simple_language_detection(sample_text)
@@ -383,7 +407,7 @@ class LanguageDetector:
 
         # Precompute denominators to avoid redundant calculations
         denom: float = float(word_count)
-        char_denom: float = float(len(text))
+        char_denom: float = float(len(text.strip()))
 
         # Calculate normalized scores
         scores: dict[str, float] = {}

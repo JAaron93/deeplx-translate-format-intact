@@ -3,7 +3,6 @@
 import logging
 import os
 import secrets
-from typing import Set
 
 from dotenv import load_dotenv
 
@@ -12,7 +11,7 @@ load_dotenv()
 logger: logging.Logger = logging.getLogger(__name__)
 
 # Valid ISO 639-1 language codes
-VALID_LANGUAGE_CODES: Set[str] = {
+VALID_LANGUAGE_CODES: set[str] = {
     "AA",
     "AB",
     "AE",
@@ -514,7 +513,7 @@ class Settings:
             return False
 
         # Validate SECRET_KEY strength for production
-        if not self.DEBUG and self.SECRET_KEY and len(self.SECRET_KEY) < 32:
+        if not self.DEBUG and len(self.SECRET_KEY) < 32:
             logger.error(
                 "SECRET_KEY is too weak: %s characters. "
                 "Must be at least 32 characters for production use.",

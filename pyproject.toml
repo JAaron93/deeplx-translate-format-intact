@@ -41,7 +41,7 @@ exclude = ["tests*", "examples*", "scripts*", "docs*", "temp*", "input*", "outpu
 
 [tool.black]
 line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+target-version = ['py312']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -59,7 +59,7 @@ extend-exclude = '''
 [tool.ruff]
 # Configure to match Black
 line-length = 88
-target-version = "py38"
+target-version = "py312"
 
 # Exclude common directories
 exclude = [
@@ -116,7 +116,7 @@ convention = "google"  # or "numpy" based on project preference
 known-first-party = ["services", "models", "utils", "database", "config", "examples", "core", "api", "ui"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 ignore_missing_imports = true
 warn_unused_ignores = true
 warn_redundant_casts = true
@@ -140,6 +140,6 @@ dev = [
     "pytest>=8.2.2",         # Test runner
     "pytest-asyncio>=1.1.0", # Asyncio support for pytest
     "pytest-cov>=4.1.0",       # Coverage plugin
-    "mypy>=1.10.0",            # Static type checker
+    "mypy>=1.10.0,<2.0.0",     # Static type checker
     "pluggy>=1.6.0"            # Plugin system for Python
 ]
