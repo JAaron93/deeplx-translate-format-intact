@@ -58,7 +58,7 @@ def _get_version() -> str:
         # Fallback to pkg_resources
         import pkg_resources
 
-        return pkg_resources.get_distribution("dolphin-ocr-translate").version
+        return pkg_resources.get_distribution("PhenomenalLayout").version
     except (ImportError, Exception):
         pass
 
@@ -67,7 +67,7 @@ def _get_version() -> str:
 
 
 # Module-level constants
-USER_AGENT = f"Dolphin-OCR-Translate-Parallel/{_get_version()}"
+USER_AGENT = f"PhenomenalLayout-Parallel/{_get_version()}"
 
 # Maximum allowed Retry-After delay to prevent pathologically long sleeps
 MAX_RETRY_AFTER_SECONDS = 60.0

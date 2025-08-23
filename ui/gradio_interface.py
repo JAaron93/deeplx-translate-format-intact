@@ -432,7 +432,9 @@ def create_gradio_interface() -> gr.Blocks:
         )
 
         # Status update function for manual refresh
-        def update_status(_progress=None):
+        def update_status(_progress: "gr.Progress | None" = None):
+            if _progress is None:
+                _progress = gr.Progress(track_tqdm=False)
             if _progress is None:
                 gr.Progress(track_tqdm=False)
             status, _unused, download_ready = get_translation_status()

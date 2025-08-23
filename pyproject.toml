@@ -3,13 +3,13 @@ requires = ["setuptools>=61.0", "wheel>=0.42.0,<1.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "deeplx-translate-format-intact"
+name = "PhenomenalLayout"
 version = "1.0.0"
-description = "Document translation application with OCR capabilities and philosophy-enhanced neologism detection"
+description = "Advanced layout preservation engine for document translation - orchestrating Lingo.dev translation services with Dolphin OCR for pixel-perfect formatting integrity"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = "MIT"
 authors = [
-    {name = "DeepLX Translate Format Intact Team"}
+    {name = "PhenomenalLayout Development Team"}
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

@@ -12,6 +12,12 @@ import logging
 import sys
 from pathlib import Path
 
+# Configure logging with basic setup
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
 logger = logging.getLogger(__name__)
 
 # Always work with an absolute, canonicalised path
@@ -124,13 +130,15 @@ def load_test_words(
                     word_copy["category"] = category
                     test_words.append(word_copy)
             else:
-                print(f"⚠️  Warning: Category '{category}' not found in {config_path}")
+                logger.warning(
+                    f"⚠️  Warning: Category '{category}' not found in {config_path}"
+                )
 
         return test_words
 
     except FileNotFoundError:
-        print(f"⚠️  Configuration file not found: {config_path}")
-        print("Using fallback test words...")
+        logger.warning(f"⚠️  Configuration file not found: {config_path}")
+        logger.info("Using fallback test words...")
         return [
             {
                 "word": "Bewusstsein",
@@ -146,7 +154,7 @@ def load_test_words(
             },
         ]
     except json.JSONDecodeError as e:
-        print(f"❌ Error parsing configuration file: {e}")
+        logger.error(f"❌ Error parsing configuration file: {e}")
         return []
 
 
@@ -242,14 +250,14 @@ def debug_compound_detection(
         filter_category: Only test words from this category (legacy, use categories instead).
         categories: List of categories to load and test.
     """
-    print("🐬 Dolphin OCR Translate - Compound Word Debug Analysis")
-    print("=" * 60)
+    logger.info("🐬 Dolphin OCR Translate - Compound Word Debug Analysis")
+    logger.info("=" * 60)
 
     try:
         # Initialize detector
-        print("🔧 Initializing NeologismDetector...")
+        logger.info("🔧 Initializing NeologismDetector...")
         detector = NeologismDetector()
-        print("✅ Detector initialized successfully")
+        logger.info("✅ Detector initialized successfully")
 
         # Load test words
         if test_words:
@@ -263,62 +271,64 @@ def debug_compound_detection(
                 for word in test_words
             ]
         else:
-            print("📖 Loading test words from configuration...")
+            logger.info("📖 Loading test words from configuration...")
 
             # Determine which categories to load
             load_categories = None
             if categories:
                 load_categories = categories
-                print(f"🎯 Loading specific categories: {', '.join(categories)}")
+                logger.info(f"🎯 Loading specific categories: {', '.join(categories)}")
             elif filter_category:
                 load_categories = [filter_category]
-                print(f"🔍 Loading single category: {filter_category}")
+                logger.info(f"🔍 Loading single category: {filter_category}")
 
             word_list = load_test_words(config_path, categories=load_categories)
 
         # Legacy filter support (for backward compatibility)
         if filter_category and not categories:
             word_list = [w for w in word_list if w.get("category") == filter_category]
-            print(f"🔍 Filtered to category: {filter_category}")
+            logger.info(f"🔍 Filtered to category: {filter_category}")
 
-        print(f"📝 Testing {len(word_list)} words...")
-        print()
+        logger.info(f"📝 Testing {len(word_list)} words...")
+        logger.info("")
 
         # Analyze each word
         for i, word_info in enumerate(word_list, 1):
             word = word_info["word"]
             context = word_info.get("context", "")
 
-            print(f"[{i}/{len(word_list)}] Analyzing: {word}")
+            logger.info(f"[{i}/{len(word_list)}] Analyzing: {word}")
 
             try:
                 # Use public debug API
                 debug_result = detector.debug_analyze_word(word, context)
 
                 if verbose:
-                    print(format_debug_output(word_info, debug_result))
+                    logger.info(format_debug_output(word_info, debug_result))
                 else:
                     # Compact output
                     compound = debug_result.get("compound_analysis", {})
                     assessment = debug_result.get("final_assessment", {})
 
-                    print(f"   Compound: {compound.get('is_compound', False)}")
-                    print(f"   Neologism: {assessment.get('is_neologism', False)}")
+                    logger.info(f"   Compound: {compound.get('is_compound', False)}")
+                    logger.info(
+                        f"   Neologism: {assessment.get('is_neologism', False)}"
+                    )
                     confidence_factors = debug_result.get("confidence_factors", {})
                     score = confidence_factors.get("weighted_score", 0.0)
-                    print(f"   Score: {score:.3f}")
-                    print()
+                    logger.info(f"   Score: {score:.3f}")
+                    logger.info("")
 
             except Exception as e:
-                print(f"❌ Error analyzing '{word}': {e}")
+                logger.error(f"❌ Error analyzing '{word}': {e}")
                 if verbose:
                     traceback.print_exc()
-                print()
+                logger.info("")
 
-        print("🎉 Analysis complete!")
+        logger.info("🎉 Analysis complete!")
 
     except Exception as e:
-        print(f"❌ Fatal error: {e}")
+        logger.error(f"❌ Fatal error: {e}")
         traceback.print_exc()
         sys.exit(1)
 
@@ -337,8 +347,7 @@ def get_available_categories(
     if config_path is None:
         config_path = project_root / "config" / "debug_test_words.json"
 
-
-# (Removed the incomplete main() stub at lines 340–348)
+    return get_categories_from_config(config_path)
 
 
 def main():

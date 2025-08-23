@@ -218,7 +218,7 @@ class LayoutAwareTranslationService:
 
         results: list[TranslationResult] = []
         for index, (block, raw) in enumerate(
-            zip(text_blocks, translations, strict=True)
+            zip(text_blocks, translations, strict=False)
         ):
             optimized = self._optimize_for_length(raw)
             analysis = self._engine.analyze_text_fit(

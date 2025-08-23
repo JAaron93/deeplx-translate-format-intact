@@ -220,12 +220,9 @@ def process_file_upload_sync(file):
         try:
             loop = asyncio.get_running_loop()
             # If we get here, we're in an async context
-            # Use a thread executor to run the async function
-            import concurrent.futures
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, process_file_upload(file))
-                return future.result()
+            # Schedule the coroutine on the running loop
+            future = asyncio.run_coroutine_threadsafe(process_file_upload(file), loop)
+            return future.result()
         except RuntimeError:
             # No event loop running, we can safely use asyncio.run
             return asyncio.run(process_file_upload(file))
@@ -294,15 +291,11 @@ def start_translation_sync(target_language, max_pages, philosophy_mode):
         try:
             loop = asyncio.get_running_loop()
             # If we get here, we're in an async context
-            # Use a thread executor to run the async function
-            import concurrent.futures
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(
-                    asyncio.run,
-                    start_translation(target_language, max_pages, philosophy_mode),
-                )
-                return future.result()
+            # Schedule the coroutine on the running loop
+            future = asyncio.run_coroutine_threadsafe(
+                start_translation(target_language, max_pages, philosophy_mode), loop
+            )
+            return future.result()
         except RuntimeError:
             # No event loop running, we can safely use asyncio.run
             return asyncio.run(

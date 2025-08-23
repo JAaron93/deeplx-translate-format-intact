@@ -254,7 +254,6 @@ GEMINI.md
 # Augment AI specific
 .augment
 .augment/
-!.augment/rules/
 
 # GitHub specific
 # GitHub specific
@@ -267,13 +266,6 @@ GEMINI.md
 # Kiro IDE specific
 .kiro
 .kiro/
-# Keep steering rules but ignore other Kiro files
-!.kiro/steering/
-# Keep specific MCP config - unignore parent directory first
-!.kiro/settings/
-!.kiro/settings/mcp.json
-.kiro/cache/
-.kiro/temp/
 
 # Qoder specific
 .qoder
@@ -285,9 +277,6 @@ mcp.json
 
 # Vincent AI specific
 .vincent/
-# Keep specific MCP config - unignore parent directory first
-!.vincent/
-!.vincent/mcp.json
 
 # Superdesign specific
 .superdesign/

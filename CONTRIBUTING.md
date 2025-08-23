@@ -1,4 +1,13 @@
-# Contributing
+# Contributing to PhenomenalLayout
+
+Welcome to PhenomenalLayout, an advanced layout preservation engine for document translation. This project orchestrates Lingo.dev's translation services with ByteDance's Dolphin OCR to achieve pixel-perfect formatting integrity.
+
+## Project Context
+
+PhenomenalLayout's core innovation lies in solving the fundamental challenge of preserving document layout when translated text differs in length from the original. Our sophisticated algorithms include:
+- Intelligent text fitting strategies (font scaling, text wrapping, bounding box optimization)
+- Quality assessment engines for layout preservation decisions
+- Integration layer between high-quality translation and OCR services
 
 This project uses pinned dev tooling and automation to keep CI stable and reproducible.
 
@@ -61,6 +70,27 @@ With `pytest-asyncio>=0.23` and pytest 8, the asyncio mode must be declared. We 
 
 - Keep edits small and focused; include a clear rationale in the message.
 - Ensure `ruff`, `mypy`, and tests pass locally before opening a PR.
+
+## Layout Preservation Development Guidelines
+
+When contributing to PhenomenalLayout's core functionality, please follow these guidelines:
+
+### Text Fitting Algorithm Development
+- **Test with multiple languages**: Ensure algorithms work across different character densities (German→English, English→Chinese, etc.)
+- **Quality metrics**: Always include quality scoring for layout preservation strategies
+- **Fallback handling**: Implement graceful degradation when optimal fitting isn't possible
+- **Performance considerations**: Test with large documents (1000+ pages) to ensure scalability
+
+### Integration Testing
+- **External service mocking**: Mock Lingo.dev and Dolphin OCR APIs for consistent testing
+- **Layout preservation validation**: Include visual regression tests for complex layouts
+- **Quality threshold testing**: Verify that layout preservation quality meets minimum standards (>0.7 score)
+
+### Documentation Requirements
+- **Algorithm explanations**: Document the mathematical basis for text fitting strategies
+- **Quality scoring**: Explain how layout preservation quality is calculated
+- **Integration patterns**: Describe how PhenomenalLayout orchestrates external services
+- **Performance characteristics**: Include benchmark data for large document processing
 
 ## CI notes
 

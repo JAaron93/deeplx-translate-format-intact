@@ -1,6 +1,7 @@
-"""Professional Document Translator with Advanced Formatting Preservation.
+"""PhenomenalLayout: Advanced Layout Preservation Engine for Document Translation.
 
-Refactored main application entry point.
+Orchestrates Lingo.dev translation services with Dolphin OCR for pixel-perfect
+formatting integrity during document translation.
 """
 
 import logging
@@ -58,9 +59,11 @@ if _created_early:
 
 # FastAPI app
 app = FastAPI(
-    title="Advanced Document Translator",
+    title="PhenomenalLayout",
     description=(
-        "Professional document translation with advanced formatting preservation"
+        "Advanced layout preservation engine for document translation - "
+        "orchestrating Lingo.dev translation services with Dolphin OCR "
+        "for pixel-perfect formatting integrity"
     ),
     version="2.0.0",
 )
@@ -98,7 +101,7 @@ async def startup_event() -> None:
 
 def main() -> None:
     """Main application entry point."""
-    logger.info("Starting Advanced Document Translator")
+    logger.info("Starting PhenomenalLayout - Advanced Layout Preservation Engine")
 
     # Create Gradio interface
     gradio_app = create_gradio_interface()
